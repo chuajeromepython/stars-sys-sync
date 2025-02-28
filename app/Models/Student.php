@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
+
+class Student extends Model implements Auditable
+{
+    use HasFactory;
+    use SoftDeletes;
+    use \OwenIt\Auditing\Auditable;
+    
+
+    protected $table = 'tbl_students';
+    public $timestamps = false;
+    public $remember_token = false;
+
+
+    public static function status($status_id) {
+
+        switch ($status_id) {
+            case '1':
+                $status = "Regular";
+                break;
+            case '2':
+                $status = "Trasferee";
+                break;
+            case '4':
+                $status = "Drop";
+                break;
+            case '3':
+                $status = "Back Subject";
+            case '0':
+                $status = "Exclude";
+                break;
+            default:
+                // code...
+                break;
+        }
+
+        return $status;
+    }
+
+    public static function getStatusOptions(){
+        $result = array(
+            "1" => "Regular",
+            "2" => "Trasferee",
+            "3" => "Back Subject",
+            "4" => "Drop",
+            "0" => "Exclude"
+        );
+
+        return $result; 
+    }
+}

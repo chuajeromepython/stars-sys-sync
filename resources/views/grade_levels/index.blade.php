@@ -1,0 +1,59 @@
+@extends('layouts.master')
+
+@section('page_name', $page['name'])
+
+@section('page_title', $page['title'])
+
+@section('page_script')
+    <script type="text/javascript" src="/js/grade_levels.js"></script>
+@endsection
+
+@section('content')
+	@include('layouts.message')
+    @include('grade_levels.create')
+    @include('grade_levels.edit')
+    @include('grade_levels.destroy')
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#create_modal"><i class="fa fa-plus mr-2"></i> Add Grade Level</a>
+                </div>
+                <div class="card-body" >
+                    <table class="table table-bordered mb-3" id="dt_grade_levels" style="width: 100%;">
+                        <thead>
+                            <tr><th>ID</th>
+                                <th>Grade Level</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($grade_levels as $grade_level)
+                                <tr>
+                                    <td>{{$grade_level->id}}</td>
+                                    <td>{{$grade_level->level}}</td>
+                                    <th>
+                                        <center>
+                                         <a href="#" class="btn-edit btn btn-primary btn-sm" 
+                                            data-toggle="modal" data-target="#edit_modal"
+                                            data-edit_id="{{$grade_level->id}}" 
+                                            data-edit_name="{{$grade_level->level}}">
+                                            <i class="fa fa-pen"></i>
+                                        </a>
+                                        <a href="#" class="btn-destroy btn-danger btn-sm btn"
+                                            data-toggle="modal" data-target="#destroy_modal"
+                                            data-destroy_id="{{$grade_level->id}}" 
+                                            data-destroy_name="{{$grade_level->level}}">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                       </center>
+                                    </th>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
