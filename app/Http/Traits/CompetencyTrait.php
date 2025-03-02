@@ -7,6 +7,7 @@ use App\Models\GradeLevel;
 use App\Models\Period;
 use App\Models\Subject;
 use App\Models\Week;
+use Illuminate\Support\Facades\DB;
 
 trait CompetencyTrait {
     /**
@@ -106,12 +107,17 @@ trait CompetencyTrait {
                 $searchKey = 'name';
                 $searchValue = $data['subject_component'];
 
-                $subject_component_id = current(array_filter($sub_comp, function ($item) use ($searchKey, $searchValue) {
-                    return isset($item[$searchKey]) && $item[$searchKey] === $searchValue;
+                $subject_component_id = current(array_filter($sub_comp, function ($item) use ($searchKey, $searchValue, $line, $data) {
+                    // if($line == 99) {
+                    //     dd( isset($item[$searchKey]), $item[$searchKey], preg_replace("/[^A-Za-z\s]/", "", $searchValue), $data['subject']);
+                    // }
+                    return isset($item[$searchKey]) && $item[$searchKey] === preg_replace("/[^A-Za-z\s]/", "", $searchValue);
                 }));
 
-                if(!$subject_component_id)
+                if(!$subject_component_id) {
                     $error[] = 'Error on row '.$line.' : Subject Component not found!.';
+
+                }
             }
         }
 
@@ -133,8 +139,8 @@ trait CompetencyTrait {
 
     public function check_competency_if_exist($data, &$error, $line)
     {
-        $is_code_exist = Competency::where('code', $data['code'])->get();
-        ($is_code_exist->count() > 0) ? $error[] = 'Error on row '.$line.' : Code already exist' : '';
+        $is_code_exist = Competency::select("*")->where(DB::raw('code like "%'.$data['code'].'%"'))->get();
+        ($is_code_exist->count() > 0) ? $error[] = 'Error on row '.$line.' : Code '.$data['code'].' already exist' : '';
     }
 
     public function validate_grade_level($data, &$error, $line)

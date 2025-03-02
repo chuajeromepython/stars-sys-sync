@@ -14,6 +14,10 @@ class Competency extends Model implements Auditable
     use \OwenIt\Auditing\Auditable;
 
     public $timestamps = false;
+
     public $remember_token = false;
+
     protected $table = 'tbl_competencies';
+
+    protected $guarded = [];
 }
