@@ -133,6 +133,13 @@ class SectionController extends Controller
 
     public function upload(Request $request)
     {   
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:10240'
+        ], [
+            'file.required' => 'Please upload a file.',
+            'file.mimes' => 'The file must be an Excel file (xlsx or xls).',
+            'file.max' => 'The file size must not exceed 10MB.'
+        ]);
 
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
         $spreadsheet = IOFactory::load( $request->file('file') );

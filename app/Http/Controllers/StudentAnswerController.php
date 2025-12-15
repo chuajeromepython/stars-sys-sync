@@ -102,7 +102,14 @@ class StudentAnswerController extends Controller
 
     public function upload(Request $request)
     {
-        
+        $request->validate([
+            'file_assessment' => 'required|mimes:csv,txt',
+        ],
+        [
+            'file_assessment.mimes' => 'The file must be a file of type: csv, txt.',
+            'file_assessment.required' => 'Please upload a file.',
+        ]);
+
         $assessment = Assessment::find($request->assessment_id);
         $assessment_keys = CustomFunction::getAssessmentKeys($request->assessment_id);
         $data = array();

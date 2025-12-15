@@ -139,6 +139,13 @@ class SummativeController extends Controller
      */
     public function upload(Request $request)
     {
+        $request->validate([
+            'file_answer_key' => 'required|mimes:xlsx,xls|max:10240'
+        ], [
+            'file_answer_key.required' => 'Please upload a file.',
+            'file_answer_key.mimes' => 'The file must be an Excel file (xlsx or xls).',
+            'file_answer_key.max' => 'The file size must not exceed 10MB.'
+        ]);
 
         $file_answer_key        = $request->file('file_answer_key');
         $spreadsheet_answer_key = IOFactory::load( $file_answer_key );

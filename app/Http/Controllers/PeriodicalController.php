@@ -70,6 +70,13 @@ class PeriodicalController extends Controller
 
     public function upload(Request $request){
 
+        $validated = $request->validate([
+            'file_answer_key' => 'required|mimes:xlsx,xls'
+        ],[
+            'file_answer_key.required' => 'Please upload an ANSWER-KEY-UPLOADER.xlsx file. you can download the template from the Downloads section.',
+            'file_answer_key.mimes' => 'The uploaded file must be an Excel file (xlsx or xls).'
+        ]);
+
         $file_answer_key = $request->file('file_answer_key');
         $spreadsheet_answer_key = IOFactory::load( $file_answer_key );
         $answer_keys = CustomFunction::verifyAnswerKeys($spreadsheet_answer_key);

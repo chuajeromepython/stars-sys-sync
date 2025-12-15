@@ -662,6 +662,14 @@ class ECDCController extends Controller
 
     public function upload(Request $request){
 
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:10240'
+        ], [
+            'file.required' => 'Please upload a file.',
+            'file.mimes' => 'The file must be an Excel file (xlsx or xls).',
+            'file.max' => 'The file size must not exceed 10MB.'
+        ]);
+
         $total_students = StudentClassroom::where('classroom_id', $request->classroom_id)->count();
         $spreadsheet = IOFactory::load( $request->file('file') );
         $sheet = $spreadsheet->getActiveSheet()->toArray();
