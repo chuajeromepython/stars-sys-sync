@@ -219,13 +219,13 @@ class ClassAssessment extends Model implements Auditable
             $correct_lpg = 0;
 
             foreach ($data as $key => $student) {
-                if($student['proficiency'] == "HP" && $student['answers'][$item_number]['is_correct'] == 1){
+                if($student['proficiency'] == "HP" && isset($student['answers'][$item_number]) && $student['answers'][$item_number]['is_correct'] == 1){
                     $correct_hpg+= 1;
                 }
-                if($student['proficiency'] == "AP" && $student['answers'][$item_number]['is_correct'] == 1){
+                if($student['proficiency'] == "AP" && isset($student['answers'][$item_number]) && $student['answers'][$item_number]['is_correct'] == 1){
                     $correct_apg+= 1;
                 }
-                if($student['proficiency'] == "LP" && $student['answers'][$item_number]['is_correct'] == 1){
+                if($student['proficiency'] == "LP" && isset($student['answers'][$item_number]) && $student['answers'][$item_number]['is_correct'] == 1){
                     $correct_lpg+= 1;
                 }
             }
