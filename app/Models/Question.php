@@ -12,4 +12,5 @@ class Question extends Model implements Auditable
     use HasFactory, SoftDeletes;
     use \OwenIt\Auditing\Auditable;
     protected $table = 'tbl_questions';
+    protected $guarded = [];
 }

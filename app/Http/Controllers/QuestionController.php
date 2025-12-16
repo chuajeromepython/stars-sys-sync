@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Question;
+use App\Models\Option;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class QuestionController extends Controller
 {
@@ -81,5 +83,73 @@ class QuestionController extends Controller
     public function destroy(Question $question)
     {
         //
+    }
+
+    /**
+     * Update answer key (question, options, and correct answer)
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function updateAnswerKey(Request $request, $id)
+    {
+        try {
+            // Validate the request
+            $validated = $request->validate([
+                'question' => 'required|string',
+                'options' => 'required|array|min:4',
+                'option_ids' => 'required|array|min:4',
+                'correct_answer' => 'required|in:A,B,C,D'
+            ]);
+
+            DB::beginTransaction();
+
+            // Update the question
+            $question = Question::findOrFail($id);
+            $question->question = $request->question;
+            $question->save();
+
+            // Update options and set correct answer
+            $options = $request->options;
+            $optionIds = $request->option_ids;
+            $correctAnswer = $request->correct_answer;
+            $assignments = ['A', 'B', 'C', 'D'];
+
+            foreach ($assignments as $index => $assignment) {
+                if (isset($optionIds[$index]) && $optionIds[$index]) {
+                    $option = Option::findOrFail($optionIds[$index]);
+                    $option->option = $options[$index];
+                    $option->is_correct = ($assignment === $correctAnswer) ? 1 : 0;
+                    $option->save();
+                    
+                    \Log::info('Option updated', [
+                        'option_id' => $option->id,
+                        'assignment' => $assignment,
+                        'is_correct' => $option->is_correct
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Answer key updated successfully!'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error: ' . json_encode($e->errors())
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating answer key: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

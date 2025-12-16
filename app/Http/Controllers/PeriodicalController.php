@@ -151,7 +151,7 @@ class PeriodicalController extends Controller
 
         foreach ($questions as $key => $question) {
             $options = AssessmentOption::select(
-                    'assignment', 'option', 'is_correct'
+                    'tbl_options.id', 'assignment', 'option', 'is_correct'
                 )->join('tbl_options', 'tbl_assessment_options.option_id', 'tbl_options.id')
                 ->where('question_id', $question->id)
                 ->get();
