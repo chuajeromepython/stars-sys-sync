@@ -136,6 +136,13 @@ class PeriodicalController extends Controller
             ->where('teacher_id', $teacher->id)
             ->get();
 
+        $classRooms = CustomFunction::getClassrooms();
+        $rooms = [];
+
+        foreach($classRooms as $classRoom){
+            $rooms = array_merge($rooms, $classRoom);
+        }
+        
         $class_assessments = ClassAssessment::select(
                 'tbl_class_assessments.id', 'section', 'level', 'period'
             )->join('tbl_teacher_classes', 'tbl_class_assessments.class_id', 'tbl_teacher_classes.id')
@@ -165,7 +172,7 @@ class PeriodicalController extends Controller
         
         $assessment = CustomFunction::getAssessmentDetails($assessment->id);
         return view('periodicals.show', compact(
-            'page', 'answer_keys', 'classes', 'assessment',
+            'page', 'answer_keys', 'classes', 'assessment','rooms',
             'class_assessments'
         ));
     }

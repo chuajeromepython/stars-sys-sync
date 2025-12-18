@@ -592,12 +592,14 @@ class CustomFunction extends Model
                         "subject" => ($advisory) ? $subject->title : 'N/A',
                         "classes" => $classes,
                         "is_advisory" => $is_advisory,
+                        "grade_level" => $grade_level->level,
+                        "teacher_class_id" => $advisory->id,
                     );
                     $classrooms[$grade_level->level][] = $room_details;
                 }
             }
         }
-
+        
         return $classrooms;
 
     }
