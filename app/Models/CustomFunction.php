@@ -840,7 +840,7 @@ class CustomFunction extends Model
             'student:id,lrn,user_id',
             'student.user',
             'student.studentAnswers',
-            'student.user.person:first_name,middle_name,last_name,birth_date,gender'
+            'student.user.person:id,first_name,middle_name,last_name,birth_date,gender'
         )
         ->where('class_assessment_id', $class_assessment_id)
         ->get();
