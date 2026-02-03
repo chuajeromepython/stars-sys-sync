@@ -399,9 +399,9 @@ class StudentController extends Controller
                 case '2019':
                     $cell = array(
                         'school_id'     => 'F3',
-                        'academic_year' => 'T4',
-                        'grade_level'   => 'AE4',
-                        'section'       => 'AM4',
+                        'academic_year' => 'S4',
+                        'grade_level'   => 'AB4',
+                        'section'       => 'AH4',
                         'total'         => 'X64',
                         'strand'        => '',
                         'lrn'           => 'A',

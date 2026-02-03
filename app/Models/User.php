@@ -57,12 +57,17 @@ class User extends Authenticatable implements Auditable
 
     public function person()
     {
-        return $this->belongsTo('App\Models\Person', 'person_id', 'id');
+        return $this->belongsTo(Person::class, 'person_id', 'id');
+    }
+
+    public function student()
+    {
+        return $this->hasOne(Student::class, 'user_id', 'id');
     }
 
     public function divisionadministrator()
     {
-        return $this->belongsTo('App\Models\DivisionAdministrator', 'id', 'user_id');
+        return $this->belongsTo(DivisionAdministrator::class, 'id', 'user_id');
     }
 
     public function getDetails($user_id){

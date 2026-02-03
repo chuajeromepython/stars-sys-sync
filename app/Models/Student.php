@@ -55,4 +55,19 @@ class Student extends Model implements Auditable
 
         return $result; 
     }
+
+    public function studentScores()
+    {
+        return $this->hasMany(StudentScore::class, 'student_id');
+    }
+
+    public function studentAnswers() 
+    {
+        return $this->hasMany(StudentAnswer::class, 'student_id', 'id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
 }

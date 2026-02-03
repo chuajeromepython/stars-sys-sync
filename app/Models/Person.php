@@ -15,4 +15,9 @@ class Person extends Model implements Auditable
     protected $table = 'tbl_persons';
     public $timestamps = false;
     public $remember_token = false;
+
+    public function user()
+    {
+        return $this->hasOne(User::class, 'person_id', 'id');
+    }
 }

@@ -836,29 +836,29 @@ class CustomFunction extends Model
         $LPG = $lowest->score+$part;
         $HPG = $highest->score-$part;
 
-        $student_scores = StudentScore::where('class_assessment_id', $class_assessment_id)->get();
+        $student_scores = StudentScore::with(
+            'student:id,lrn,user_id',
+            'student.user',
+            'student.studentAnswers',
+            'student.user.person:first_name,middle_name,last_name,birth_date,gender'
+        )
+        ->where('class_assessment_id', $class_assessment_id)
+        ->get();
 
         $result = array();
 
         foreach ($student_scores as $key => $student_score) {
-            $student = Student::select(
-                'tbl_students.id', 'lrn',
-                'first_name', 'middle_name', 'last_name', 'birth_date', 'gender'
-            )->join('tbl_users', 'tbl_students.user_id', 'tbl_users.id')
-            ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
-            ->where('tbl_students.id', $student_score->student_id)
-            ->first();
 
             $percentage = ( $student_score->score / $assessment->number_of_items ) * (100);
             $percentage =  number_format((float) $percentage, 2, '.', '');
-
+          
             // PROFICIENCY LEVEL
 
-            if($student_score->score <= $LPG){
+            if($student_score->score < $LPG){
                 $proficiency = 'LP';
-            }elseif($student_score->score > $LPG && $student_score->score < $HPG){
+            }elseif($student_score->score >= $LPG && $student_score->score <= $HPG){
                 $proficiency = 'AP';
-            }elseif($student_score->score >= $HPG){
+            }elseif($student_score->score > $HPG){
                 $proficiency = 'HP';
             }
 
@@ -894,9 +894,9 @@ class CustomFunction extends Model
             }
             
             $result[$student_score->student_id] =  array(
-                "lrn" => $student->lrn,
-                "name" => $student->last_name.', '.$student->first_name.' '.$student->middle_name,
-                "gender" => $student->gender,
+                "lrn" => $student_score->student->lrn,
+                "name" => $student_score->student->user?->person?->last_name.', '.$student_score->student->user?->person?->first_name.' '.$student_score->student->user?->person?->middle_name,
+                "gender" => $student_score->student->user?->person?->gender,
                 "score" => $student_score->score,
                 "percentage" => $percentage,
                 "proficiency" => $proficiency,

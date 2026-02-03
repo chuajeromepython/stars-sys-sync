@@ -14,4 +14,10 @@ class StudentScore extends Model implements Auditable
     use \OwenIt\Auditing\Auditable;
 
     protected $table = 'tbl_student_scores';
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class, 'student_id', 'id');
+    }
+
 }
