@@ -70,6 +70,13 @@ class PeriodicalController extends Controller
 
     public function upload(Request $request){
 
+        $validated = $request->validate([
+            'file_answer_key' => 'required|mimes:xlsx,xls'
+        ],[
+            'file_answer_key.required' => 'Please upload an ANSWER-KEY-UPLOADER.xlsx file. you can download the template from the Downloads section.',
+            'file_answer_key.mimes' => 'The uploaded file must be an Excel file (xlsx or xls).'
+        ]);
+
         $file_answer_key = $request->file('file_answer_key');
         $spreadsheet_answer_key = IOFactory::load( $file_answer_key );
         $answer_keys = CustomFunction::verifyAnswerKeys($spreadsheet_answer_key);
@@ -129,6 +136,13 @@ class PeriodicalController extends Controller
             ->where('teacher_id', $teacher->id)
             ->get();
 
+        $classRooms = CustomFunction::getClassrooms();
+        $rooms = [];
+
+        foreach($classRooms as $classRoom){
+            $rooms = array_merge($rooms, $classRoom);
+        }
+        
         $class_assessments = ClassAssessment::select(
                 'tbl_class_assessments.id', 'section', 'level', 'period'
             )->join('tbl_teacher_classes', 'tbl_class_assessments.class_id', 'tbl_teacher_classes.id')
@@ -144,7 +158,7 @@ class PeriodicalController extends Controller
 
         foreach ($questions as $key => $question) {
             $options = AssessmentOption::select(
-                    'assignment', 'option', 'is_correct'
+                    'tbl_options.id', 'assignment', 'option', 'is_correct'
                 )->join('tbl_options', 'tbl_assessment_options.option_id', 'tbl_options.id')
                 ->where('question_id', $question->id)
                 ->get();
@@ -158,7 +172,7 @@ class PeriodicalController extends Controller
         
         $assessment = CustomFunction::getAssessmentDetails($assessment->id);
         return view('periodicals.show', compact(
-            'page', 'answer_keys', 'classes', 'assessment',
+            'page', 'answer_keys', 'classes', 'assessment','rooms',
             'class_assessments'
         ));
     }

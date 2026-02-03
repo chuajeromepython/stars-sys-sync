@@ -61,20 +61,13 @@ class ClassAssessment extends Model implements Auditable
 
         }
 
-        foreach ($data as $key => $student) {
-            if($student['proficiency'] == "AP"){
-                $sum_of_apg += 1;
-            }
-            if($student['proficiency'] == "LP"){
-                $sum_of_lpg += 1;
-            }
-            if($student['proficiency'] == "HP"){
-                $sum_of_hpg += 1;
-            }
-        }
+        $level = array_count_values(array_column($data, 'proficiency'));
+        $sum_of_apg = isset($level['AP']) ? $level['AP'] : 0;
+        $sum_of_lpg = isset($level['LP']) ? $level['LP'] : 0;
+        $sum_of_hpg = isset($level['HP']) ? $level['HP'] : 0;
+  
+        $mean = round(($sum_of_count == 0) ? 0 :$sum_of_x / $sum_of_count, 2); //old ($sum_of_count == 0) ? 0 :$sum_of_x / $sum_of_count
         
-        $mean = ($sum_of_count == 0) ? 0 :$sum_of_x / $sum_of_count;
-
         for ($score=1; $score <= $assessment['number_of_items'] ; $score++) { 
             
             $xbar = number_format(($score-$mean)*($score-$mean), 2, '.', '');
@@ -89,7 +82,7 @@ class ClassAssessment extends Model implements Auditable
         
         $sd = ($sum_of_count == 0) 
             ? 0 
-            : number_format(sqrt($sum_of_fxb / $sum_of_count - 1), 2, '.', '');
+            : number_format(sqrt($sum_of_fxb / ($sum_of_count - 1)), 2, '.', '');
 
         $proficiency = ($sum_of_count == 0) 
             ? 0 
@@ -219,13 +212,13 @@ class ClassAssessment extends Model implements Auditable
             $correct_lpg = 0;
 
             foreach ($data as $key => $student) {
-                if($student['proficiency'] == "HP" && $student['answers'][$item_number]['is_correct'] == 1){
+                if($student['proficiency'] == "HP" && isset($student['answers'][$item_number]) && $student['answers'][$item_number]['is_correct'] == 1){
                     $correct_hpg+= 1;
                 }
-                if($student['proficiency'] == "AP" && $student['answers'][$item_number]['is_correct'] == 1){
+                if($student['proficiency'] == "AP" && isset($student['answers'][$item_number]) && $student['answers'][$item_number]['is_correct'] == 1){
                     $correct_apg+= 1;
                 }
-                if($student['proficiency'] == "LP" && $student['answers'][$item_number]['is_correct'] == 1){
+                if($student['proficiency'] == "LP" && isset($student['answers'][$item_number]) && $student['answers'][$item_number]['is_correct'] == 1){
                     $correct_lpg+= 1;
                 }
             }

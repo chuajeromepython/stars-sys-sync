@@ -248,6 +248,14 @@ class StudentController extends Controller
 
     public function upload(Request $request)
     {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:10240'
+        ], [
+            'file.required' => 'Please upload a file.',
+            'file.mimes' => 'The file must be an Excel file (xlsx or xls).',
+            'file.max' => 'The file size must not exceed 10MB.'
+        ]);
+
         // FUNCTION FOR UPLOADING SF1
         $classroom = Classroom::find($request->classroom_id);
         $spreadsheet = IOFactory::load( $request->file('file') );  
@@ -391,9 +399,9 @@ class StudentController extends Controller
                 case '2019':
                     $cell = array(
                         'school_id'     => 'F3',
-                        'academic_year' => 'T4',
-                        'grade_level'   => 'AE4',
-                        'section'       => 'AM4',
+                        'academic_year' => 'S4',
+                        'grade_level'   => 'AB4',
+                        'section'       => 'AH4',
                         'total'         => 'X64',
                         'strand'        => '',
                         'lrn'           => 'A',

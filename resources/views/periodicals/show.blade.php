@@ -6,11 +6,15 @@
 
 @section('page_script')
     <script type="text/javascript" src="/js/periodicals.js"></script>
+    <script>
+
+    </script>
 @endsection
 
 @section('content')
 	@include('layouts.message')
     @include('periodicals.upload_csv')
+    @include('periodicals.edit_answer_key')
     <a href="/summatives" class="btn btn-danger mr-3 mb-3">
         <i class="fa fa-angle-left mr-2"></i> Back
     </a>
@@ -105,6 +109,7 @@
                                 <th> B</th>
                                 <th> C</th>
                                 <th> D</th>
+                                <th> Action </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -120,6 +125,19 @@
                                     mr-2">{{$option->assignment}}</span>
                                     {{$option->option}}</td>
                                 @endforeach
+                                <td>
+                                    <center>
+                                        <button class="btn btn-warning btn-sm edit-answer-key"
+                                            data-toggle="modal"
+                                            data-target="#edit_answer_key_modal"
+                                            data-question-id="{{$keys['question']->id}}"
+                                            data-item-number="{{$keys['question']->item_number}}"
+                                            data-question="{{$keys['question']->question}}"
+                                            data-options='@json($keys['options'])'>
+                                            <i class="fa fa-edit"></i> Edit
+                                        </button>
+                                    </center>
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>

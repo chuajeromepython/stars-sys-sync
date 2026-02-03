@@ -102,7 +102,14 @@ class StudentAnswerController extends Controller
 
     public function upload(Request $request)
     {
-        
+        $request->validate([
+            'file_assessment' => 'required|mimes:csv,txt',
+        ],
+        [
+            'file_assessment.mimes' => 'The file must be a file of type: csv, txt.',
+            'file_assessment.required' => 'Please upload a file.',
+        ]);
+
         $assessment = Assessment::find($request->assessment_id);
         $assessment_keys = CustomFunction::getAssessmentKeys($request->assessment_id);
         $data = array();
@@ -170,9 +177,7 @@ class StudentAnswerController extends Controller
                 }else{
                     $class_assessment = $is_class_assessment_existing[0];
                 }
-                
-               
-
+            
                 foreach ($data as $student_id => $answers) {
                     
                     $is_student_existing = StudentScore::where([
@@ -182,15 +187,24 @@ class StudentAnswerController extends Controller
 
                     if($is_student_existing->count() == 0){
 
-                        $student_score = new StudentScore;
+                        $student_score = StudentScore::where('class_assessment_id', $class_assessment->id)
+                            ->where('student_id', $student_id)
+                            ->first();
                         $student_score->student_id = $student_id;
                         $student_score->score = $answers['score'];
                         $student_score->class_assessment_id = $class_assessment->id;
                         $student_score->save();
 
                         foreach ($answers['answer'] as $item_number => $answer) {
-                           
-                            $student_answer = new StudentAnswer;
+                            $student_answer = StudentAnswer::where('student_id', $student_id)
+                                ->where('item_number', $item_number)
+                                ->where('class_assessment_id', $class_assessment->id)
+                                ->first();
+                                
+                            if(empty($student_answer)){
+                                $student_answer = new StudentAnswer;
+                            }
+
                             $student_answer->student_id = $student_id;
                             $student_answer->answer = $answer['answer'];
                             $student_answer->is_correct = $answer['is_correct'];

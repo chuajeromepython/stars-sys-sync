@@ -26,6 +26,7 @@ use App\Http\Controllers\ECDCController;
 use App\Http\Controllers\GradeLevelController;
 use App\Http\Controllers\ItemBankController;
 use App\Http\Controllers\PeriodicalController;
+use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolSupervisorController;
@@ -296,6 +297,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/periodicals/', [PeriodicalController::class, 'index']);
         Route::post('/periodicals/upload', [PeriodicalController::class, 'upload']);
         Route::get('/periodicals/{assessment}', [PeriodicalController::class, 'show']);
+    #Questions
+        Route::put('/questions/{id}/update-answer-key', [QuestionController::class, 'updateAnswerKey']);
     #StudentAnswers
         Route::post('/student_answers/upload', [StudentAnswerController::class, 'upload']);
         Route::post('/student_answers/batch_update', [StudentAnswerController::class, 'batch_update']);
