@@ -124,6 +124,7 @@ class StudentAnswerController extends Controller
         
         foreach ($sheets as $students) {
             if($students) {
+                $fortmattedLRN = "";
                 $lrn = "";
                 $score = 0;
                 $answer = [];
@@ -143,14 +144,16 @@ class StudentAnswerController extends Controller
                     }
                 }
 
+                $fortmattedLRN = preg_replace('/\D/', '', $lrn);
+
                 $student = Student::select('student_id')
                     ->join('tbl_student_classes', 'tbl_student_classes.student_id',  'tbl_students.id')
-                    ->where('lrn', $lrn)
+                    ->where('lrn', $fortmattedLRN)
                     ->where('class_id', $request->class_id)
                     ->get();
 
-                if($student->count() == 0){
-                    $error[] = $lrn." does not exist on this class.";
+                if($student->count() == 0 || empty($fortmattedLRN)){
+                    $error[] = $fortmattedLRN." does not exist on this class.";
                 }else{
                     $data[$student[0]->student_id] = array(
                         "score" => $score,
