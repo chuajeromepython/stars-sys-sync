@@ -271,7 +271,7 @@ class ClassroomController extends Controller
         $students = CustomFunction::getStudentsPerClassroom($classroom->id);
 
 
-
+        $page['title'] = $is_advisory ? 'Classroom Advisory Class' : 'Classroom Subject Class';
         $subjects = Subject::all();
 
         return view('classrooms.show', compact(
