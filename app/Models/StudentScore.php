@@ -15,6 +15,12 @@ class StudentScore extends Model implements Auditable
 
     protected $table = 'tbl_student_scores';
 
+    protected $fillable = [
+        'student_id',
+        'class_assessment_id',
+        'score',
+    ];
+
     public function student()
     {
         return $this->belongsTo(Student::class, 'student_id', 'id');

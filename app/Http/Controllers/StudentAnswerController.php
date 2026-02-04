@@ -177,7 +177,7 @@ class StudentAnswerController extends Controller
                 }else{
                     $class_assessment = $is_class_assessment_existing[0];
                 }
-            
+               
                 foreach ($data as $student_id => $answers) {
                     
                     $is_student_existing = StudentScore::where([
@@ -187,13 +187,27 @@ class StudentAnswerController extends Controller
 
                     if($is_student_existing->count() == 0){
 
-                        $student_score = StudentScore::where('class_assessment_id', $class_assessment->id)
-                            ->where('student_id', $student_id)
-                            ->first();
-                        $student_score->student_id = $student_id;
-                        $student_score->score = $answers['score'];
-                        $student_score->class_assessment_id = $class_assessment->id;
-                        $student_score->save();
+                        StudentScore::firstOrCreate([
+                            'student_id' => $student_id,
+                            'class_assessment_id' => $class_assessment->id
+                        ],
+                        [
+                            'score' => $answers['score'],
+                            'student_id' => $student_id,
+                            'class_assessment_id' => $class_assessment->id,
+                        ]);
+
+                        // $student_score = StudentScore::where('class_assessment_id', $class_assessment->id)
+                        //     ->where('student_id', $student_id)
+                        //     ->first();
+
+                        // if(empty($student_score)){ 
+                        //     dd($student_id, $answers);
+                        // }
+                        // $student_score->student_id = $student_id;
+                        // $student_score->score = $answers['score'];
+                        // $student_score->class_assessment_id = $class_assessment->id;
+                        // $student_score->save();
 
                         foreach ($answers['answer'] as $item_number => $answer) {
                             $student_answer = StudentAnswer::where('student_id', $student_id)
