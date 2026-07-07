@@ -17,14 +17,12 @@
 				<div class="card h-100">
 					<div class="card-header d-flex justify-content-between align-items-center">
 						<label class="text-primary m-0">Mobile Authorization QR</label>
-						<button
-							type="button"
-							id="refresh-qr"
+						<a
+							href=""
 							class="btn btn-sm btn-outline-primary"
-							data-url="{{ route('account.qr') }}"
 						>
-							Refresh
-						</button>
+						Refresh
+					</a>
 					</div>
 					<div class="card-body text-center">
 						<div id="qr-code-wrapper" class="mb-3">{!! $qrData['qr_svg'] !!}</div>

@@ -20,7 +20,7 @@
                         data-toggle="modal" 
                         data-target="#upload_modal_assessments">
                         <i class="fa fa-upload mr-2"></i> 
-                        Upload Periodical Exam
+                        Upload Diagnostic Test
                     </a>
                 </div>
                 <div class="card-body" >
@@ -28,7 +28,7 @@
                         <thead>
                             <tr>
                                 <th>Assessment Title</th>
-                                <th>Period</th>
+                                <th>Term</th>
                                 <th>Grade Level</th>
                                 <th>Subject</th>
                                 <th></th>

@@ -16,7 +16,7 @@ class CustomFunction extends Model
     /************************************************
     This Model is mainly use for Custom functions
     to avoid code redundancy.
-    **************************************************/
+     **************************************************/
 
     // NERRIE'S NOTE
     // This function is used only for testing purposes
@@ -119,7 +119,6 @@ class CustomFunction extends Model
         }
 
         return $filter;
-
     }
 
     // NERRIE'S NOTE:
@@ -169,7 +168,6 @@ class CustomFunction extends Model
         }
 
         return $filter;
-
     }
 
     // NERRIE'S NOTE:
@@ -292,7 +290,6 @@ class CustomFunction extends Model
         ];
 
         return $details;
-
     }
 
     // NERRIE'S NOTE:
@@ -384,8 +381,7 @@ class CustomFunction extends Model
                 default:
                     return redirect('/forbidden');
                     break;
-
-            }// end of switch
+            } // end of switch
 
             $details[] = [
                 'classification' => $history->classification,
@@ -397,11 +393,9 @@ class CustomFunction extends Model
                 'district' => ($district == null) ? $district : $district->name,
                 'school' => ($school == null) ? $school : $school->name,
             ];
-
         }
 
         return $details;
-
     }
 
     // NERRIE'S NOTE:
@@ -458,34 +452,53 @@ class CustomFunction extends Model
             case 'Elementary':
                 $filter = [
                     'Kinder',
-                    'Grade 1', 'Grade 2', 'Grade 3',
-                    'Grade 4', 'Grade 5', 'Grade 6',
+                    'Grade 1',
+                    'Grade 2',
+                    'Grade 3',
+                    'Grade 4',
+                    'Grade 5',
+                    'Grade 6',
                 ];
                 break;
             case 'Junior High School':
                 $filter = [
-                    'Grade 7', 'Grade 8', 'Grade 9',
+                    'Grade 7',
+                    'Grade 8',
+                    'Grade 9',
                     'Grade 10',
                 ];
                 break;
             case 'Stand Alone Senior High':
                 $filter = [
-                    'Grade 11', 'Grade 12',
+                    'Grade 11',
+                    'Grade 12',
                 ];
                 break;
             case 'Integrated':
                 $filter = [
-                    'Grade 7', 'Grade 8', 'Grade 9',
-                    'Grade 10', 'Grade 11', 'Grade 12',
+                    'Grade 7',
+                    'Grade 8',
+                    'Grade 9',
+                    'Grade 10',
+                    'Grade 11',
+                    'Grade 12',
                 ];
                 break;
             case 'ALS':
                 $filter = [
                     'Kinder',
-                    'Grade 1', 'Grade 2', 'Grade 3',
-                    'Grade 4', 'Grade 5', 'Grade 6',
-                    'Grade 7', 'Grade 8', 'Grade 9',
-                    'Grade 10', 'Grade 11', 'Grade 12',
+                    'Grade 1',
+                    'Grade 2',
+                    'Grade 3',
+                    'Grade 4',
+                    'Grade 5',
+                    'Grade 6',
+                    'Grade 7',
+                    'Grade 8',
+                    'Grade 9',
+                    'Grade 10',
+                    'Grade 11',
+                    'Grade 12',
                 ];
                 break;
             default:
@@ -494,7 +507,6 @@ class CustomFunction extends Model
         }
 
         return $filter;
-
     }
 
     /* NERRIE'S NOTE:
@@ -513,6 +525,103 @@ class CustomFunction extends Model
             ]
         ]
     ] */
+
+    public static function getClassroomsByTeacherUserId($id)
+    {
+        $classrooms = [];
+        $teacher = Teacher::where('user_id', $id)->first();
+
+        if (! $teacher) {
+            return $classrooms;
+        }
+
+        $school_id = $teacher->school_id;
+
+        $academic_year = AcademicYear::active();
+
+        if (! $academic_year) {
+            return $classrooms;
+        }
+
+        $grade_level_filter = CustomFunction::filterGradeLevel($school_id);
+        $grade_levels = GradeLevel::whereIn('level', $grade_level_filter)->get()->keyBy('id');
+
+        $classrooms_query = Classroom::with([
+            'section:id,section',
+            'advisoryTeacherClass.teacher.user.person',
+            'advisoryTeacherClass.subject',
+        ])
+            ->where('school_id', $school_id)
+            ->where('academic_year_id', $academic_year->id)
+            ->whereIn('grade_level_id', $grade_levels->keys());
+
+        if (Auth::user()->classification == 'Teacher') {
+            $current_teacher = Auth::user()->id == $id
+                ? $teacher
+                : Teacher::where('user_id', Auth::user()->id)->first();
+
+            if (! $current_teacher) {
+                return $classrooms;
+            }
+
+            $classrooms_query->withCount([
+                'teacherClasses as current_teacher_classes_count' => function ($query) use ($current_teacher) {
+                    $query->where('teacher_id', $current_teacher->id);
+                },
+                'teacherClasses as current_teacher_advisory_count' => function ($query) use ($current_teacher) {
+                    $query->where('teacher_id', $current_teacher->id)
+                        ->where('advisory', 1);
+                },
+            ]);
+        }
+
+        $rooms_by_grade_level = $classrooms_query->get()->groupBy('grade_level_id');
+
+        foreach ($grade_levels as $key => $grade_level) {
+
+            foreach ($rooms_by_grade_level->get($grade_level->id, collect()) as $room) {
+
+                $is_advisory = 0;
+                $classes = 0;
+                $is_included = 1;
+
+                if (Auth::user()->classification == 'Teacher') {
+                    $classes = (int) ($room->current_teacher_classes_count ?? 0);
+                    $is_advisory = ((int) ($room->current_teacher_advisory_count ?? 0) > 0) ? 1 : 0;
+
+                    if ($is_advisory == 0 && $classes == 0) {
+                        $is_included = 0;
+                    }
+                }
+
+                $advisory = $room->advisoryTeacherClass;
+                $section = $room->section;
+                $advisor_person = $advisory?->teacher?->user?->person;
+                $subject = $advisory?->subject;
+
+                if ($advisory && (! $advisor_person || ! $subject)) {
+                    $is_included = 0;
+                }
+
+                if ($is_included == 1) {
+                    $room_details = [
+                        'classroom_id' => $room->id,
+                        'section' => $section?->section,
+                        'section_id' => $section?->id,
+                        'advisor' => ($advisory && $advisor_person) ? $advisor_person->first_name.' '.$advisor_person->last_name : 'N/A',
+                        'subject' => ($advisory && $subject) ? $subject->title : 'N/A',
+                        'classes' => $classes,
+                        'is_advisory' => $is_advisory,
+                        'grade_level' => $grade_level->level,
+                        'teacher_class_id' => $advisory?->id,
+                    ];
+                    $classrooms[$grade_level->level][] = $room_details;
+                }
+            }
+        }
+
+        return $classrooms;
+    }
 
     public static function getClassrooms()
     {
@@ -562,7 +671,6 @@ class CustomFunction extends Model
                     if ($is_advisory == 0 && $classes == 0) {
                         $is_included = 0;
                     }
-
                 }
 
                 $room = Classroom::find($room->id);
@@ -602,7 +710,6 @@ class CustomFunction extends Model
         }
 
         return $classrooms;
-
     }
 
     // NERRIE'S NOTE
@@ -612,8 +719,15 @@ class CustomFunction extends Model
     public static function getStudentsPerClassroom($classroom_id)
     {
         $students = Student::select(
-            'tbl_students.id', 'lrn', 'tbl_student_classrooms.status',
-            'first_name', 'middle_name', 'last_name', 'birth_date', 'gender', 'is_uploaded'
+            'tbl_students.id',
+            'lrn',
+            'tbl_student_classrooms.status',
+            'first_name',
+            'middle_name',
+            'last_name',
+            'birth_date',
+            'gender',
+            'is_uploaded'
         )->join('tbl_student_classrooms', 'tbl_students.id', 'tbl_student_classrooms.student_id')
             ->join('tbl_users', 'tbl_students.user_id', 'tbl_users.id')
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
@@ -645,10 +759,18 @@ class CustomFunction extends Model
         ($is_user_exist->count() > 0) ? $error[] = 'Error on row '.$row.' : Username already taken.' : '';
 
         $months = [
-            'January', 'February', 'March',
-            'April', 'May', 'June', 'July',
-            'August', 'September',
-            'October', 'November', 'December',
+            'January',
+            'February',
+            'March',
+            'April',
+            'May',
+            'June',
+            'July',
+            'August',
+            'September',
+            'October',
+            'November',
+            'December',
         ];
 
         if ($data['birth_date'] != null) {
@@ -692,10 +814,18 @@ class CustomFunction extends Model
         ($is_user_exist->count() > 0) ? $error[] = 'Error on row '.$row.' : Username already exist.' : '';
 
         $months = [
-            'January', 'February', 'March',
-            'April', 'May', 'June', 'July',
-            'August', 'September',
-            'October', 'November', 'December',
+            'January',
+            'February',
+            'March',
+            'April',
+            'May',
+            'June',
+            'July',
+            'August',
+            'September',
+            'October',
+            'November',
+            'December',
         ];
 
         if ($data['birth_date'] != null) {
@@ -737,8 +867,12 @@ class CustomFunction extends Model
             'tbl_assessments.id as id',
             'tbl_assessments.number_of_items',
             'tbl_assessments.date',
-            'tbl_assessments.academic_year_id', 'from', 'to',
-            'level', 'tbl_subjects.title as subject', 'type',
+            'tbl_assessments.academic_year_id',
+            'from',
+            'to',
+            'level',
+            'tbl_subjects.title as subject',
+            'type',
             'period'
         )
             ->join('tbl_grade_levels', 'tbl_assessments.grade_level_id', 'tbl_grade_levels.id')
@@ -757,8 +891,13 @@ class CustomFunction extends Model
 
         $class = TeacherClass::select(
             'tbl_teacher_classes.id as id',
-            'first_name', 'middle_name', 'last_name', 'suffix',
-            'level', 'section', 'title as subject'
+            'first_name',
+            'middle_name',
+            'last_name',
+            'suffix',
+            'level',
+            'section',
+            'title as subject'
         )->join('tbl_teachers', 'tbl_teacher_classes.teacher_id', 'tbl_teachers.id')
             ->join('tbl_users', 'tbl_teachers.user_id', 'tbl_users.id')
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
@@ -770,7 +909,6 @@ class CustomFunction extends Model
             ->first();
 
         return $class;
-
     }
 
     public static function getClassroomDetails($classroom_id)
@@ -796,7 +934,8 @@ class CustomFunction extends Model
                 ->join('tbl_tracks', 'tbl_classrooms.track_id', 'tbl_tracks.id')
                 ->join('tbl_semesters', 'tbl_classrooms.semester_id', 'tbl_semesters.id');
 
-            array_push($select,
+            array_push(
+                $select,
                 'tbl_tracks.name as track',
                 'tbl_strands.name as strand',
                 'tbl_semesters.semester',
@@ -812,7 +951,8 @@ class CustomFunction extends Model
     {
 
         $get_assessment_keys = AssessmentKey::select(
-            'item_number', 'assignment'
+            'item_number',
+            'assignment'
         )->join('tbl_assessment_options', 'tbl_assessment_keys.id', 'tbl_assessment_options.assessment_key_id')
             ->join('tbl_options', 'tbl_assessment_options.option_id', 'tbl_options.id')
             ->where('is_correct', 1)
@@ -826,7 +966,6 @@ class CustomFunction extends Model
         }
 
         return $assessment_keys;
-
     }
 
     public static function updateAssessmentResult($class_assessment_id)
@@ -919,13 +1058,11 @@ class CustomFunction extends Model
                 'achievement' => $achievement,
                 'answers' => $answers,
             ];
-
         }
 
         Storage::disk('public')->put('res-'.$class_assessment_id.'.json', json_encode($result));
 
         return $result;
-
     }
 
     public static function verifyAnswerKeys($spreadsheet)
@@ -1015,7 +1152,9 @@ class CustomFunction extends Model
 
             $classes = TeacherClass::where('teacher_id', $teacher_id)
                 ->select(
-                    'tbl_teacher_classes.id as id', 'level', 'title'
+                    'tbl_teacher_classes.id as id',
+                    'level',
+                    'title'
                 )->join('tbl_classrooms', 'tbl_teacher_classes.classroom_id', 'tbl_classrooms.id')
                 ->join('tbl_grade_levels', 'tbl_classrooms.grade_level_id', 'tbl_grade_levels.id')
                 ->join('tbl_subjects', 'tbl_teacher_classes.subject_id', 'tbl_subjects.id')
@@ -1044,7 +1183,6 @@ class CustomFunction extends Model
                     }
                 }
             }
-
         }
 
         if (count($error) == 0) {
@@ -1079,7 +1217,7 @@ class CustomFunction extends Model
                         ], // end of question array()
                     ];
                 }
-            }// end foreach
+            } // end foreach
         }
 
         if (count($error) == 0) {

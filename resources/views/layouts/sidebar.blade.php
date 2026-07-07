@@ -62,7 +62,7 @@
 									{{ ($page['sub_name'] == "Periodical") ? 'bg-info' : '' }}
 								@endif">
 								<i class="far fa-circle nav-icon"></i>
-								<p>Periodical Exam</p>
+								<p>Diagnostic Test</p>
 							</a>
 						</li>
 						<li class="nav-item">
@@ -71,7 +71,7 @@
 									{{ ($page['sub_name'] == "Summative") ? 'active' : '' }}
 								@endif">
 								<i class="far fa-circle nav-icon"></i>
-								<p>Summative Exam</p>
+								<p>Summative Test</p>
 							</a>
 						</li>
 						<li class="nav-item">

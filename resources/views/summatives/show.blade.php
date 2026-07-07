@@ -21,7 +21,7 @@
             <div class="card">
                 <div class="card-header">
                     <label class="text-primary">
-                        {{$assessment->period}} Period - Summative Exam No. {{$summative->summative_number}}
+                        {{$assessment->period}} Period - Summative Test No. {{$summative->summative_number}}
                     </label>
                 </div>
                 <div class="card-body">

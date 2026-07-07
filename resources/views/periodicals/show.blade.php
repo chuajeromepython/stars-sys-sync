@@ -23,7 +23,7 @@
             <div class="card">
                 <div class="card-header">
                     <label class="text-primary">
-                        {{$assessment->period}} Period - Periodical Exam
+                        {{$assessment->period}} Period - Diagnostic Test
                     </label>
                 </div>
                 <div class="card-body">

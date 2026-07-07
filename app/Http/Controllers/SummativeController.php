@@ -30,7 +30,7 @@ class SummativeController extends Controller
         $page = [
             'name' => 'Assessment',
             'sub_name' => 'Summative',
-            'title' => 'Summative Exam',
+            'title' => 'Summative Test',
             'crumb' => ['Assessments' => '/assessments'],
         ];
         $periods = Period::all();
@@ -59,11 +59,11 @@ class SummativeController extends Controller
 
         $page = [
             'name' => 'Assessment',
-            'title' => 'Summative Exam',
+            'title' => 'Summative Test',
             'sub_name' => 'Summative',
             'crumb' => [
                 'Assessments' => '/summatives',
-                'Summative Exam' => '/summatives',
+                'Summative Test' => '/summatives',
                 'View' => '/summatives/'.$assessment->id,
 
             ],
@@ -161,7 +161,7 @@ class SummativeController extends Controller
                     $summative->save();
 
                 } else {
-                    return back()->withErrors('Summative Exam already uploaded in this class');
+                    return back()->withErrors('Summative Test already uploaded in this class');
                 }
 
                 DB::commit();
@@ -173,7 +173,7 @@ class SummativeController extends Controller
             }
 
             if ($result === true) {
-                return redirect('/summatives')->with('success', 'Summative Exam Successfully uploaded');
+                return redirect('/summatives')->with('success', 'Summative Test Successfully uploaded');
             } else {
                 return redirect('/summatives')->withErrors($result);
             }
