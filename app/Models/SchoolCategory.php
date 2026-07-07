@@ -5,13 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use OwenIt\Auditing\Contracts\Auditable;
 
-class SchoolCategory extends Model implements Auditable
-{   
-    use SoftDeletes;
+class SchoolCategory extends Model
+{
     use HasFactory;
-    use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
+    // use \OwenIt\Auditing\Auditable;
 
     protected $table = 'tbl_school_categories';
 }

@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-
+use App\Models\Division;
 use App\Models\DivisionSuperIntendent;
 use App\Models\Person;
-use App\Models\Division;
 use App\Models\User;
 use Auth;
-
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class DivisionSuperIntendentController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -27,7 +26,7 @@ class DivisionSuperIntendentController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -37,8 +36,7 @@ class DivisionSuperIntendentController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -48,8 +46,7 @@ class DivisionSuperIntendentController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\DivisionSuperIntendent  $divisionSuperIntendent
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(DivisionSuperIntendent $divisionSuperIntendent)
     {
@@ -59,15 +56,15 @@ class DivisionSuperIntendentController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\DivisionSuperIntendent  $divisionSuperIntendent
-     * @return \Illuminate\Http\Response
+     * @param  DivisionSuperIntendent  $divisionSuperIntendent
+     * @return Response
      */
     public function edit(DivisionSuperIntendent $division_superintendent)
     {
         $page = [
-            'name'      =>  'User',
-            'title'     =>  'Edit Division Superintendent',
-            'crumb'     =>  array('Users' => '/users', "Edit Division Superintendent" => "")
+            'name' => 'User',
+            'title' => 'Edit Division Superintendent',
+            'crumb' => ['Users' => '/users', 'Edit Division Superintendent' => ''],
         ];
 
         $user = User::find($division_superintendent->user_id);
@@ -75,17 +72,18 @@ class DivisionSuperIntendentController extends Controller
         switch (Auth::user()->classification) {
             case 'Division Administrator':
                 $divisions = Division::where('id', $division_superintendent->division_id)->get();
-                $attribute = "disabled";
+                $attribute = 'disabled';
                 break;
             case 'System Administrator':
                 $divisions = Division::all();
-                $attribute = "";
+                $attribute = '';
                 break;
             default:
                 break;
         }
+
         return view('division_superintendents.edit', compact(
-            'page', 'user', 'person', 
+            'page', 'user', 'person',
             'divisions', 'division_superintendent', 'attribute'
         ));
     }
@@ -93,26 +91,24 @@ class DivisionSuperIntendentController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\DivisionSuperIntendent  $divisionSuperIntendent
-     * @return \Illuminate\Http\Response
+     * @param  DivisionSuperIntendent  $divisionSuperIntendent
+     * @return Response
      */
     public function update(Request $request)
     {
         DB::beginTransaction();
-        
+
         try {
-            
+
             $division_superintendent = DivisionSuperIntendent::find($request->id);
             $user = User::find($division_superintendent->user_id);
             $person = Person::find($user->person_id);
-            
-            if (Auth::user()->classification == "System Administrator") {
+
+            if (Auth::user()->classification == 'System Administrator') {
                 $division_superintendent->division_id = $request->division;
                 $division_superintendent->save();
             }
-            
-            
+
             $person->first_name = $request->first_name;
             $person->middle_name = $request->middle_name;
             $person->last_name = $request->last_name;
@@ -129,7 +125,7 @@ class DivisionSuperIntendentController extends Controller
             $result = $e->getMessage();
         }
 
-         if($result === true) {
+        if ($result === true) {
             return back()->with('success', 'Division Superintendent has been updated successfully.');
         } else {
             return back()->withErrors($result);
@@ -139,8 +135,7 @@ class DivisionSuperIntendentController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\DivisionSuperIntendent  $divisionSuperIntendent
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(DivisionSuperIntendent $divisionSuperIntendent)
     {

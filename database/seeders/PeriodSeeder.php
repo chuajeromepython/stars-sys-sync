@@ -14,18 +14,18 @@ class PeriodSeeder extends Seeder
      */
     public function run()
     {
-        $periods = array(
-            
-            array('period' => 'First'),
-            array('period' => 'Second'),
-            array('period' => 'Third'),
-            array('period' => 'Fourth'),
-            array('period' => 'Prelim'),
-            array('period' => 'Midterm'),
-            array('period' => 'Pre-Final'),
-            array('period' => 'Final'),
+        $periods = [
 
-        );
+            ['period' => 'First'],
+            ['period' => 'Second'],
+            ['period' => 'Third'],
+            ['period' => 'Fourth'],
+            ['period' => 'Prelim'],
+            ['period' => 'Midterm'],
+            ['period' => 'Pre-Final'],
+            ['period' => 'Final'],
+
+        ];
 
         DB::table('tbl_periods')->insert($periods);
     }

@@ -2,10 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-
 
 class AssessmentTypeSeeder extends Seeder
 {
@@ -16,13 +14,13 @@ class AssessmentTypeSeeder extends Seeder
      */
     public function run()
     {
-       $types = array(
-            
-            array('type' => 'Periodical'),
-            array('type' => 'Summative'),
-            array('type' => 'ECD'),
+        $types = [
 
-        );
+            ['type' => 'Periodical'],
+            ['type' => 'Summative'],
+            ['type' => 'ECD'],
+
+        ];
 
         DB::table('tbl_assessment_types')->insert($types);
     }

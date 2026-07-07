@@ -2,74 +2,98 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Competency;
+use App\Models\School;
+use App\Models\User;
+use App\Services\QrAuthorizationPayloadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
-use App\Models\School;
-use App\Models\Competency;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
-{   
-    public function welcome(){
-        
+{
+    public function __construct(private QrAuthorizationPayloadService $qrAuthorizationPayloadService) {}
+
+    public function welcome()
+    {
+
         $schools = School::count();
         $competencies = Competency::count();
         $users = User::count();
+
         return view('welcome', compact('schools', 'competencies', 'users'));
     }
+
     public function index()
     {
         Auth::logout();
+
         return view('auth.login');
     }
-    
+
     public function authenticate(Request $request)
     {
-        $this->validate($request,[
+        $request->validate([
             'username' => 'required',
-            'password' => 'required'
+            'password' => 'required',
         ]);
 
         $credentials = $request->only('username', 'password');
 
-        if(! Auth::attempt( $credentials ) ) {
+        if (! Auth::attempt($credentials)) {
             return back()->withErrors('Invalid credentials')->withInput($request->all);
         }
-        
+
         return redirect('/dashboard');
     }
 
-    
     public function destroy()
     {
         Auth::logout();
+
         return redirect('/login');
     }
-    
-    public function forbidden(){
+
+    public function forbidden()
+    {
 
         return view('auth.403');
     }
 
-    public function account(){
+    public function account()
+    {
 
         $page = [
-            'name'      =>  'Account',
-            'title'     =>  'Account Management',
-            'crumb'     =>  array('Account' => '/account')
+            'name' => 'Account',
+            'title' => 'Account Management',
+            'crumb' => ['Account' => '/account'],
         ];
 
-        return view('auth.account',
-            compact('page')
-        );
+        $qrData = $this->qrAuthorizationPayloadService->buildForUser(Auth::user());
+
+        return view('auth.account', compact('page', 'qrData'));
     }
 
-    public function updatePassword(Request $request){
-        // dd($request->password);
+    public function accountQr()
+    {
+        $qrData = $this->qrAuthorizationPayloadService->buildForUser(Auth::user());
+
+        return response()->json([
+            'qr_svg' => $qrData['qr_svg'],
+            'payload' => $qrData['payload'],
+        ]);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
         $user = User::find(Auth::user()->id);
-        $user->password = bcrypt($request->password);
+        $user->password = Hash::make($request->password);
         $user->save();
 
-        return back()->with('success', "Password has been updated");
+        return back()->with('success', 'Password has been updated');
     }
 }

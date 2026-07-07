@@ -14,13 +14,13 @@ class SchoolTypeSeeder extends Seeder
      */
     public function run()
     {
-        $school_types = array(
-            array('type' => 'Elementary'),
-            array('type' => 'Junior High School'),
-            array('type' => 'Stand Alone Senior High'),
-            array('type' => 'Integrated'),
-            array('type' => 'ALS')
-        );
+        $school_types = [
+            ['type' => 'Elementary'],
+            ['type' => 'Junior High School'],
+            ['type' => 'Stand Alone Senior High'],
+            ['type' => 'Integrated'],
+            ['type' => 'ALS'],
+        ];
 
         DB::table('tbl_school_types')->insert($school_types);
     }

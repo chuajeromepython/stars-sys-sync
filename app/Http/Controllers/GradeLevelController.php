@@ -4,25 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Models\GradeLevel;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class GradeLevelController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
         $page = [
-            'name'      =>  'Grade Level',
-            'title'     =>  'Grade Level Management',
-            'crumb'     =>  array('Grade Level' => '/grade_levels')
+            'name' => 'Grade Level',
+            'title' => 'Grade Level Management',
+            'crumb' => ['Grade Level' => '/grade_levels'],
         ];
 
         $grade_levels = GradeLevel::all();
+
         return view('grade_levels.index', compact(
-            'page', 
+            'page',
             'grade_levels',
         ));
     }
@@ -30,7 +32,7 @@ class GradeLevelController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -40,26 +42,25 @@ class GradeLevelController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
-        $this->validate($request,[
-            'level' => 'required'
+        $request->validate([
+            'level' => 'required',
         ]);
 
         $result = GradeLevel::where([
-            ['level', '=', $request->level]
+            ['level', '=', $request->level],
         ])->get();
 
-        if(!count($result)) {
+        if (! count($result)) {
 
             $gradeLevel = new GradeLevel;
             $gradeLevel->level = $request->level;
             $gradeLevel->save();
 
-            return back()->with('success', 'New grade level has been added successfully.');      
+            return back()->with('success', 'New grade level has been added successfully.');
         } else {
             return back()->withErrors('Grade Level already exists!');
         }
@@ -68,8 +69,7 @@ class GradeLevelController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\GradeLevel  $gradeLevel
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(GradeLevel $gradeLevel)
     {
@@ -79,8 +79,7 @@ class GradeLevelController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\GradeLevel  $gradeLevel
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(GradeLevel $gradeLevel)
     {
@@ -90,21 +89,21 @@ class GradeLevelController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\GradeLevel  $gradeLevel
-     * @return \Illuminate\Http\Response
+     * @param  GradeLevel  $gradeLevel
+     * @return Response
      */
     public function update(Request $request)
     {
         $existing = GradeLevel::where('level', $request->level)
             ->where('id', '<>', $request->id)->get();
 
-        if($existing->count() == 0){
+        if ($existing->count() == 0) {
             $grade_level = GradeLevel::find($request->id);
             $grade_level->level = $request->level;
             $grade_level->save();
+
             return back()->with('success', 'Grade Level has been updated successfully.');
-        }else{
+        } else {
             return back()->withErrors('Grade Level already exists!');
         }
     }
@@ -112,13 +111,14 @@ class GradeLevelController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\GradeLevel  $grade_level
-     * @return \Illuminate\Http\Response
+     * @param  GradeLevel  $grade_level
+     * @return Response
      */
     public function destroy(Request $request)
     {
         $gradeLevel = GradeLevel::find($request->id);
         $gradeLevel->delete();
+
         return back()->with('success', 'Grade Level has been deleted successfully.');
     }
 }

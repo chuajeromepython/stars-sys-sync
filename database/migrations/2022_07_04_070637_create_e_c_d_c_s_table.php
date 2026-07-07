@@ -20,10 +20,10 @@ return new class extends Migration
             $table->bigInteger('academic_year_id');
             $table->string('period');
             $table->bigInteger('teacher_id');
-            $table->string('source')->comment("1-uploaded; 2-encoded");
+            $table->string('source')->comment('1-uploaded; 2-encoded');
             $table->string('date');
             $table->timestamps();
-            
+
         });
     }
 

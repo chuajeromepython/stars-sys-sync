@@ -4,25 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Models\Semester;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class SemesterController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
         $page = [
-            'name'      =>  'Semester',
-            'title'     =>  'Semester Management',
-            'crumb'     =>  array('Semester' => '/divisions')
+            'name' => 'Semester',
+            'title' => 'Semester Management',
+            'crumb' => ['Semester' => '/divisions'],
         ];
 
         $semesters = Semester::all();
+
         return view('semesters.index', compact(
-            'page', 
+            'page',
             'semesters',
         ));
     }
@@ -30,7 +32,7 @@ class SemesterController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -40,21 +42,21 @@ class SemesterController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
-         $this->validate($request,[
-            'semester' => 'required'
+        $request->validate([
+            'semester' => 'required',
         ]);
 
         $result = Semester::where('semester', '=', $request->semester)->get();
 
-        if(!count($result)) {
-            $semester = new semester;
+        if (! count($result)) {
+            $semester = new Semester;
             $semester->semester = $request->semester;
             $semester->save();
+
             return redirect('/semesters')->with('success', 'New semester has been added successfully.');
         } else {
             return back()->withErrors('Semester already exists!');
@@ -64,8 +66,7 @@ class SemesterController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Semester  $semester
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(Semester $semester)
     {
@@ -75,8 +76,7 @@ class SemesterController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\Semester  $semester
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(Semester $semester)
     {
@@ -86,21 +86,21 @@ class SemesterController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Semester  $semester
-     * @return \Illuminate\Http\Response
+     * @param  Semester  $semester
+     * @return Response
      */
-     public function update(Request $request)
+    public function update(Request $request)
     {
-         $existing = Semester::where('semester', $request->semester)
+        $existing = Semester::where('semester', $request->semester)
             ->where('id', '<>', $request->id)->get();
 
-        if($existing->count() == 0){
+        if ($existing->count() == 0) {
             $semester = Semester::find($request->id);
             $semester->semester = $request->semester;
             $semester->save();
+
             return back()->with('success', 'Semester has been updated successfully.');
-        }else{
+        } else {
             return back()->withErrors('Semester already exists!');
         }
     }
@@ -108,13 +108,14 @@ class SemesterController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Semester  $semester
-     * @return \Illuminate\Http\Response
+     * @param  Semester  $semester
+     * @return Response
      */
     public function destroy(Request $request)
     {
         $semester = Semester::find($request->id);
         $semester->delete();
+
         return back()->with('success', 'Semester has been deleted successfully.');
     }
 }

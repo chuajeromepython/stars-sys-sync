@@ -20,7 +20,7 @@ return new class extends Migration
             $table->bigInteger('question_id');
             $table->timestamps();
             $table->softDeletes();
-                   
+
         });
     }
 

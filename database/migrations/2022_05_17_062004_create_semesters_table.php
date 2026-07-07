@@ -11,7 +11,7 @@ class CreateSemestersTable extends Migration
      *
      * @return void
      */
-   public function up()
+    public function up()
     {
         Schema::create('tbl_semesters', function (Blueprint $table) {
             $table->bigIncrements('id');

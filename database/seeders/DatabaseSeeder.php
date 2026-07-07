@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
@@ -14,19 +13,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        
 
         $this->call([
             AcademicYearSeeder::class,
             AssessmentTypeSeeder::class,
             ClassificationSeeder::class,
-            //CompetencySeeder::class,  /*  */
+            // CompetencySeeder::class,  /*  */
             CourseSeeder::class,
             DistrictSeeder::class,
             DivisionAdministratorSeeder::class,
             DivisionSeeder::class,
-            //ECDCDomainSeeder::class, /*  */
-           // ECDCCompetencySeeder::class, /*  */
+            // ECDCDomainSeeder::class, /*  */
+            // ECDCCompetencySeeder::class, /*  */
             GradeLevelSeeder::class,
             PeriodSeeder::class,
             PersonSeeder::class,
@@ -41,7 +39,7 @@ class DatabaseSeeder extends Seeder
             TrackSeeder::class,
             UserSeeder::class,
             WeekSeeder::class,
-            // SchoolSupervisorSeeder::class, 
+            // SchoolSupervisorSeeder::class,
         ]);
     }
 }

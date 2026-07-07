@@ -2,35 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\Request;
-
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-
-use Auth;
 use App\Models\Assessment;
-use App\Models\AssessmentKey;
-use App\Models\AssessmentOption;
-use App\Models\AssessmentClass;
 use App\Models\ClassAssessment;
 use App\Models\CustomFunction;
-use App\Models\Question;
-use App\Models\Teacher;
-use App\Models\TeacherClass;
 use App\Models\Student;
-use App\Models\StudentScore;
-use App\Models\StudentClass;
 use App\Models\StudentAnswer;
+use App\Models\StudentScore;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class StudentAnswerController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -40,7 +27,7 @@ class StudentAnswerController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -50,8 +37,7 @@ class StudentAnswerController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -61,8 +47,7 @@ class StudentAnswerController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\StudentAnswer  $studentAnswer
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(StudentAnswer $studentAnswer)
     {
@@ -72,8 +57,7 @@ class StudentAnswerController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\StudentAnswer  $studentAnswer
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(StudentAnswer $studentAnswer)
     {
@@ -83,9 +67,7 @@ class StudentAnswerController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\StudentAnswer  $studentAnswer
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, StudentAnswer $studentAnswer)
     {
@@ -95,51 +77,49 @@ class StudentAnswerController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\StudentAnswer  $studentAnswer
-     * @return \Illuminate\Http\Response
+     * @param  StudentAnswer  $studentAnswer
+     * @return Response
      */
-    
-
     public function upload(Request $request)
     {
         $request->validate([
             'file_assessment' => 'required|mimes:csv,txt',
         ],
-        [
-            'file_assessment.mimes' => 'The file must be a file of type: csv, txt.',
-            'file_assessment.required' => 'Please upload a file.',
-        ]);
+            [
+                'file_assessment.mimes' => 'The file must be a file of type: csv, txt.',
+                'file_assessment.required' => 'Please upload a file.',
+            ]);
 
         $assessment = Assessment::find($request->assessment_id);
         $assessment_keys = CustomFunction::getAssessmentKeys($request->assessment_id);
-        $data = array();
-        $error = array();
+        $data = [];
+        $error = [];
 
         $file_assessment = $request->file('file_assessment');
-        $csv_file_path   = $file_assessment->getRealPath();
-        $assessment_csv  = fopen( $csv_file_path, 'r' );
-        while(! feof($assessment_csv)) {
-            $sheets[] = fgetcsv($assessment_csv,0,';');
+        $csv_file_path = $file_assessment->getRealPath();
+        $assessment_csv = fopen($csv_file_path, 'r');
+        while (! feof($assessment_csv)) {
+            $sheets[] = fgetcsv($assessment_csv, 0, ';');
         }
-        
+
         foreach ($sheets as $students) {
-            if($students) {
-                $fortmattedLRN = "";
-                $lrn = "";
+            if ($students) {
+                $fortmattedLRN = '';
+                $lrn = '';
                 $score = 0;
                 $answer = [];
                 foreach ($students as $key => $value) {
-                    if($key < 12){
+                    if ($key < 12) {
                         $lrn .= $value;
-                    }else{
-                        $item_number = $key-11;
-                        if(array_key_exists($item_number, $assessment_keys)){
+                    } else {
+                        $item_number = $key - 11;
+                        if (array_key_exists($item_number, $assessment_keys)) {
                             $is_correct = ($assessment_keys[$item_number] == $value) ? true : false;
-                            $score = ($assessment_keys[$item_number] == $value) ? $score+1 : $score;
-                            $answer[$item_number] = array(
-                                "answer" => $value,
-                                "is_correct" => $is_correct
-                            );
+                            $score = ($assessment_keys[$item_number] == $value) ? $score + 1 : $score;
+                            $answer[$item_number] = [
+                                'answer' => $value,
+                                'is_correct' => $is_correct,
+                            ];
                         }
                     }
                 }
@@ -147,24 +127,24 @@ class StudentAnswerController extends Controller
                 $fortmattedLRN = preg_replace('/\D/', '', $lrn);
 
                 $student = Student::select('student_id')
-                    ->join('tbl_student_classes', 'tbl_student_classes.student_id',  'tbl_students.id')
+                    ->join('tbl_student_classes', 'tbl_student_classes.student_id', 'tbl_students.id')
                     ->where('lrn', $fortmattedLRN)
                     ->where('class_id', $request->class_id)
                     ->get();
 
-                if($student->count() == 0 || empty($fortmattedLRN)){
-                    $error[] = $fortmattedLRN." does not exist on this class.";
-                }else{
-                    $data[$student[0]->student_id] = array(
-                        "score" => $score,
-                        "answer" => $answer
-                    );
+                if ($student->count() == 0 || empty($fortmattedLRN)) {
+                    $error[] = $fortmattedLRN.' does not exist on this class.';
+                } else {
+                    $data[$student[0]->student_id] = [
+                        'score' => $score,
+                        'answer' => $answer,
+                    ];
                 }
             }
         }
 
-        if (sizeof($error) == 0) {
-            
+        if (count($error) == 0) {
+
             DB::beginTransaction();
             try {
 
@@ -172,39 +152,39 @@ class StudentAnswerController extends Controller
                     ->where('assessment_id', $request->assessment_id)
                     ->get();
 
-                if($is_class_assessment_existing->count() == 0){
+                if ($is_class_assessment_existing->count() == 0) {
                     $class_assessment = new ClassAssessment;
                     $class_assessment->class_id = $request->class_id;
                     $class_assessment->assessment_id = $request->assessment_id;
                     $class_assessment->save();
-                }else{
+                } else {
                     $class_assessment = $is_class_assessment_existing[0];
                 }
-               
+
                 foreach ($data as $student_id => $answers) {
-                    
+
                     $is_student_existing = StudentScore::where([
-                        "class_assessment_id" => $request->assessment_id,
-                        "student_id" => $student_id
+                        'class_assessment_id' => $request->assessment_id,
+                        'student_id' => $student_id,
                     ])->get();
 
-                    if($is_student_existing->count() == 0){
+                    if ($is_student_existing->count() == 0) {
 
                         StudentScore::firstOrCreate([
                             'student_id' => $student_id,
-                            'class_assessment_id' => $class_assessment->id
-                        ],
-                        [
-                            'score' => $answers['score'],
-                            'student_id' => $student_id,
                             'class_assessment_id' => $class_assessment->id,
-                        ]);
+                        ],
+                            [
+                                'score' => $answers['score'],
+                                'student_id' => $student_id,
+                                'class_assessment_id' => $class_assessment->id,
+                            ]);
 
                         // $student_score = StudentScore::where('class_assessment_id', $class_assessment->id)
                         //     ->where('student_id', $student_id)
                         //     ->first();
 
-                        // if(empty($student_score)){ 
+                        // if(empty($student_score)){
                         //     dd($student_id, $answers);
                         // }
                         // $student_score->student_id = $student_id;
@@ -217,8 +197,8 @@ class StudentAnswerController extends Controller
                                 ->where('item_number', $item_number)
                                 ->where('class_assessment_id', $class_assessment->id)
                                 ->first();
-                                
-                            if(empty($student_answer)){
+
+                            if (empty($student_answer)) {
                                 $student_answer = new StudentAnswer;
                             }
 
@@ -230,7 +210,7 @@ class StudentAnswerController extends Controller
                             $student_answer->save();
                         }
                     }
-                    
+
                 }
 
                 DB::commit();
@@ -241,26 +221,24 @@ class StudentAnswerController extends Controller
                 $result = $e->getMessage();
             }
 
-            if($result === true) {
+            if ($result === true) {
                 return redirect('/periodicals/'.$request->assessment_id)->with('success', 'Class Assessment uploaded successfully.');
             } else {
                 return back()->withErrors($result);
             }
 
-        }else{
+        } else {
             return back()->withErrors($error);
         }
 
     }
 
-
     public function batch_update(Request $request)
     {
         DB::beginTransaction();
         try {
-            
+
             $assessment_keys = CustomFunction::getAssessmentKeys($request->assessment_id);
-            
 
             foreach ($request->student_answer_id as $key => $value) {
                 $is_correct = ($request->answer[$key] == $assessment_keys[$request->item_number[$key]]) ? true : false;
@@ -278,7 +256,7 @@ class StudentAnswerController extends Controller
             $student_score = StudentScore::where('class_assessment_id', $request->class_assessment_id)
                 ->where('student_id', $request->student_id)
                 ->first();
-                
+
             $student_score->score = $score;
             $student_score->save();
 
@@ -290,13 +268,11 @@ class StudentAnswerController extends Controller
             $result = $e->getMessage();
         }
 
-        if($result === true) {
+        if ($result === true) {
             return redirect('/class_assessments/'.$request->class_assessment_id)
                 ->with('success', 'Student Answers successfully updated.');
         } else {
             return back()->withErrors($result);
         }
     }
-
-
 }

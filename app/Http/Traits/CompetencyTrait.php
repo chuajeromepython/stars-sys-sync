@@ -9,26 +9,28 @@ use App\Models\Subject;
 use App\Models\Week;
 use Illuminate\Support\Facades\DB;
 
-trait CompetencyTrait {
+trait CompetencyTrait
+{
     /**
      * undocumented function summary
      *
      * Undocumented function long description
      *
-     * @param Type $var Description
+     * @param  Type  $var  Description
      * @return type
+     *
      * @throws conditon
      **/
-    public function uploadSubject(&$errors, $row, $line, $week_id = null, $period_id = null, $error = array())
+    public function uploadSubject(&$errors, $row, $line, $week_id = null, $period_id = null, $error = [])
     {
-        $data = array(
-            "code" => $row[0],
-            "description" => $row[1],
-            "subject" => $row[2],
-            "grade_level" => $row[3],
-            "period" => $row[4],
-            "week" => $row[5]
-        );
+        $data = [
+            'code' => $row[0],
+            'description' => $row[1],
+            'subject' => $row[2],
+            'grade_level' => $row[3],
+            'period' => $row[4],
+            'week' => $row[5],
+        ];
 
         $this->check_competency_if_exist($data, $error, $line);
 
@@ -38,16 +40,16 @@ trait CompetencyTrait {
 
         $period_id = $this->validate_period($data, $error, $line);
 
-        if($data['subject'] == null){
+        if ($data['subject'] == null) {
             $error[] = 'Error on row '.$line.' : Subject cannot be null.';
-        }else{
+        } else {
             $subject = Subject::where('title', $data['subject'])->get();
-            if($subject->count() == 0){
+            if ($subject->count() == 0) {
                 $error[] = 'Error on row '.$line.' : Invalid Subject.';
             }
         }
 
-        if(sizeOf($error) == 0){
+        if (count($error) == 0) {
             $competency = new Competency;
             $competency->code = $data['code'];
             $competency->description = $data['description'];
@@ -56,7 +58,7 @@ trait CompetencyTrait {
             $competency->week_id = $week_id;
             $competency->period_id = $period_id;
             $competency->save();
-        }else{
+        } else {
             $errors[] = $error;
         }
     }
@@ -66,22 +68,23 @@ trait CompetencyTrait {
      *
      * Undocumented function long description
      *
-     * @param Type $var Description
+     * @param  Type  $var  Description
      * @return type
+     *
      * @throws conditon
      **/
-    public function uploadWithSubjectComponent(&$errors, $row, $line, $week_id = null, $period_id = null, $error = array())
+    public function uploadWithSubjectComponent(&$errors, $row, $line, $week_id = null, $period_id = null, $error = [])
     {
-        $data = array(
-            "code" => $row[0],
-            "description" => $row[1],
-            "subject" => $row[2],
-            "subject_component" => $row[3],
-            "grade_level" => $row[4],
-            "period" => $row[5],
-            "week" => $row[6]
-        );
-        
+        $data = [
+            'code' => $row[0],
+            'description' => $row[1],
+            'subject' => $row[2],
+            'subject_component' => $row[3],
+            'grade_level' => $row[4],
+            'period' => $row[5],
+            'week' => $row[6],
+        ];
+
         $this->check_competency_if_exist($data, $error, $line);
 
         $grade_level = $this->validate_grade_level($data, $error, $line);
@@ -90,39 +93,39 @@ trait CompetencyTrait {
 
         $period_id = $this->validate_period($data, $error, $line);
 
-        if($data['subject'] == null){
+        if ($data['subject'] == null) {
 
             $error[] = 'Error on row '.$line.' : Subject cannot be null.';
-        }else{
+        } else {
 
             $subject = Subject::where('title', $data['subject'])->get();
-            if($subject->count() == 0){
+            if ($subject->count() == 0) {
 
                 $error[] = 'Error on row '.$line.' : Invalid Subject.';
             }
 
-            if($subject[0]->subject_components->count() > 0) {
+            if ($subject[0]->subject_components->count() > 0) {
 
                 $sub_comp = $subject[0]->subject_components->toArray();
                 $searchKey = 'name';
                 $searchValue = $data['subject_component'];
 
-                $subject_component_id = current(array_filter($sub_comp, function ($item) use ($searchKey, $searchValue, $line, $data) {
+                $subject_component_id = current(array_filter($sub_comp, function ($item) use ($searchKey, $searchValue) {
                     // if($line == 99) {
                     //     dd( isset($item[$searchKey]), $item[$searchKey], preg_replace("/[^A-Za-z\s]/", "", $searchValue), $data['subject']);
                     // }
-                    return isset($item[$searchKey]) && $item[$searchKey] === preg_replace("/[^A-Za-z\s]/", "", $searchValue);
+                    return isset($item[$searchKey]) && $item[$searchKey] === preg_replace("/[^A-Za-z\s]/", '', $searchValue);
                 }));
 
-                if(!$subject_component_id) {
+                if (! $subject_component_id) {
                     $error[] = 'Error on row '.$line.' : Subject Component not found!.';
 
                 }
             }
         }
 
-        if(sizeOf($error) == 0){
-            
+        if (count($error) == 0) {
+
             $competency = new Competency;
             $competency->code = $data['code'];
             $competency->description = $data['description'];
@@ -132,37 +135,38 @@ trait CompetencyTrait {
             $competency->week_id = $week_id;
             $competency->period_id = $period_id;
             $competency->save();
-        }else{
+        } else {
             $errors[] = $error;
         }
     }
 
     public function check_competency_if_exist($data, &$error, $line)
     {
-        $is_code_exist = Competency::select("*")->where(DB::raw('code like "%'.$data['code'].'%"'))->get();
+        $is_code_exist = Competency::select('*')->where(DB::raw('code like "%'.$data['code'].'%"'))->get();
         ($is_code_exist->count() > 0) ? $error[] = 'Error on row '.$line.' : Code '.$data['code'].' already exist' : '';
     }
 
     public function validate_grade_level($data, &$error, $line)
     {
-        if($data['grade_level'] == null){
+        if ($data['grade_level'] == null) {
             $error[] = 'Error on row '.$line.' : Grade Level cannot be null.';
-        }else{
+        } else {
             $grade_level = GradeLevel::where('level', $data['grade_level'])->get();
-            if($grade_level->count() == 0){
+            if ($grade_level->count() == 0) {
                 $error[] = 'Error on row '.$line.' : Invalid Grade Level.';
             }
+
             return $grade_level;
         }
     }
 
     public function validate_week($data, &$error, $line)
     {
-        if($data['week'] != null){
+        if ($data['week'] != null) {
             $week = Week::where('week', $data['week'])->get();
-            if($week->count() == 0){
+            if ($week->count() == 0) {
                 $error[] = 'Error on row '.$line.' : Invalid Week.';
-            }else{
+            } else {
                 return $week[0]->id;
             }
         }
@@ -170,11 +174,11 @@ trait CompetencyTrait {
 
     public function validate_period($data, &$error, $line)
     {
-        if($data['period'] != null){
+        if ($data['period'] != null) {
             $period = Period::where('period', $data['period'])->get();
-            if($period->count() == 0){
+            if ($period->count() == 0) {
                 $error[] = 'Error on row '.$line.' : Invalid Period.';
-            }else{
+            } else {
                 return $period[0]->id;
             }
         }

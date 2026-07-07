@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -15,13 +14,13 @@ class SemesterSeeder extends Seeder
      */
     public function run()
     {
-        $semesters = array(
-            
-            array('semester' => 'First'),
-            array('semester' => 'Second'),
-            array('semester' => 'Third'),
+        $semesters = [
 
-        );
+            ['semester' => 'First'],
+            ['semester' => 'Second'],
+            ['semester' => 'Third'],
+
+        ];
 
         DB::table('tbl_semesters')->insert($semesters);
     }
