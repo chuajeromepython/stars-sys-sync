@@ -14,11 +14,11 @@ class AssessmentController extends Controller
 
         $page = [
             'name' => 'Assessment',
-            'title' => 'Periodical Exam',
-            'sub_name' => 'Periodical',
+            'title' => 'Diagnostic Test',
+            'sub_name' => 'Diagnostic',
             'crumb' => [
                 'Assessments' => '/periodicals',
-                'Periodical Exam' => '/periodicals',
+                'Diagnostic Test' => '/periodicals',
                 'View' => '/periodicals/'.$assessment->id,
 
             ],

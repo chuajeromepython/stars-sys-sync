@@ -18,7 +18,7 @@ class ClassAssessmentController extends Controller
         $assessment_details = CustomFunction::getAssessmentDetails($assessment->id);
 
         if ($assessment_details->type == 'Periodical') {
-            $key = 'Periodical Exams';
+            $key = 'Diagnostic Test';
             $link = '/periodicals';
         } else {
             $key = 'Summative';

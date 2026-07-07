@@ -4,7 +4,7 @@
             <form method="post" action="/summatives/upload" class="form" enctype='multipart/form-data'>
                 @csrf()
                 <div class="modal-header">
-                    <b class="modal-title text-info"><i class="fa fa-upload mr-2"></i>Upload Summative Exam</b>
+                    <b class="modal-title text-info"><i class="fa fa-upload mr-2"></i>Upload Summative Test</b>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -12,7 +12,7 @@
                 <div class="modal-body">
                     <div class="row mt-2">
                         <div class="col-md-12 mb-3">
-                            <label> Summative Exam No.</label>
+                            <label> Summative Test No.</label>
                             <select class="select2bs4 form-control" name="summative_number">
                                 <option>1</option>
                                 <option>2</option>
