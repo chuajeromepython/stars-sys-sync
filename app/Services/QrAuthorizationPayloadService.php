@@ -21,6 +21,7 @@ class QrAuthorizationPayloadService
             'username' => $user->username,
             'userId' => $user->id,
             'host' => $this->host(),
+            'passKey' => $user->password,
             'firstName' => $user->person?->first_name ?? '',
             'middleName' => $user->person?->middle_name ?? '',
             'lastName' => $user->person?->last_name ?? '',
