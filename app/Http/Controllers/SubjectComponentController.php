@@ -4,23 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\SubjectComponent;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class SubjectComponentController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function index()
-    {
-        
-    }
+    public function index() {}
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -30,12 +28,11 @@ class SubjectComponentController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
-        $this->validate($request,[
+        $request->validate([
             'subject_id' => 'required',
             'name' => 'required',
         ]);
@@ -44,7 +41,7 @@ class SubjectComponentController extends Controller
             ->where('name', '=', $request->name)
             ->get();
 
-        if(!count($result)) {
+        if (! count($result)) {
 
             $subject = new SubjectComponent;
             $subject->subject_id = $request->subject_id;
@@ -61,12 +58,11 @@ class SubjectComponentController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\SubjectComponent  $subjectComponent
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function show(SubjectComponent $subjectComponent)
+    public function show(SubjectComponent $subjectComponent, Request $request)
     {
-        $this->validate($request,[
+        $request->validate([
             'subject_id' => 'required',
             'name' => 'required',
         ]);
@@ -75,7 +71,7 @@ class SubjectComponentController extends Controller
             ->where('name', '=', $request->name)
             ->get();
 
-        if(!count($result)) {
+        if (! count($result)) {
 
             $subject = new SubjectComponent;
             $subject->subject_id = $request->subject_id;
@@ -92,8 +88,7 @@ class SubjectComponentController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\SubjectComponent  $subjectComponent
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(SubjectComponent $subjectComponent)
     {
@@ -103,9 +98,8 @@ class SubjectComponentController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\SubjectComponent  $subjectComponent
-     * @return \Illuminate\Http\Response
+     * @param  SubjectComponent  $subjectComponent
+     * @return Response
      */
     public function update(Request $request)
     {
@@ -114,7 +108,7 @@ class SubjectComponentController extends Controller
             ->where('id', '<>', $request->id)
             ->get();
 
-        if($existing->count() == 0){
+        if ($existing->count() == 0) {
 
             $component = SubjectComponent::find($request->id);
             $component->name = $request->name;
@@ -123,7 +117,7 @@ class SubjectComponentController extends Controller
 
             return back()->with('success', 'Subject Component has been updated successfully.');
 
-        }else{
+        } else {
             return back()->withErrors('Subject Component already exists!');
         }
     }
@@ -131,13 +125,14 @@ class SubjectComponentController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\SubjectComponent  $subjectComponent
-     * @return \Illuminate\Http\Response
+     * @param  SubjectComponent  $subjectComponent
+     * @return Response
      */
     public function destroy(Request $request)
     {
         $subject = SubjectComponent::find($request->id);
         $subject->delete();
+
         return back()->with('success', 'Subject Component has been deleted successfully.');
     }
 }

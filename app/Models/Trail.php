@@ -9,16 +9,17 @@ class Trail extends Model
 {
     use HasFactory;
 
-    protected $table = "audits";
+    protected $table = 'audits';
 
-    public static function models(){
-        $path = app_path() . "/Models";
+    public static function models()
+    {
+        $path = app_path().'/Models';
         $results = scandir($path);
-        $results = array_slice($results, 2); 
-        $models = array();
-        
+        $results = array_slice($results, 2);
+        $models = [];
+
         foreach ($results as $key => $result) {
-            $models[] = explode(".",$result)[0];
+            $models[] = explode('.', $result)[0];
         }
 
         return $models;

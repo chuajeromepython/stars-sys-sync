@@ -2,62 +2,62 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-
+use App\Models\Division;
 use App\Models\DivisionSupervisor;
 use App\Models\Person;
 use App\Models\Subject;
-use App\Models\Division;
 use App\Models\User;
 use Auth;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class DivisionSupervisorController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
         //
     }
 
-    
     public function edit(DivisionSupervisor $divisionSupervisor)
     {
         $page = [
-            'name'      =>  'User',
-            'title'     =>  'Edit Division Supervisor',
-            'crumb'     =>  array('Users' => '/users', "Edit Division Supervisor" => "")
+            'name' => 'User',
+            'title' => 'Edit Division Supervisor',
+            'crumb' => ['Users' => '/users', 'Edit Division Supervisor' => ''],
         ];
 
         $user = User::find($divisionSupervisor->user_id);
         $person = Person::find($user->person_id);
-        
+
         $current_subjects = array_filter(json_decode($divisionSupervisor->subject_id, true));
         $subjects = Subject::all();
 
         switch (Auth::user()->classification) {
             case 'Division Administrator':
                 $divisions = Division::where('id', $divisionSupervisor->division_id)->get();
-                $attribute = "disabled";
+                $attribute = 'disabled';
                 break;
             case 'System Administrator':
                 $divisions = Division::all();
-                $attribute = "";
+                $attribute = '';
                 break;
             default:
                 break;
         }
+
         return view('division_supervisors.edit', compact(
-            'page', 
-            'user', 
-            'person', 
-            'divisions', 
-            'current_subjects', 
-            'subjects', 
+            'page',
+            'user',
+            'person',
+            'divisions',
+            'current_subjects',
+            'subjects',
             'divisionSupervisor',
             'attribute'
         ));
@@ -66,17 +66,17 @@ class DivisionSupervisorController extends Controller
     public function update(Request $request)
     {
         DB::beginTransaction();
-        
+
         try {
-            
+
             $division_supervisor = DivisionSupervisor::find($request->id);
             $user = User::find($division_supervisor->user_id);
             $person = Person::find($user->person_id);
-            
-            if (Auth::user()->classification == "System Administrator") {
+
+            if (Auth::user()->classification == 'System Administrator') {
                 $division_supervisor->division_id = $request->division;
             }
-            
+
             $division_supervisor->subject_id = json_encode($request->subjects);
             $division_supervisor->save();
 
@@ -96,13 +96,11 @@ class DivisionSupervisorController extends Controller
             $result = $e->getMessage();
         }
 
-         if($result === true) {
+        if ($result === true) {
             return back()->with('success', 'Division Supervisor has been updated successfully.');
         } else {
             return back()->withErrors($result);
         }
 
     }
-
-    
 }

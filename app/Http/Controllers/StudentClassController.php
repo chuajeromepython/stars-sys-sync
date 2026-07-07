@@ -2,19 +2,18 @@
 
 namespace App\Http\Controllers;
 
-
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-
 use App\Models\StudentClass;
 use App\Models\StudentClassroom;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class StudentClassController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -24,7 +23,7 @@ class StudentClassController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -34,8 +33,7 @@ class StudentClassController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -45,8 +43,7 @@ class StudentClassController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\StudentClass  $studentClass
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(StudentClass $studentClass)
     {
@@ -56,8 +53,7 @@ class StudentClassController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\StudentClass  $studentClass
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(StudentClass $studentClass)
     {
@@ -67,9 +63,7 @@ class StudentClassController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\StudentClass  $studentClass
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, StudentClass $studentClass)
     {
@@ -79,8 +73,7 @@ class StudentClassController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\StudentClass  $studentClass
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(StudentClass $studentClass)
     {
@@ -88,8 +81,8 @@ class StudentClassController extends Controller
     }
 
     public function sync(Request $request)
-    {   
-        
+    {
+
         DB::beginTransaction();
         try {
 
@@ -97,37 +90,34 @@ class StudentClassController extends Controller
             $student_count = 0;
             foreach ($students as $key => $student) {
 
-                $existing =  StudentClass::where([
-                    "student_id" => $student->student_id,
-                    "class_id" => $request->class_id,
+                $existing = StudentClass::where([
+                    'student_id' => $student->student_id,
+                    'class_id' => $request->class_id,
                 ])->first();
 
-                if (!$existing){
+                if (! $existing) {
                     $student_class = new StudentClass;
                     $student_class->student_id = $student->student_id;
                     $student_class->class_id = $request->class_id;
                     $student_class->status = $student->status;
-                    $student_class->save(); 
+                    $student_class->save();
                     $student_count++;
                 }
-                
-            }
 
+            }
 
             DB::commit();
             $result = true;
-            
+
         } catch (Exception $e) {
             DB::rollBack();
             $result = $e->getMessage();
         }
 
-        if($result === true) {
-            return back()->with('success', $student_count."/".$students->count().' Students has been synced successfully.');
+        if ($result === true) {
+            return back()->with('success', $student_count.'/'.$students->count().' Students has been synced successfully.');
         } else {
             return back()->withErrors($result);
         }
-
-
     }
 }

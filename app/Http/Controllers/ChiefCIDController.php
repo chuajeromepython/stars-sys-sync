@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers;
 
-
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-
 use App\Models\ChiefCID;
-use App\Models\Person;
 use App\Models\Division;
+use App\Models\Person;
 use App\Models\User;
 use Auth;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class ChiefCIDController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -27,7 +26,7 @@ class ChiefCIDController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -37,8 +36,7 @@ class ChiefCIDController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -48,8 +46,7 @@ class ChiefCIDController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\ChiefCID  $chiefCID
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(ChiefCID $chiefCID)
     {
@@ -59,15 +56,15 @@ class ChiefCIDController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\ChiefCID  $chiefCID
-     * @return \Illuminate\Http\Response
+     * @param  ChiefCID  $chiefCID
+     * @return Response
      */
     public function edit(ChiefCID $chief_cid)
     {
         $page = [
-            'name'      =>  'User',
-            'title'     =>  'Edit Chief CID',
-            'crumb'     =>  array('Users' => '/users', "Edit Chief CID" => "")
+            'name' => 'User',
+            'title' => 'Edit Chief CID',
+            'crumb' => ['Users' => '/users', 'Edit Chief CID' => ''],
         ];
 
         $user = User::find($chief_cid->user_id);
@@ -75,18 +72,18 @@ class ChiefCIDController extends Controller
         switch (Auth::user()->classification) {
             case 'Division Administrator':
                 $divisions = Division::where('id', $divisionSupervisor->division_id)->get();
-                $attribute = "disabled";
+                $attribute = 'disabled';
                 break;
             case 'System Administrator':
                 $divisions = Division::all();
-                $attribute = "";
+                $attribute = '';
                 break;
             default:
                 break;
         }
 
         return view('chief_cids.edit', compact(
-            'page', 'user', 'person', 
+            'page', 'user', 'person',
             'divisions', 'chief_cid', 'attribute'
         ));
     }
@@ -94,21 +91,20 @@ class ChiefCIDController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\ChiefCID  $chiefCID
-     * @return \Illuminate\Http\Response
+     * @param  ChiefCID  $chiefCID
+     * @return Response
      */
     public function update(Request $request)
     {
         DB::beginTransaction();
-        
+
         try {
-            
+
             $chief_cid = ChiefCID::find($request->id);
             $user = User::find($chief_cid->user_id);
             $person = Person::find($user->person_id);
 
-            if (Auth::user()->classification == "System Administrator") {
+            if (Auth::user()->classification == 'System Administrator') {
                 $chief_cid->division_id = $request->division;
                 $chief_cid->save();
             }
@@ -129,7 +125,7 @@ class ChiefCIDController extends Controller
             $result = $e->getMessage();
         }
 
-         if($result === true) {
+        if ($result === true) {
             return back()->with('success', 'Chief CID has been updated successfully.');
         } else {
             return back()->withErrors($result);
@@ -139,8 +135,7 @@ class ChiefCIDController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\ChiefCID  $chiefCID
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(ChiefCID $chiefCID)
     {

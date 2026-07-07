@@ -4,14 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use OwenIt\Auditing\Contracts\Auditable;
 
-class ECDCDomain extends Model implements Auditable
+class ECDCDomain extends Model
 {
     use HasFactory;
-    use \OwenIt\Auditing\Auditable;
-    
-    
-    protected $table = 'tbl_ecdc_domains';
+    // use \OwenIt\Auditing\Auditable;
 
+    protected $table = 'tbl_ecdc_domains';
 }

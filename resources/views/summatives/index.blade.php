@@ -19,7 +19,7 @@
                         data-toggle="modal" 
                         data-target="#upload_modal_assessments">
                         <i class="fa fa-upload mr-2"></i> 
-                        Upload Summative Exam
+                        Upload Summative Test
                     </a>
                 </div>
                 <div class="card-body" >
@@ -27,7 +27,7 @@
                         <thead>
                             <tr>
                                 <th>Assessment Title</th>
-                                <th>Period</th>
+                                <th>Term</th>
                                 <th>Summative No.</th>
                                 <th>Grade Level</th>
                                 <th>Subject</th>
