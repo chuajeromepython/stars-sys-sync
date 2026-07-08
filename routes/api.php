@@ -22,4 +22,4 @@ use Illuminate\Support\Facades\Route;
 Route::get('/authenticate/{username}/{password}/', [AppApiController::class, 'authenticate']);
 Route::post('/classrooms/sync', [AppApiController::class, 'syncClassroomsByTeacherUserId']);
 Route::post('/students/sync', [AppApiController::class, 'studentsPerClassroom']);
-Route::post('/upload/assessment', [AppApiController::class, 'studentsPerClassroom']);
+Route::post('/upload/assessment', [AppApiController::class, 'uploadAssessment']);
