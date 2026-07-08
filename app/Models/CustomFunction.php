@@ -728,10 +728,14 @@ class CustomFunction extends Model
             'last_name',
             'birth_date',
             'gender',
-            'is_uploaded'
+            'is_uploaded',
+            'tbl_classrooms.section_id as sectionId',
+            'tbl_classrooms.grade_level_id as gradeLevelId',
+            'tbl_classrooms.id as classroomId'
         )->join('tbl_student_classrooms', 'tbl_students.id', 'tbl_student_classrooms.student_id')
             ->join('tbl_users', 'tbl_students.user_id', 'tbl_users.id')
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
+            ->join('tbl_classrooms', 'tbl_student_classrooms.classroom_id', 'tbl_classrooms.id')
             ->where('tbl_student_classrooms.classroom_id', $classroom_id)
             ->where('tbl_student_classrooms.status', 1)
             ->get();

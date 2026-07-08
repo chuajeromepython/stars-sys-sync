@@ -111,4 +111,27 @@ class AppApiController extends Controller
             'data' => $classrooms,
         ]);
     }
+
+    public function studentsPerClassroom(Request $request)
+    {
+        $request->validate([
+            'classroom_id' => 'required|integer|exists:tbl_classrooms,id',
+        ], [
+            'classroom_id.required' => 'Classroom ID is required.',
+            'classroom_id.integer' => 'Classroom ID must be an integer.',
+            'classroom_id.exists' => 'Classroom ID does not exist.',
+        ]);
+
+        $classroom_id = $request->input('classroom_id');
+
+        $students = CustomFunction::getStudentsPerClassroom($classroom_id);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Students retrieved successfully.',
+            'data' => $students
+                ->map(fn($u) => $u->only(['lrn', 'sectionId', 'gradeLevelId', 'classroomId']))
+                ->toArray()
+        ]);
+    }
 }
