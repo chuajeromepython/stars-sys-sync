@@ -6,20 +6,26 @@ use App\Models\Assessment;
 use App\Models\ClassAssessment;
 use App\Models\CustomFunction;
 use App\Models\StudentScore;
+use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 
 class ClassAssessmentController extends Controller
 {
-    public function show(ClassAssessment $class_assessment)
+    public function show(ClassAssessment $class_assessment, Request $request)
     {
 
         $assessment = Assessment::find($class_assessment->assessment_id);
         $assessment_details = CustomFunction::getAssessmentDetails($assessment->id);
 
         if ($assessment_details->type == 'Periodical') {
-            $key = 'Diagnostic Test';
-            $link = '/periodicals';
+            if ($request->assessment_path == 'diagnostics') {
+                $key = 'Diagnostic Test';
+                $link = '/diagnostics';
+            } else {
+                $key = 'Term Exam';
+                $link = '/periodicals';
+            }
         } else {
             $key = 'Summative';
             $link = '/summatives';

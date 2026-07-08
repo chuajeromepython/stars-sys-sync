@@ -8,6 +8,7 @@ use App\Models\CustomFunction;
 use App\Models\Student;
 use App\Models\StudentAnswer;
 use App\Models\StudentScore;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -94,6 +95,7 @@ class StudentAnswerController extends Controller
         $assessment_keys = CustomFunction::getAssessmentKeys($request->assessment_id);
         $data = [];
         $error = [];
+        $sheets = [];
 
         $file_assessment = $request->file('file_assessment');
         $csv_file_path = $file_assessment->getRealPath();
@@ -222,7 +224,12 @@ class StudentAnswerController extends Controller
             }
 
             if ($result === true) {
-                return redirect('/periodicals/'.$request->assessment_id)->with('success', 'Class Assessment uploaded successfully.');
+                $assessment_path = in_array($request->assessment_path, ['periodicals', 'diagnostics'])
+                    ? $request->assessment_path
+                    : 'periodicals';
+
+                return redirect('/'.$assessment_path.'/'.$request->assessment_id)
+                    ->with('success', 'Class Assessment uploaded successfully.');
             } else {
                 return back()->withErrors($result);
             }

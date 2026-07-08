@@ -252,21 +252,19 @@ class CompetencyController extends Controller
                     }
                 }
 
-                return back()->withErrors($error_messages);
+                DB::rollBack();
+
+                return redirect('/competencies')->withErrors($error_messages)->withInput();
             }
 
             DB::commit();
-            $result = true;
 
-        } catch (Exception $e) {
-            DB::rollBack();
-            $result = $e->getMessage();
-        }
-
-        if ($result === true) {
             return redirect('/competencies')->with('success', 'Competency Uploader has been uploaded successfully.');
-        } else {
-            return back()->withErrors($result);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect('/competencies')->withErrors([$e->getMessage()]);
         }
 
     }

@@ -25,7 +25,7 @@
                         </div>
                         <div class="col-md-12">
                             <center>
-                                <img src="/images/assessment_0.png" id="img_assessment"  
+                                <img src="/images/assessment_0.png" id="img_assessment"
                                     style="height: 80px;opacity: 20%"><br>
                                 <small class="text-muted text-bold mt-3" id="label_assessment">No File Selected</small>
                                 <a href="#" class="btn bg-light mt-1 btn-sm btn-block" id="btn_assessment">
@@ -34,7 +34,7 @@
                             </center>
                             <input type="file" name="file_assessment" id="file_assessment"  style="display: none;">
                             <input type="hidden" name="assessment_id" value="{{$assessment->id}}">
-                            <input type="hidden" name="assessment_path" value="periodicals">
+                            <input type="hidden" name="assessment_path" value="diagnostics">
                         </div>
                     </div>
                 </div>
