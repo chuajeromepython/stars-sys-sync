@@ -27,6 +27,7 @@
                     <table class="table table-bordered mb-3" id="dt_periodicals">
                         <thead>
                             <tr>
+                                <th>ID</th>
                                 <th>Assessment Title</th>
                                 <th>Term</th>
                                 <th>Grade Level</th>
@@ -37,6 +38,7 @@
                         <tbody>
                             @foreach($assessments as $assessment)
                                 <tr>
+                                    <td>{{$assessment->id}}</td>
                                     <td>{{$assessment->assessment}}</td>
                                     <td>{{$assessment->period}}</td>
                                     <td>{{$assessment->level}}</td>

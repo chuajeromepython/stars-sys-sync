@@ -28,6 +28,7 @@ class ClassAssessment extends Model
         $data = ClassAssessment::getResults($class_assessment_id);
         $class_assessment = ClassAssessment::find($class_assessment_id);
         $assessment = Assessment::find($class_assessment->assessment_id);
+        $number_of_items = (int) $assessment->number_of_items;
 
         $tally = [];
         $sum_of_x = 0;
@@ -41,7 +42,7 @@ class ClassAssessment extends Model
 
         $result = [];
 
-        for ($score = 1; $score <= $assessment->number_of_items; $score++) {
+        for ($score = 1; $score <= $number_of_items; $score++) {
 
             $count = 0;
             foreach ($data as $key => $student) {
@@ -67,7 +68,7 @@ class ClassAssessment extends Model
 
         $mean = round(($sum_of_count == 0) ? 0 : $sum_of_x / $sum_of_count, 2); // old ($sum_of_count == 0) ? 0 :$sum_of_x / $sum_of_count
 
-        for ($score = 1; $score <= $assessment['number_of_items']; $score++) {
+        for ($score = 1; $score <= $number_of_items; $score++) {
 
             $xbar = number_format(($score - $mean) * ($score - $mean), 2, '.', '');
             $fxb = number_format($tally[$score]['count'] * $xbar, 2, '.', '');
@@ -79,7 +80,7 @@ class ClassAssessment extends Model
             $sum_of_fxb += $fxb;
         }
 
-        $sd = ($sum_of_count == 0)
+        $sd = ($sum_of_count <= 1)
             ? 0
             : number_format(sqrt($sum_of_fxb / ($sum_of_count - 1)), 2, '.', '');
 
@@ -87,13 +88,15 @@ class ClassAssessment extends Model
             ? 0
             : number_format(($sum_of_apg + $sum_of_hpg) / $sum_of_count * 100, 2, '.', '');
 
-        $mastery = ($sum_of_count == 0)
+        $mastery = ($sum_of_count == 0 || $number_of_items == 0)
             ? 0
-            : number_format($sum_of_x / ($sum_of_count * $assessment['number_of_items']) * 100, 2, '.', '');
+            : number_format($sum_of_x / ($sum_of_count * $number_of_items) * 100, 2, '.', '');
 
         $results = [
             'mean' => number_format($mean, 2, '.', ''),
-            'mps' => number_format((($mean / $assessment['number_of_items']) * 100), 2, '.', ''),
+            'mps' => ($number_of_items == 0)
+                ? 0
+                : number_format((($mean / $number_of_items) * 100), 2, '.', ''),
             'sd' => $sd,
             'hpg' => $sum_of_hpg,
             'apg' => $sum_of_apg,
@@ -230,7 +233,9 @@ class ClassAssessment extends Model
                 }
             }
 
-            $index = number_format(($correct_hpg / $sum_of_hpg) - ($correct_lpg / $sum_of_lpg), 2, '.', '');
+            $hpg_ratio = ($sum_of_hpg > 0) ? ($correct_hpg / $sum_of_hpg) : 0;
+            $lpg_ratio = ($sum_of_lpg > 0) ? ($correct_lpg / $sum_of_lpg) : 0;
+            $index = number_format($hpg_ratio - $lpg_ratio, 2, '.', '');
 
             $percentage = $index * 100;
             if ($percentage < 19) {
