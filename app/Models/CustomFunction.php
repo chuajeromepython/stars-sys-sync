@@ -613,6 +613,7 @@ class CustomFunction extends Model
                         'classes' => $classes,
                         'is_advisory' => $is_advisory,
                         'grade_level' => $grade_level->level,
+                        'school_year' => $academic_year?->from.'-'.$academic_year->to,
                         'teacher_class_id' => $advisory?->id,
                     ];
                     $classrooms[$grade_level->level][] = $room_details;
