@@ -7,6 +7,7 @@ use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class AppApiController extends Controller
@@ -38,7 +39,7 @@ class AppApiController extends Controller
         $validator = Validator::make($request->all(), [
             'userId' => ['required', 'integer', 'exists:tbl_users,id'],
         ]);
-
+        
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -50,7 +51,13 @@ class AppApiController extends Controller
 
         $user_id = (int) $request->input('userId');
 
-        if (! Auth::check()) {
+         $isAuthenticated = DB::table('sessions')
+            ->where('user_id', $user_id)
+            ->where('last_activity', '>=', now()->subMinutes(15)->timestamp) // your "active" threshold
+            ->exists();
+
+        
+        if (! $isAuthenticated) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated request. Please login first.',
@@ -58,13 +65,13 @@ class AppApiController extends Controller
             ], 401);
         }
 
-        if ((int) Auth::id() !== $user_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Submitted userId does not match the active session.',
-                'data' => null,
-            ], 403);
-        }
+        // if ((int) Auth::id() !== $user_id) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Submitted userId does not match the active session.',
+        //         'data' => null,
+        //     ], 403);
+        // }
 
         $user = User::find($user_id);
 
@@ -86,6 +93,8 @@ class AppApiController extends Controller
             ], 404);
         }
 
+        Auth::loginUsingId($user_id);
+        
         $classrooms = CustomFunction::getClassroomsByTeacherUserId($user_id);
 
         if (empty($classrooms)) {
@@ -100,6 +109,29 @@ class AppApiController extends Controller
             'success' => true,
             'message' => 'Classrooms synced successfully',
             'data' => $classrooms,
+        ]);
+    }
+
+    public function studentsPerClassroom(Request $request)
+    {
+        $request->validate([
+            'classroom_id' => 'required|integer|exists:tbl_classrooms,id',
+        ], [
+            'classroom_id.required' => 'Classroom ID is required.',
+            'classroom_id.integer' => 'Classroom ID must be an integer.',
+            'classroom_id.exists' => 'Classroom ID does not exist.',
+        ]);
+
+        $classroom_id = $request->input('classroom_id');
+
+        $students = CustomFunction::getStudentsPerClassroom($classroom_id);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Students retrieved successfully.',
+            'data' => $students
+                ->map(fn($u) => $u->only(['lrn', 'sectionId', 'gradeLevelId', 'classroomId']))
+                ->toArray()
         ]);
     }
 }
