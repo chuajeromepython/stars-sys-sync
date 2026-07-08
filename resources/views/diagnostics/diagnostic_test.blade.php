@@ -6,16 +6,13 @@
 
 @section('page_script')
     <script type="text/javascript" src="/js/periodicals.js"></script>
-    <script>
-
-    </script>
 @endsection
 
 @section('content')
 	@include('layouts.message')
-    @include('periodicals.upload_csv')
+    @include('diagnostics.upload_csv')
     @include('periodicals.edit_answer_key')
-    <a href="/summatives" class="btn btn-danger mr-3 mb-3">
+    <a href="/diagnostics" class="btn btn-danger mr-3 mb-3">
         <i class="fa fa-angle-left mr-2"></i> Back
     </a>
     <div class="row mb-2">
@@ -23,7 +20,7 @@
             <div class="card">
                 <div class="card-header">
                     <label class="text-primary">
-                        {{$assessment->period}} Period - Term Exam
+                        {{$assessment->period}} Period - Diagnostic Test
                     </label>
                 </div>
                 <div class="card-body">
@@ -48,13 +45,13 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <a href="/periodicals" class="btn btn-danger float-left mr-3">
+                    <a href="/diagnostics" class="btn btn-danger float-left mr-3">
                         <i class="fa fa-angle-left mr-2"></i> Back
                     </a>
-                    <a href="#" class="btn btn-info" 
-                        data-toggle="modal" 
+                    <a href="#" class="btn btn-info"
+                        data-toggle="modal"
                         data-target="#upload_modal_csv">
-                        <i class="fa fa-upload mr-2"></i> 
+                        <i class="fa fa-upload mr-2"></i>
                         Upload Class Assessment
                     </a>
                 </div>
@@ -76,7 +73,7 @@
                                     <td>{{$class_assessment->section}}</td>
                                     <td>
                                         <center>
-                                            <a href="/class_assessments/{{$class_assessment->id}}?assessment_path=periodicals"
+                                            <a href="/class_assessments/{{$class_assessment->id}}?assessment_path=diagnostics"
                                             class="btn btn-primary btn-sm">
                                                 <i class="fa fa-arrow-right"></i>
                                             </a>
@@ -113,14 +110,14 @@
                             </tr>
                         </thead>
                         <tbody>
-                            
+
                             @foreach($answer_keys as $keys)
                             <tr>
                                 <td>{{$keys['question']->item_number}}</td>
                                 <td>{{$keys['question']->question}}</td>
                                 @foreach($keys['options'] as $option)
                                 <td>
-                                    <span class="badge 
+                                    <span class="badge
                                         {{ ($option->is_correct == 1) ? 'bg-success' : 'bg-secondary'  }}
                                     mr-2">{{$option->assignment}}</span>
                                     {{$option->option}}</td>
@@ -146,6 +143,4 @@
             </div>
         </div>
     </div>
-
-     
 @endsection

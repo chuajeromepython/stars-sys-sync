@@ -10,17 +10,17 @@
 
 @section('content')
 	@include('layouts.message')
-    @include('periodicals.upload')
-    
+    @include('diagnostics.upload')
+
     <div class="row">
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <a href="#" class="btn btn-info" 
-                        data-toggle="modal" 
+                    <a href="#" class="btn btn-info"
+                        data-toggle="modal"
                         data-target="#upload_modal_assessments">
-                        <i class="fa fa-upload mr-2"></i> 
-                        Upload Term Exam
+                        <i class="fa fa-upload mr-2"></i>
+                        Upload Diagnostic Test
                     </a>
                 </div>
                 <div class="card-body" >
@@ -43,7 +43,7 @@
                                     <td>{{$assessment->subject}}</td>
                                     <th>
                                         <center>
-                                            <a href="/periodicals/{{$assessment->id}}" class="btn bg-purple btn-sm">
+                                            <a href="/diagnostics/{{$assessment->id}}" class="btn bg-purple btn-sm">
                                                 <i class="fa fa-list"></i>
                                             </a>
                                        </center>
@@ -51,7 +51,7 @@
                                 </tr>
                             @endforeach
                         </tbody>
-                    </table>        
+                    </table>
                 </div>
             </div>
         </div>

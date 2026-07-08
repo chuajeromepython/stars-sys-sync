@@ -14,6 +14,7 @@ use App\Http\Controllers\CompetencyController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentHeadController;
+use App\Http\Controllers\DiagnosticController;
 use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\DistrictSupervisorController;
 use App\Http\Controllers\DivisionAdministratorController;
@@ -288,10 +289,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/assessments/update', [AssessmentController::class, 'update']);
     Route::post('/assessments/destroy', [AssessmentController::class, 'destroy']);
     Route::post('/assessments/upload', [AssessmentController::class, 'upload']);
-    // Peroiodicals
+    // Periodicals
     Route::get('/periodicals/', [PeriodicalController::class, 'index']);
     Route::post('/periodicals/upload', [PeriodicalController::class, 'upload']);
     Route::get('/periodicals/{assessment}', [PeriodicalController::class, 'show']);
+    // Diagnostics
+    Route::get('/diagnostics/', [DiagnosticController::class, 'index']);
+    Route::post('/diagnostics/upload', [DiagnosticController::class, 'upload']);
+    Route::get('/diagnostics/{assessment}', [DiagnosticController::class, 'show']);
     // Questions
     Route::put('/questions/{id}/update-answer-key', [QuestionController::class, 'updateAnswerKey']);
     // StudentAnswers
