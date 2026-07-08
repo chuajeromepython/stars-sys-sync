@@ -110,9 +110,16 @@ class SummativeController extends Controller
         $summative = Summative::where('assessment_id', $assessment->id)->first();
         $assessment = CustomFunction::getAssessmentDetails($assessment->id);
 
+        $classRooms = CustomFunction::getClassrooms();
+        $rooms = [];
+
+        foreach ($classRooms as $classRoom) {
+            $rooms = array_merge($rooms, $classRoom);
+        }
+
         return view('summatives.show', compact(
             'page', 'answer_keys', 'classes', 'assessment',
-            'class_assessments', 'summative'
+            'class_assessments', 'summative', 'rooms'
         ));
     }
 
