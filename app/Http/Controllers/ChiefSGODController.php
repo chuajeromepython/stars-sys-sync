@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers;
 
-
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-
 use App\Models\ChiefSGOD;
-use App\Models\Person;
 use App\Models\Division;
+use App\Models\Person;
 use App\Models\User;
-Use Auth;
+use Auth;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class ChiefSGODController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -27,7 +26,7 @@ class ChiefSGODController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -37,8 +36,7 @@ class ChiefSGODController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -48,8 +46,7 @@ class ChiefSGODController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\ChiefSGOD  $chiefSGOD
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(ChiefSGOD $chiefSGOD)
     {
@@ -59,15 +56,15 @@ class ChiefSGODController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\ChiefSGOD  $chiefSGOD
-     * @return \Illuminate\Http\Response
+     * @param  ChiefSGOD  $chiefSGOD
+     * @return Response
      */
     public function edit(ChiefSGOD $chief_sgod)
     {
         $page = [
-            'name'      =>  'User',
-            'title'     =>  'Edit Chief SGOD',
-            'crumb'     =>  array('Users' => '/users', "Edit Chief SGOD" => "")
+            'name' => 'User',
+            'title' => 'Edit Chief SGOD',
+            'crumb' => ['Users' => '/users', 'Edit Chief SGOD' => ''],
         ];
 
         $user = User::find($chief_sgod->user_id);
@@ -75,18 +72,18 @@ class ChiefSGODController extends Controller
         switch (Auth::user()->classification) {
             case 'Division Administrator':
                 $divisions = Division::where('id', $divisionSupervisor->division_id)->get();
-                $attribute = "disabled";
+                $attribute = 'disabled';
                 break;
             case 'System Administrator':
                 $divisions = Division::all();
-                $attribute = "";
+                $attribute = '';
                 break;
             default:
                 break;
         }
 
         return view('chief_sgods.edit', compact(
-            'page', 'user', 'person', 
+            'page', 'user', 'person',
             'divisions', 'chief_sgod', 'attribute'
         ));
     }
@@ -94,25 +91,24 @@ class ChiefSGODController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\ChiefSGOD  $chiefSGOD
-     * @return \Illuminate\Http\Response
+     * @param  ChiefSGOD  $chiefSGOD
+     * @return Response
      */
     public function update(Request $request)
     {
         DB::beginTransaction();
-        
+
         try {
-            
+
             $chief_sgod = ChiefSGOD::find($request->id);
             $user = User::find($chief_sgod->user_id);
             $person = Person::find($user->person_id);
 
-            if (Auth::user()->classification == "System Administrator") {
+            if (Auth::user()->classification == 'System Administrator') {
                 $chief_sgod->division_id = $request->division;
                 $chief_sgod->save();
             }
-            
+
             $person->first_name = $request->first_name;
             $person->middle_name = $request->middle_name;
             $person->last_name = $request->last_name;
@@ -129,7 +125,7 @@ class ChiefSGODController extends Controller
             $result = $e->getMessage();
         }
 
-         if($result === true) {
+        if ($result === true) {
             return back()->with('success', 'Chief SGOD has been updated successfully.');
         } else {
             return back()->withErrors($result);
@@ -139,8 +135,7 @@ class ChiefSGODController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\ChiefSGOD  $chiefSGOD
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(ChiefSGOD $chiefSGOD)
     {

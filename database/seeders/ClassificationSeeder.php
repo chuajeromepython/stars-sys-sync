@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class ClassificationSeeder extends Seeder
 {
@@ -15,20 +14,20 @@ class ClassificationSeeder extends Seeder
      */
     public function run()
     {
-        $classifications = array(
-            array('classification' => 'System Administrator'),
-            array('classification' => 'Division Supervisor'),
-            array('classification' => 'District Supervisor'),
-            array('classification' => 'School Head'),
-            array('classification' => 'Teacher'),
-            array('claissfication' => 'Student'),
-            array('classification' => 'Division Administrator'),
-            array('classification' => 'Division Superintendent'),
-            array('classification' => 'Assistant Division Superintendent'),
-            array('classification' => 'Chief of CID'),
-            array('classification' => 'Chief of SGOD'),
-            array('classification' => 'Department Head'),
-        );
+        $classifications = [
+            ['classification' => 'System Administrator'],
+            ['classification' => 'Division Supervisor'],
+            ['classification' => 'District Supervisor'],
+            ['classification' => 'School Head'],
+            ['classification' => 'Teacher'],
+            ['claissfication' => 'Student'],
+            ['classification' => 'Division Administrator'],
+            ['classification' => 'Division Superintendent'],
+            ['classification' => 'Assistant Division Superintendent'],
+            ['classification' => 'Chief of CID'],
+            ['classification' => 'Chief of SGOD'],
+            ['classification' => 'Department Head'],
+        ];
 
         DB::table('tbl_classifications')->insert($classifications);
     }

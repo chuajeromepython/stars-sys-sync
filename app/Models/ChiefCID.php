@@ -5,16 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use OwenIt\Auditing\Contracts\Auditable;
 
-
-class ChiefCID extends Model implements Auditable
+class ChiefCID extends Model
 {
     use HasFactory;
     use SoftDeletes;
-    use \OwenIt\Auditing\Auditable;
-    
+    // use \OwenIt\Auditing\Auditable;
+
     protected $table = 'tbl_chief_cids';
+
     public $timestamps = false;
+
     public $remember_token = false;
 }

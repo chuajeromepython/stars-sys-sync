@@ -5,26 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
-use OwenIt\Auditing\Contracts\Auditable;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
-
-class Assessment extends Model implements Auditable
+class Assessment extends Model
 {
     use HasFactory;
     use SoftDeletes;
-    use \OwenIt\Auditing\Auditable;
+
+    // use \OwenIt\Auditing\Auditable;
     protected $table = 'tbl_assessments';
 
-
-    public static function saveAnswerKeys($answer_keys){
+    public static function saveAnswerKeys($answer_keys)
+    {
 
         $teacher_id = Teacher::where('user_id', Auth::user()->id)->value('id');
 
         $assessment = new Assessment;
-        $assessment->title = $answer_keys['title'];;
-        $assessment->date = $answer_keys['date'];;
+        $assessment->title = $answer_keys['title'];
+        $assessment->date = $answer_keys['date'];
         $assessment->assessment_type_id = $answer_keys['type'];
         $assessment->number_of_items = $answer_keys['items'];
         $assessment->period_id = $answer_keys['period'];
@@ -34,10 +32,9 @@ class Assessment extends Model implements Auditable
         $assessment->academic_year_id = AcademicYear::active()->id;
         $assessment->save();
 
-
         foreach ($answer_keys['keys'] as $key => $items) {
             foreach ($items['question'] as $identifier => $value) {
-                if ($identifier == "Q") {
+                if ($identifier == 'Q') {
 
                     $question = new Question;
                     $question->question = $value;
@@ -50,14 +47,14 @@ class Assessment extends Model implements Auditable
                     $assessment_key->question_id = $question->id;
                     $assessment_key->save();
 
-                }else{
+                } else {
 
                     $assessment_key = AssessmentKey::whereRaw(
                         'id = (select max(`id`) from tbl_assessment_keys)'
                     )->first();
 
                     $is_correct = (strtolower($identifier) == strtolower($items['answer'])) ? true : false;
-                        
+
                     $option = new Option;
                     $option->option = $value;
                     $option->is_correct = $is_correct;
@@ -66,7 +63,7 @@ class Assessment extends Model implements Auditable
 
                     $assessment_option = new AssessmentOption;
                     $assessment_option->assignment = $identifier;
-                    $assessment_option->option_id =  $option->id;
+                    $assessment_option->option_id = $option->id;
                     $assessment_option->assessment_key_id = $assessment_key->id;
                     $assessment_option->save();
 

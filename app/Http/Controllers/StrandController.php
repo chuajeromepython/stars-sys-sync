@@ -2,26 +2,25 @@
 
 namespace App\Http\Controllers;
 
-
-use Illuminate\Http\Request;
-
+use App\Models\Course;
 use App\Models\Strand;
 use App\Models\Track;
-use App\Models\Course;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class StrandController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
         $page = [
-            'name'      =>  'Strand',
-            'title'     =>  'Strand Management',
-            'crumb'     =>  array('Strand' => '/strands')
+            'name' => 'Strand',
+            'title' => 'Strand Management',
+            'crumb' => ['Strand' => '/strands'],
         ];
 
         $strands = Strand::select(
@@ -30,11 +29,12 @@ class StrandController extends Controller
             'tbl_strands.track_id',
             'tbl_tracks.name as track',
         )->join('tbl_tracks', 'tbl_strands.track_id', 'tbl_tracks.id')
-        ->get();
+            ->get();
 
         $tracks = Track::all();
+
         return view('strands.index', compact(
-            'page', 
+            'page',
             'strands',
             'tracks'
         ));
@@ -43,7 +43,7 @@ class StrandController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -53,25 +53,25 @@ class StrandController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
-        $this->validate($request,[
+        $request->validate([
             'track' => 'required',
-            'name' => 'required'
+            'name' => 'required',
         ]);
 
         $result = Strand::where('name', '=', $request->name)
-        ->where('track_id', '=', $request->track)
-        ->get();
+            ->where('track_id', '=', $request->track)
+            ->get();
 
-        if(!count($result)) {
+        if (! count($result)) {
             $strand = new Strand;
             $strand->name = $request->name;
             $strand->track_id = $request->track;
             $strand->save();
+
             return redirect('/strands')->with('success', 'New strand has been added successfully.');
         } else {
             return back()->withErrors('Strand already exists!');
@@ -81,18 +81,14 @@ class StrandController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Strand  $strand
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function show(Strand $strand)
-    {
-    }
+    public function show(Strand $strand) {}
 
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\Strand  $strand
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(Strand $strand)
     {
@@ -102,28 +98,28 @@ class StrandController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Strand  $strand
-     * @return \Illuminate\Http\Response
+     * @param  Strand  $strand
+     * @return Response
      */
     public function update(Request $request)
     {
-        
-        $this->validate($request,[
+
+        $request->validate([
             'track_id' => 'required',
-            'name' => 'required'
+            'name' => 'required',
         ]);
 
         $result = Strand::where('name', '=', $request->name)
-        ->where('track_id', '=', $request->track_id)
-        ->where('id', '<>', $request->id)
-        ->get();
+            ->where('track_id', '=', $request->track_id)
+            ->where('id', '<>', $request->id)
+            ->get();
 
-        if(!count($result)) {
+        if (! count($result)) {
             $strand = Strand::find($request->id);
             $strand->name = $request->name;
             $strand->track_id = $request->track_id;
             $strand->save();
+
             return redirect('/strands')->with('success', 'Strand has been updated successfully.');
         } else {
             return back()->withErrors('Strand already exists!');
@@ -133,23 +129,25 @@ class StrandController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Strand  $strand
-     * @return \Illuminate\Http\Response
+     * @param  Strand  $strand
+     * @return Response
      */
     public function destroy(Request $request)
-    {   
+    {
         $courses = Course::where('strand_id', $request->id)->get();
         $strand = Strand::find($request->id);
         if ($courses->count() == 0) {
             $strand->delete();
+
             return back()->with('success', 'Strand has been deleted successfully.');
-        }else{
-            $errors[] = "There are data found under ".$strand->name." :";
+        } else {
+            $errors[] = 'There are data found under '.$strand->name.' :';
             $errors[] = ($courses->count() == 1)
-                ? $courses->count()." active Course found." 
-                : $courses->count()." active Courses found.";
+                ? $courses->count().' active Course found.'
+                : $courses->count().' active Courses found.';
+
             return back()->withErrors($errors);
         }
-        
+
     }
 }

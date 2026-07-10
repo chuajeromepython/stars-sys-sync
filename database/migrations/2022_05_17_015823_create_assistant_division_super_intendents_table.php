@@ -14,7 +14,7 @@ class CreateAssistantDivisionSuperIntendentsTable extends Migration
     public function up()
     {
         Schema::create('tbl_asst_division_superintendents', function (Blueprint $table) {
-           $table->bigIncrements('id');
+            $table->bigIncrements('id');
             $table->boolean('status');
             $table->bigInteger('user_id');
             $table->bigInteger('division_id');

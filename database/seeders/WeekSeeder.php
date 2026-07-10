@@ -14,20 +14,20 @@ class WeekSeeder extends Seeder
      */
     public function run()
     {
-        $weeks = array(
-            array('week' => 'Week 1'),
-            array('week' => 'Week 2'),
-            array('week' => 'Week 3'),
-            array('week' => 'Week 4'),
-            array('week' => 'Week 5'),
-            array('week' => 'Week 6'),
-            array('week' => 'Week 7'),
-            array('week' => 'Week 8'),
-            array('week' => 'Week 9'),
-            array('week' => 'Week 10'),
-            array('week' => 'Week 11'),
-            array('week' => 'Week 12'),
-        );
+        $weeks = [
+            ['week' => 'Week 1'],
+            ['week' => 'Week 2'],
+            ['week' => 'Week 3'],
+            ['week' => 'Week 4'],
+            ['week' => 'Week 5'],
+            ['week' => 'Week 6'],
+            ['week' => 'Week 7'],
+            ['week' => 'Week 8'],
+            ['week' => 'Week 9'],
+            ['week' => 'Week 10'],
+            ['week' => 'Week 11'],
+            ['week' => 'Week 12'],
+        ];
 
         DB::table('tbl_weeks')->insert($weeks);
     }

@@ -20,15 +20,16 @@
                         data-toggle="modal" 
                         data-target="#upload_modal_assessments">
                         <i class="fa fa-upload mr-2"></i> 
-                        Upload Periodical Exam
+                        Upload Term Exam
                     </a>
                 </div>
                 <div class="card-body" >
                     <table class="table table-bordered mb-3" id="dt_periodicals">
                         <thead>
                             <tr>
+                                <th>ID</th>
                                 <th>Assessment Title</th>
-                                <th>Period</th>
+                                <th>Term</th>
                                 <th>Grade Level</th>
                                 <th>Subject</th>
                                 <th></th>
@@ -37,6 +38,7 @@
                         <tbody>
                             @foreach($assessments as $assessment)
                                 <tr>
+                                    <td>{{$assessment->id}}</td>
                                     <td>{{$assessment->assessment}}</td>
                                     <td>{{$assessment->period}}</td>
                                     <td>{{$assessment->level}}</td>
