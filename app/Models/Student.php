@@ -5,36 +5,36 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use OwenIt\Auditing\Contracts\Auditable;
 
-class Student extends Model implements Auditable
+class Student extends Model
 {
     use HasFactory;
     use SoftDeletes;
-    use \OwenIt\Auditing\Auditable;
-    
+    // use \OwenIt\Auditing\Auditable;
 
     protected $table = 'tbl_students';
+
     public $timestamps = false;
+
     public $remember_token = false;
 
-
-    public static function status($status_id) {
+    public static function status($status_id)
+    {
 
         switch ($status_id) {
             case '1':
-                $status = "Regular";
+                $status = 'Regular';
                 break;
             case '2':
-                $status = "Trasferee";
+                $status = 'Trasferee';
                 break;
             case '4':
-                $status = "Drop";
+                $status = 'Drop';
                 break;
             case '3':
-                $status = "Back Subject";
+                $status = 'Back Subject';
             case '0':
-                $status = "Exclude";
+                $status = 'Exclude';
                 break;
             default:
                 // code...
@@ -44,16 +44,17 @@ class Student extends Model implements Auditable
         return $status;
     }
 
-    public static function getStatusOptions(){
-        $result = array(
-            "1" => "Regular",
-            "2" => "Trasferee",
-            "3" => "Back Subject",
-            "4" => "Drop",
-            "0" => "Exclude"
-        );
+    public static function getStatusOptions()
+    {
+        $result = [
+            '1' => 'Regular',
+            '2' => 'Trasferee',
+            '3' => 'Back Subject',
+            '4' => 'Drop',
+            '0' => 'Exclude',
+        ];
 
-        return $result; 
+        return $result;
     }
 
     public function studentScores()
@@ -61,7 +62,7 @@ class Student extends Model implements Auditable
         return $this->hasMany(StudentScore::class, 'student_id');
     }
 
-    public function studentAnswers() 
+    public function studentAnswers()
     {
         return $this->hasMany(StudentAnswer::class, 'student_id', 'id');
     }

@@ -15,38 +15,37 @@ class UserSeeder extends Seeder
      */
     public function run()
     {
-        $users = array(
-            array(
-                'username' => "glennnerrie",
-                'status' => "1",
-                'classification' => "Division Administrator",
+        $users = [
+            [
+                'username' => 'glennnerrie',
+                'status' => '1',
+                'classification' => 'Division Administrator',
                 'password' => Hash::make('password'),
-                'person_id' => "1",
-            ),
-            array(
-                'username' => "sysad",
-                'status' => "1",
-                'classification' => "System Administrator",
+                'person_id' => '1',
+            ],
+            [
+                'username' => 'sysad',
+                'status' => '1',
+                'classification' => 'System Administrator',
                 'password' => Hash::make('password'),
-                'person_id' => "2",
-            ),
-            array(
-                'username' => "frederick.zaide@deped.gov.ph",
-                'status' => "1",
-                'classification' => "Division Administrator",
+                'person_id' => '2',
+            ],
+            [
+                'username' => 'frederick.zaide@deped.gov.ph',
+                'status' => '1',
+                'classification' => 'Division Administrator',
                 'password' => Hash::make('password'),
-                'person_id' => "3",
-            ),
-            array(
-                'username' => "frederick.zaide001@deped.gov.ph",
-                'status' => "1",
-                'classification' => "Division Administrator",
+                'person_id' => '3',
+            ],
+            [
+                'username' => 'frederick.zaide001@deped.gov.ph',
+                'status' => '1',
+                'classification' => 'Division Administrator',
                 'password' => Hash::make('password'),
-                'person_id' => "3",
-            )
-        );
+                'person_id' => '3',
+            ],
+        ];
 
-        
         DB::table('tbl_users')->insert($users);
 
     }

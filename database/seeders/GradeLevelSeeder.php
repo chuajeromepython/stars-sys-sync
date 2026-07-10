@@ -14,21 +14,21 @@ class GradeLevelSeeder extends Seeder
      */
     public function run()
     {
-        $gradeLevels = array(
-            array('level' => "Grade 1"),
-            array('level' => "Grade 2"),
-            array('level' => "Grade 3"),
-            array('level' => "Grade 4"),
-            array('level' => "Grade 5"),
-            array('level' => "Grade 6"),
-            array('level' => "Grade 7"),
-            array('level' => "Grade 8"),
-            array('level' => "Grade 9"),
-            array('level' => "Grade 10"),
-            array('level' => "Grade 11"),
-            array('level' => "Grade 12"),
-            array('level' => "Kinder")
-        );
+        $gradeLevels = [
+            ['level' => 'Grade 1'],
+            ['level' => 'Grade 2'],
+            ['level' => 'Grade 3'],
+            ['level' => 'Grade 4'],
+            ['level' => 'Grade 5'],
+            ['level' => 'Grade 6'],
+            ['level' => 'Grade 7'],
+            ['level' => 'Grade 8'],
+            ['level' => 'Grade 9'],
+            ['level' => 'Grade 10'],
+            ['level' => 'Grade 11'],
+            ['level' => 'Grade 12'],
+            ['level' => 'Kinder'],
+        ];
 
         DB::table('tbl_grade_levels')->insert($gradeLevels);
     }

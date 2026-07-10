@@ -23,7 +23,7 @@
             <div class="card">
                 <div class="card-header">
                     <label class="text-primary">
-                        {{$assessment->period}} Period - Periodical Exam
+                        {{$assessment->period}} Period - Term Exam
                     </label>
                 </div>
                 <div class="card-body">
@@ -76,7 +76,7 @@
                                     <td>{{$class_assessment->section}}</td>
                                     <td>
                                         <center>
-                                            <a href="/class_assessments/{{$class_assessment->id}}"
+                                            <a href="/class_assessments/{{$class_assessment->id}}?assessment_path=periodicals"
                                             class="btn btn-primary btn-sm">
                                                 <i class="fa fa-arrow-right"></i>
                                             </a>

@@ -62,7 +62,16 @@
 									{{ ($page['sub_name'] == "Periodical") ? 'bg-info' : '' }}
 								@endif">
 								<i class="far fa-circle nav-icon"></i>
-								<p>Periodical Exam</p>
+								<p>Term Exam</p>
+							</a>
+						</li>
+						<li class="nav-item">
+							<a href="/diagnostics" class="nav-link
+								@if(array_key_exists("sub_name", $page))
+									{{ ($page['sub_name'] == "Diagnostic") ? 'bg-info' : '' }}
+								@endif">
+								<i class="far fa-circle nav-icon"></i>
+								<p>Diagnostic Test</p>
 							</a>
 						</li>
 						<li class="nav-item">
@@ -71,7 +80,7 @@
 									{{ ($page['sub_name'] == "Summative") ? 'active' : '' }}
 								@endif">
 								<i class="far fa-circle nav-icon"></i>
-								<p>Summative Exam</p>
+								<p>Summative Test</p>
 							</a>
 						</li>
 						<li class="nav-item">

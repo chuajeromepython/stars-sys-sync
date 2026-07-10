@@ -2,58 +2,54 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\Request;
-
-use Auth;
-use App\Models\DepartmentHead;
-use App\Models\SchoolSupervisor;
 use App\Models\ClassificationHistory;
+use App\Models\DepartmentHead;
 use App\Models\DivisionAdministrator;
-use App\Models\School;
-use App\Models\User;
 use App\Models\Person;
+use App\Models\School;
+use App\Models\SchoolSupervisor;
 use App\Models\Subject;
+use App\Models\User;
+use Auth;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class DepartmentHeadController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
         $page = [
-            'name'      =>  'Department Head',
-            'title'     =>  'Department Head Management',
-            'crumb'     =>  array('Department Head' => '/department_heads')
+            'name' => 'Department Head',
+            'title' => 'Department Head Management',
+            'crumb' => ['Department Head' => '/department_heads'],
         ];
 
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
         $department_heads = User::select(
-                'tbl_department_heads.id', 'username', 'tbl_department_heads.subject_id',
-                'first_name', 'middle_name', 'last_name', 'suffix', 'user_id'
-            )->join('tbl_department_heads', 'tbl_department_heads.user_id', 'tbl_users.id')
+            'tbl_department_heads.id', 'username', 'tbl_department_heads.subject_id',
+            'first_name', 'middle_name', 'last_name', 'suffix', 'user_id'
+        )->join('tbl_department_heads', 'tbl_department_heads.user_id', 'tbl_users.id')
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
             ->where('school_id', $school_id)
             ->where('classification', 'Department Head')
             ->get();
 
-        $subjects  = array();
+        $subjects = [];
 
-        
         foreach ($department_heads as $key => $dp) {
-            $current_subjects = ($dp->subject_id == "null") ? array()  : array_filter(json_decode($dp->subject_id));
+            $current_subjects = ($dp->subject_id == 'null') ? [] : array_filter(json_decode($dp->subject_id));
             $get_subject = Subject::whereIn('id', $current_subjects)->get();
             $subjects[$dp->id] = $get_subject;
         }
 
-
-
         return view('department_heads.index', compact(
-            'page', 
+            'page',
             'department_heads', 'subjects'
         ));
     }
@@ -61,23 +57,24 @@ class DepartmentHeadController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
-         $page = [
-            'name'      =>  'Department Head',
-            'title'     =>  'Department Head Management',
-            'crumb'     =>  array('Department Head' => '/department_heads', 'Add Department Head' => '/Department Heads/create')
+        $page = [
+            'name' => 'Department Head',
+            'title' => 'Department Head Management',
+            'crumb' => ['Department Head' => '/department_heads', 'Add Department Head' => '/Department Heads/create'],
         ];
 
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
 
         $school = School::find($school_id);
         $subjects = Subject::all();
+
         // dd($school->name);
         return view('department_heads.create', compact(
-            'page', 
+            'page',
             'school', 'subjects'
         ));
     }
@@ -85,39 +82,37 @@ class DepartmentHeadController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
         $check_username = User::where('username', '=', $request->username)->get();
-        
-        if($check_username->count() == 0){
+
+        if ($check_username->count() == 0) {
 
             DB::beginTransaction();
             try {
-                
+
                 $person = new Person;
                 $person->first_name = $request->first_name;
                 $person->middle_name = $request->middle_name;
                 $person->last_name = $request->last_name;
                 $person->suffix = $request->suffix;
                 $person->gender = $request->gender;
-                $person->birth_date = date("Y-m-d", strtotime($request->birth_date));
-                $person->save(); // insert 
+                $person->birth_date = date('Y-m-d', strtotime($request->birth_date));
+                $person->save(); // insert
 
-                $user = new User; 
+                $user = new User;
                 $user->username = $request->username;
                 $user->password = bcrypt('12345');
-                $user->classification = "Department Head";
+                $user->classification = 'Department Head';
                 $user->status = true;
                 $user->person_id = $person->id;
                 $user->save();
 
-                
-                $history = new ClassificationHistory; 
+                $history = new ClassificationHistory;
                 $history->user_id = $user->id;
-                $history->classification = "Department Head";
+                $history->classification = 'Department Head';
                 $history->encoder_user_id = Auth::user()->id;
                 $history->save();
 
@@ -128,7 +123,6 @@ class DepartmentHeadController extends Controller
                 $department_head->subject_id = json_encode($request->subject_id, true);
                 $department_head->save();
 
-
                 DB::commit();
                 $result = true;
 
@@ -137,13 +131,13 @@ class DepartmentHeadController extends Controller
                 $result = $e->getMessage();
             }
 
-            if($result === true) {
+            if ($result === true) {
                 return back()->with('success', 'New Department Head has been added successfully.');
             } else {
                 return back()->withErrors($result);
             }
 
-        }else{
+        } else {
             return back()->withErrors('Username is already taken.')->withInput($request->all);
         }
     }
@@ -151,8 +145,7 @@ class DepartmentHeadController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\DepartmentHead  $departmentHead
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(DepartmentHead $departmentHead)
     {
@@ -162,39 +155,39 @@ class DepartmentHeadController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\DepartmentHead  $departmentHead
-     * @return \Illuminate\Http\Response
+     * @param  DepartmentHead  $departmentHead
+     * @return Response
      */
     public function edit(DepartmentHead $department_head)
     {
         $page = [
-            'name'      =>  (Auth::user()->classification == "School Head") ? 'Department Head' : 'User',
-            'title'     =>  'Edit Department Head',
-            'crumb'     =>  array('Users' => '/users', "Edit Department Head" => "")
+            'name' => (Auth::user()->classification == 'School Head') ? 'Department Head' : 'User',
+            'title' => 'Edit Department Head',
+            'crumb' => ['Users' => '/users', 'Edit Department Head' => ''],
         ];
 
-        if(Auth::user()->classification == "School Head"){
+        if (Auth::user()->classification == 'School Head') {
             $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
             $schools = School::where('id', $school_id)->get();
-        }else if (Auth::user()->classification == "Division Administrator") {
+        } elseif (Auth::user()->classification == 'Division Administrator') {
             $division_id = DivisionAdministrator::find(Auth::user()->id)->value('division_id');
             $schools = School::select('tbl_schools.name', 'tbl_schools.id')
-            ->join('tbl_districts', 'tbl_schools.district_id', 'tbl_districts.id')
-            ->where('division_id', $division_id)
-            ->get();
-        }else if (Auth::user()->classification == "System Administrator"){
+                ->join('tbl_districts', 'tbl_schools.district_id', 'tbl_districts.id')
+                ->where('division_id', $division_id)
+                ->get();
+        } elseif (Auth::user()->classification == 'System Administrator') {
             $schools = School::all();
-        }else{
+        } else {
             return redirect('/forbidden');
         }
 
         $subjects = Subject::all();
-        $current_subjects = ($department_head->subject_id == "null") ? array()  : array_filter(json_decode($department_head->subject_id));
+        $current_subjects = ($department_head->subject_id == 'null') ? [] : array_filter(json_decode($department_head->subject_id));
         $user = User::find($department_head->user_id);
         $person = Person::find($user->person_id);
 
         return view('department_heads.edit', compact(
-            'page', 'user', 'person', 
+            'page', 'user', 'person',
             'schools', 'department_head', 'current_subjects', 'subjects'
         ));
     }
@@ -202,25 +195,23 @@ class DepartmentHeadController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\DepartmentHead  $departmentHead
-     * @return \Illuminate\Http\Response
+     * @param  DepartmentHead  $departmentHead
+     * @return Response
      */
     public function update(Request $request)
     {
         DB::beginTransaction();
-        
+
         try {
-            
+
             $department_head = DepartmentHead::find($request->id);
             $user = User::find($department_head->user_id);
             $person = Person::find($user->person_id);
-                
 
-            if(Auth::user()->classification != "School Head"){
+            if (Auth::user()->classification != 'School Head') {
                 $department_head->school_id = $request->school_id;
             }
-            
+
             $department_head->email = $request->email;
             $department_head->subject_id = json_encode($request->subjects, true);
             $department_head->save();
@@ -241,7 +232,7 @@ class DepartmentHeadController extends Controller
             $result = $e->getMessage();
         }
 
-        if($result === true) {
+        if ($result === true) {
             return back()->with('success', 'Department Head has been updated successfully.');
         } else {
             return back()->withErrors($result);
@@ -251,15 +242,15 @@ class DepartmentHeadController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\DepartmentHead  $departmentHead
-     * @return \Illuminate\Http\Response
+     * @param  DepartmentHead  $departmentHead
+     * @return Response
      */
     public function destroy(Request $request)
     {
-        
+
         $user = User::find($request->id);
         $user->delete();
 
-        return back()->with('success', "User account has been deleted successfully." );
+        return back()->with('success', 'User account has been deleted successfully.');
     }
 }

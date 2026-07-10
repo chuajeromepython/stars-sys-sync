@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-
 class SchoolCategorySeeder extends Seeder
 {
     /**
@@ -15,10 +14,10 @@ class SchoolCategorySeeder extends Seeder
      */
     public function run()
     {
-         $school_categories = array(
-            array('category' => 'Public'),
-            array('category' => 'Private'),
-        );
+        $school_categories = [
+            ['category' => 'Public'],
+            ['category' => 'Private'],
+        ];
 
         DB::table('tbl_school_categories')->insert($school_categories);
     }

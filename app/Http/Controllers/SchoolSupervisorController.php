@@ -2,30 +2,25 @@
 
 namespace App\Http\Controllers;
 
-
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-
-use Auth;
-use Carbon\Carbon;
 use App\Models\ClassificationHistory;
-use App\Models\SchoolSupervisor;
-use App\Models\DivisionAdministrator;
-use App\Models\School;
-use App\Models\User;
-use App\Models\Person;
 use App\Models\CustomFunction;
+use App\Models\DivisionAdministrator;
+use App\Models\Person;
+use App\Models\School;
+use App\Models\SchoolSupervisor;
+use App\Models\User;
+use Auth;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class SchoolSupervisorController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -35,7 +30,7 @@ class SchoolSupervisorController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -45,8 +40,7 @@ class SchoolSupervisorController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -56,9 +50,9 @@ class SchoolSupervisorController extends Controller
     public function edit(SchoolSupervisor $school_supervisor)
     {
         $page = [
-            'name'      =>  'User',
-            'title'     =>  'Edit School Head',
-            'crumb'     =>  array('Users' => '/users', "Edit School Head" => "")
+            'name' => 'User',
+            'title' => 'Edit School Head',
+            'crumb' => ['Users' => '/users', 'Edit School Head' => ''],
         ];
 
         $user = User::find($school_supervisor->user_id);
@@ -80,30 +74,27 @@ class SchoolSupervisorController extends Controller
         }
 
         return view('school_supervisors.edit', compact(
-            'page', 'user', 'person', 
+            'page', 'user', 'person',
             'schools', 'school_supervisor'
         ));
     }
 
-    
-
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\SchoolSupervisor  $schoolSupervisor
-     * @return \Illuminate\Http\Response
+     * @param  SchoolSupervisor  $schoolSupervisor
+     * @return Response
      */
     public function update(Request $request)
     {
         DB::beginTransaction();
-        
+
         try {
-            
+
             $school_supervisor = SchoolSupervisor::find($request->id);
             $user = User::find($school_supervisor->user_id);
             $person = Person::find($user->person_id);
-            
+
             $school_supervisor->school_id = $request->school_id;
             $school_supervisor->save();
 
@@ -123,7 +114,7 @@ class SchoolSupervisorController extends Controller
             $result = $e->getMessage();
         }
 
-         if($result === true) {
+        if ($result === true) {
             return back()->with('success', 'School Supervisor has been updated successfully.');
         } else {
             return back()->withErrors($result);
@@ -133,75 +124,76 @@ class SchoolSupervisorController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\SchoolSupervisor  $schoolSupervisor
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(SchoolSupervisor $schoolSupervisor)
     {
         //
     }
 
-    public function upload(Request $request){
+    public function upload(Request $request)
+    {
 
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls|max:10240'
+            'file' => 'required|mimes:xlsx,xls|max:10240',
         ], [
             'file.required' => 'Please upload a file.',
             'file.mimes' => 'The file must be an Excel file (xlsx or xls).',
-            'file.max' => 'The file size must not exceed 10MB.'
+            'file.max' => 'The file size must not exceed 10MB.',
         ]);
 
-        $spreadsheet = IOFactory::load( $request->file('file') );
-        $sheet = $spreadsheet->getActiveSheet()->toArray();  
-        $data = array();
-        $errors = array();
-        $error_messages = array();
+        $spreadsheet = IOFactory::load($request->file('file'));
+        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $data = [];
+        $errors = [];
+        $error_messages = [];
 
         DB::beginTransaction();
         try {
 
-
             foreach ($sheet as $key => $row) {
                 if ($key > 1) {
 
-                    if ($row[0] == null) { break; }
-                    $data = array(
-                        "last_name" => $row[0],
-                        "first_name" => $row[1],
-                        "middle_name" => $row[2],
-                        "suffix" => $row[3],
-                        "email" => $row[4],
-                        "gender" => $row[5],
-                        "birth_date" => $row[6],
-                        "school_id" => $row[7],
-                    );
+                    if ($row[0] == null) {
+                        break;
+                    }
+                    $data = [
+                        'last_name' => $row[0],
+                        'first_name' => $row[1],
+                        'middle_name' => $row[2],
+                        'suffix' => $row[3],
+                        'email' => $row[4],
+                        'gender' => $row[5],
+                        'birth_date' => $row[6],
+                        'school_id' => $row[7],
+                    ];
 
                     $get_errors = CustomFunction::getSchoolHeadUploaderError($data, $key);
-                
-                    if(sizeof($get_errors) > 0){
+
+                    if (count($get_errors) > 0) {
                         $errors[] = $get_errors;
-                    }else{
+                    } else {
 
                         $person = new Person;
                         $person->first_name = $data['first_name'];
                         $person->middle_name = $data['middle_name'];
                         $person->last_name = $data['last_name'];
                         $person->suffix = $data['suffix'];
-                        $person->gender = ($data['gender'] == "Female") ? "F" : "M";
-                        $person->birth_date = ($data['birth_date'] == null) ? null : date("Y-m-d", strtotime($data['birth_date']) );
-                        $person->save(); // insert 
+                        $person->gender = ($data['gender'] == 'Female') ? 'F' : 'M';
+                        $person->birth_date = ($data['birth_date'] == null) ? null : date('Y-m-d', strtotime($data['birth_date']));
+                        $person->save(); // insert
 
-                        $user = new User; 
+                        $user = new User;
                         $user->username = $data['email'];
                         $user->password = bcrypt('12345');
-                        $user->classification = "School Head";
+                        $user->classification = 'School Head';
                         $user->status = true;
                         $user->person_id = $person->id;
                         $user->save();
 
-                        $history = new ClassificationHistory; 
+                        $history = new ClassificationHistory;
                         $history->user_id = $user->id;
-                        $history->classification = "School Head";
+                        $history->classification = 'School Head';
                         $history->encoder_user_id = Auth::user()->id;
                         $history->save();
 
@@ -216,25 +208,26 @@ class SchoolSupervisorController extends Controller
                     }
                 }
             }
-            
-            if(sizeof($errors) > 0){
-                foreach($errors as $error_msgs){
+
+            if (count($errors) > 0) {
+                foreach ($errors as $error_msgs) {
                     foreach ($error_msgs as $key => $message) {
                         $error_messages[] = $message;
                     }
                 }
+
                 return back()->withErrors($error_messages);
             }
 
             DB::commit();
             $result = true;
-            
+
         } catch (Exception $e) {
             DB::rollBack();
             $result = $e->getMessage();
         }
 
-        if($result === true) {
+        if ($result === true) {
             return redirect('/users')->with('success', 'School Head Uploader has been uploaded successfully.');
         } else {
             return back()->withErrors($result);

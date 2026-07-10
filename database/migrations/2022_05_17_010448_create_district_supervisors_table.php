@@ -11,7 +11,7 @@ class CreateDistrictSupervisorsTable extends Migration
      *
      * @return void
      */
-     public function up()
+    public function up()
     {
         Schema::create('tbl_district_supervisors', function (Blueprint $table) {
             $table->bigIncrements('id');
