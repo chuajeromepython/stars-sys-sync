@@ -136,7 +136,7 @@ class AppApiController extends Controller
             'success' => true,
             'message' => 'Students retrieved successfully.',
             'data' => $students
-                ->map(fn ($u) => $u->only(['lrn', 'sectionId', 'gradeLevelId', 'classroomId']))
+                ->map(fn($u) => $u->only(['lrn', 'sectionId', 'gradeLevelId', 'classroomId']))
                 ->toArray(),
         ]);
     }
@@ -146,8 +146,8 @@ class AppApiController extends Controller
         $validator = Validator::make(
             $request->all(),
             [
-                'assessment_id' => ['required', 'integer'],
-                'class_id' => ['required', 'integer'],
+                'assessment_id' => ['required', 'integer'], // input field from app, input type NUMBER
+                'class_id' => ['required', 'integer'], // from
                 'file_assessment' => ['required', 'mimes:csv,txt'],
             ],
             [
@@ -222,7 +222,7 @@ class AppApiController extends Controller
                     ->get();
 
                 if ($student->count() == 0 || empty($fortmattedLRN)) {
-                    $error[] = $fortmattedLRN.' does not exist on this class.';
+                    $error[] = $fortmattedLRN . ' does not exist on this class.';
                 } else {
                     $data[$student[0]->student_id] = [
                         'score' => $score,
@@ -384,14 +384,12 @@ class AppApiController extends Controller
                     $summative->summative_number = $request->summative_number;
                     $summative->assessment_id = $assessment->id;
                     $summative->save();
-
                 } else {
                     return back()->withErrors('Summative Test already uploaded in this class');
                 }
 
                 DB::commit();
                 $result = true;
-
             } catch (Exception $e) {
                 DB::rollBack();
                 $result = $e->getMessage();
@@ -402,7 +400,6 @@ class AppApiController extends Controller
             } else {
                 return redirect('/summatives')->withErrors($result);
             }
-
         } else {
             return redirect('/summatives')->withErrors($answer_keys);
         }
