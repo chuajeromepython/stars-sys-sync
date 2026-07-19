@@ -21,9 +21,9 @@ class AcademicYearController extends Controller
         ];
 
         $academic_years = AcademicYear::all();
-    
+
         return view('academic_years.index', compact(
-            'page', 
+            'page',
             'academic_years',
         ));
     }
@@ -46,7 +46,7 @@ class AcademicYearController extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate($request,[
+        $request->validate([
             'year_from' => 'required|numeric',
             'year_to' => 'required|numeric'
         ]);
@@ -56,7 +56,7 @@ class AcademicYearController extends Controller
             ['to', '=', $request->year_to]
         ])->get();
 
-        if(!count($result)) {
+        if (!count($result)) {
 
             $academicYear = new AcademicYear;
             $academicYear->from = $request->year_from;
@@ -64,7 +64,7 @@ class AcademicYearController extends Controller
             $academicYear->is_active = false;
             $academicYear->save();
 
-            return redirect('/academic_years')->with('success', 'New academic year has been added successfully.');      
+            return redirect('/academic_years')->with('success', 'New academic year has been added successfully.');
         } else {
             return back()->withErrors('Academic year already exists!');
         }
@@ -100,10 +100,8 @@ class AcademicYearController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request)
-    {   
-
-        // dd($request);
-        $this->validate($request,[
+    {
+        $request->validate([
             'year_from' => 'required|numeric',
             'year_to' => 'required|numeric'
         ]);
@@ -114,7 +112,7 @@ class AcademicYearController extends Controller
             ['to', '=', $request->year_to]
         ])->get();
 
-        if(!count($result)) {
+        if (!count($result)) {
 
             $academicYear = AcademicYear::find($request->id);
             $academicYear->from = $request->year_from;
