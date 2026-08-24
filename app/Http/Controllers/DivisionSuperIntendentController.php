@@ -128,7 +128,7 @@ class DivisionSuperIntendentController extends Controller
         if ($result === true) {
             return back()->with('success', 'Division Superintendent has been updated successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 

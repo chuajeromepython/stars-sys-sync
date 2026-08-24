@@ -73,17 +73,18 @@ class PeriodicalController extends Controller
 
             } catch (Exception $e) {
                 DB::rollBack();
+
                 $result = $e->getMessage();
             }
 
             if ($result === true) {
                 return redirect('/periodicals')->with('success', 'Term Exam Successfully uploaded');
             } else {
-                return redirect('/periodicals')->withErrors($result);
+                return redirect('/periodicals')->withErrors(['error' => $result]);
             }
 
         } else {
-            return redirect('/periodicals')->withErrors($answer_keys);
+            return redirect('/periodicals')->withErrors(['error' => $answer_keys]);
         }
 
     }

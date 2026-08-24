@@ -35,7 +35,7 @@ class TeacherClassController extends Controller
         $has_record = ClassAssessment::where('class_id', $request->teacher_class_id)->get();
 
         if ($has_record->count() > 0) {
-            return back()->withErrors('Subject Class contains assessment.');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Subject Class contains assessment.']);
         } else {
             $classroom->delete();
         }
@@ -71,7 +71,7 @@ class TeacherClassController extends Controller
 
             return back()->with('success', 'Subject Class successfully added.');
         } else {
-            return back()->withErrors('Subject Class already exists.');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Subject Class already exists.']);
         }
     }
 
@@ -223,7 +223,7 @@ class TeacherClassController extends Controller
                     }
                 }
 
-                return back()->withErrors($error_messages);
+                return redirect()->to(url()->previous())->withErrors(['error' => $error_messages]);
             }
 
             DB::commit();
@@ -237,7 +237,7 @@ class TeacherClassController extends Controller
         if ($result === true) {
             return redirect('/classrooms/'.$request->classroom_id)->with('success', 'Subject Class Uploader has been uploaded successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
 
     }
@@ -267,7 +267,7 @@ class TeacherClassController extends Controller
 
         } else {
 
-            return back()->withErrors('Student already exists in this class!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Student already exists in this class!']);
         }
     }
 

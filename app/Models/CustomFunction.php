@@ -891,6 +891,31 @@ class CustomFunction extends Model
         return $assessment;
     }
 
+    public static function getAssessmentsDetailsByTeacherId($teacher_id)
+    {
+        $assessment = Assessment::select(
+            'tbl_assessments.title as assessment',
+            'tbl_assessments.id as id',
+            'tbl_assessments.number_of_items',
+            'tbl_assessments.date',
+            'from',
+            'to',
+            'level',
+            'tbl_subjects.title as subject',
+            'type',
+            'period'
+        )
+            ->join('tbl_grade_levels', 'tbl_assessments.grade_level_id', 'tbl_grade_levels.id')
+            ->join('tbl_subjects', 'tbl_assessments.subject_id', 'tbl_subjects.id')
+            ->join('tbl_periods', 'tbl_assessments.period_id', 'tbl_periods.id')
+            ->join('tbl_assessment_types', 'tbl_assessments.assessment_type_id', 'tbl_assessment_types.id')
+            ->join('tbl_academic_years', 'tbl_assessments.academic_year_id', 'tbl_academic_years.id')
+            ->where('tbl_assessments.teacher_id', $teacher_id)
+            ->get();
+
+        return $assessment;
+    }
+
     public static function getClassDetails($class_id)
     {
 
