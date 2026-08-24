@@ -89,7 +89,7 @@ class ECDCController extends Controller
             //         "mosy" => 0,
             //     )
             // ];
-            return back()->withErrors('No classroom for kinder found!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'No classroom for kinder found!']);
         }
 
         return view('ecdc.index', compact(
@@ -118,7 +118,7 @@ class ECDCController extends Controller
 
             return back()->with('success', 'ECDC Successfully Updated');
         } else {
-            return back()->withErrors($error);
+            return redirect()->to(url()->previous())->withErrors(['error' => $error]);
         }
 
     }
@@ -185,7 +185,7 @@ class ECDCController extends Controller
             ])->count();
 
             if ($existing > 0) {
-                return back()->withErrors('Oops. A Student with same ECDC period already exist');
+                return redirect()->to(url()->previous())->withErrors(['error' => 'Oops. A Student with same ECDC period already exist']);
             } //
 
             $ecdc = new ECDC;
@@ -229,7 +229,7 @@ class ECDCController extends Controller
         if ($result === true) {
             return redirect('/ecdcs/classroom/'.$request->classroom_id)->with('success', 'ECDC Successfully Encoded');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
 
     }
@@ -765,12 +765,12 @@ class ECDCController extends Controller
             if ($result === true) {
                 return back()->with('success', 'ECDC Successfully Uploaded. Total of '.$duplicates.' duplicate record(s) found.');
             } else {
-                return back()->withErrors($result);
+                return redirect()->to(url()->previous())->withErrors(['error' => $result]);
             }
 
         } else {
 
-            return back()->withErrors($errors);
+            return redirect()->to(url()->previous())->withErrors(['error' => $errors]);
 
         }
 

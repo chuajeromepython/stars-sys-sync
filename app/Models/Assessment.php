@@ -74,4 +74,9 @@ class Assessment extends Model
         return $assessment;
 
     }
+
+    public function assessmentKeys()
+    {
+        return $this->hasMany(AssessmentKey::class, 'assessment_id', 'id');
+    }
 }

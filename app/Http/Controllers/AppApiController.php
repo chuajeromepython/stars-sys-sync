@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
+use App\Models\AssessmentKey;
 use App\Models\ClassAssessment;
 use App\Models\CustomFunction;
 use App\Models\Student;
@@ -132,12 +133,12 @@ class AppApiController extends Controller
         $classroom_id = $request->input('classroom_id');
 
         $students = CustomFunction::getStudentsPerClassroom($classroom_id);
-
+        
         return response()->json([
             'success' => true,
             'message' => 'Students retrieved successfully.',
             'data' => $students
-                ->map(fn($u) => $u->only(['lrn', 'sectionId', 'gradeLevelId', 'classroomId']))
+                ->map(fn ($u) => $u->only(['lrn', 'sectionId', 'gradeLevelId', 'classroomId', 'first_name', 'middle_name', 'last_name']))
                 ->toArray(),
         ]);
     }
@@ -412,5 +413,52 @@ class AppApiController extends Controller
         } else {
             return redirect('/summatives')->withErrors($answer_keys);
         }
+    }
+
+    public function syncAssessment(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:tbl_users,id',
+        ], [
+            'user_id.required' => 'User ID is required.',
+            'user_id.integer' => 'User ID must be an integer.',
+            'user_id.exists' => 'User ID does not exist.',
+        ]);
+
+        $user_id = $request->input('user_id');
+        $teacher_id = Teacher::where('user_id', $user_id)->value('id');
+        $assessments = CustomFunction::getAssessmentsDetailsByTeacherId($teacher_id)
+            ->load(['assessmentKeys.questions.options']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Assessments retrieved successfully.',
+            'data' => [
+                'assessments' => $assessments->map(function ($assessment) {
+                    return [
+                        'id' => $assessment->id,
+                        'title' => $assessment->assessment,
+                        'number_of_items' => $assessment->number_of_items,
+                        'from' => $assessment->from,
+                        'to' => $assessment->to,
+                        'level' => $assessment->level,
+                        'subject' => $assessment->subject,
+                        'type' => $assessment->type,
+                        'period' => $assessment->period,
+                        'assessment_keys' => $assessment->assessmentKeys->map(function ($key) {
+                            return [
+                                'question' => $key->questions->question,
+                                'options' => $key->questions->options->map(function ($option) {
+                                    return [
+                                        'option' => $option->option,
+                                        'is_correct' => (bool) $option->is_correct,
+                                    ];
+                                }),
+                            ];
+                        }),
+                    ];
+                })
+            ],
+        ]);
     }
 }

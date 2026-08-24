@@ -12,9 +12,9 @@ use App\Models\Period;
 use App\Models\Summative;
 use App\Models\Teacher;
 use App\Models\TeacherClass;
-use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -168,13 +168,17 @@ class SummativeController extends Controller
                     $summative->save();
 
                 } else {
-                    return back()->withErrors('Summative Test already uploaded in this class');
+                    DB::rollBack();
+
+                    return redirect()->to(url()->previous())
+                        ->withErrors(['summative' => 'Summative Test already uploaded in this class'])
+                        ->withInput();
                 }
 
                 DB::commit();
                 $result = true;
 
-            } catch (Exception $e) {
+            } catch (\Throwable $e) {
                 DB::rollBack();
                 $result = $e->getMessage();
             }
@@ -182,11 +186,11 @@ class SummativeController extends Controller
             if ($result === true) {
                 return redirect('/summatives')->with('success', 'Summative Test Successfully uploaded');
             } else {
-                return redirect('/summatives')->withErrors($result);
+                return redirect('/summatives')->withErrors(['error' => $result]);
             }
 
         } else {
-            return redirect('/summatives')->withErrors($answer_keys);
+            return redirect('/summatives')->withErrors(['error' => $answer_keys]);
         }
 
     }

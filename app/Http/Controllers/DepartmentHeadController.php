@@ -134,11 +134,11 @@ class DepartmentHeadController extends Controller
             if ($result === true) {
                 return back()->with('success', 'New Department Head has been added successfully.');
             } else {
-                return back()->withErrors($result);
+                return redirect()->to(url()->previous())->withErrors(['error' => $result]);
             }
 
         } else {
-            return back()->withErrors('Username is already taken.')->withInput($request->all);
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Username is already taken.'])->withInput($request->all);
         }
     }
 
@@ -235,7 +235,7 @@ class DepartmentHeadController extends Controller
         if ($result === true) {
             return back()->with('success', 'Department Head has been updated successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 

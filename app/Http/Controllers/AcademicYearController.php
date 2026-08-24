@@ -4,20 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class AcademicYearController extends Controller
 {
     /**
      * Display a listing of the resource.
-     *  
-     * @return \Illuminate\Http\Response
+     *
+     * @return Response
      */
     public function index()
     {
         $page = [
-            'name'      =>  'Academic Year',
-            'title'     =>  'Academic Year Management',
-            'crumb'     =>  array('Academic Year' => '/academic_years')
+            'name' => 'Academic Year',
+            'title' => 'Academic Year Management',
+            'crumb' => ['Academic Year' => '/academic_years'],
         ];
 
         $academic_years = AcademicYear::all();
@@ -31,7 +32,7 @@ class AcademicYearController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -41,19 +42,18 @@ class AcademicYearController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
         $request->validate([
             'year_from' => 'required|numeric',
-            'year_to' => 'required|numeric'
+            'year_to' => 'required|numeric',
         ]);
 
         $result = AcademicYear::where([
             ['from', '=', $request->year_from],
-            ['to', '=', $request->year_to]
+            ['to', '=', $request->year_to],
         ])->get();
 
         if (!count($result)) {
@@ -66,15 +66,14 @@ class AcademicYearController extends Controller
 
             return redirect('/academic_years')->with('success', 'New academic year has been added successfully.');
         } else {
-            return back()->withErrors('Academic year already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Academic year already exists!']);
         }
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\AcademicYear  $academicYear
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(AcademicYear $academicYear)
     {
@@ -84,8 +83,7 @@ class AcademicYearController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\AcademicYear  $academicYear
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(AcademicYear $academicYear)
     {
@@ -95,21 +93,20 @@ class AcademicYearController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\AcademicYear  $academicYear
-     * @return \Illuminate\Http\Response
+     * @param  AcademicYear  $academicYear
+     * @return Response
      */
     public function update(Request $request)
     {
         $request->validate([
             'year_from' => 'required|numeric',
-            'year_to' => 'required|numeric'
+            'year_to' => 'required|numeric',
         ]);
 
         $result = AcademicYear::where([
             ['id', '<>', $request->id],
             ['from', '=', $request->year_from],
-            ['to', '=', $request->year_to]
+            ['to', '=', $request->year_to],
         ])->get();
 
         if (!count($result)) {
@@ -122,15 +119,15 @@ class AcademicYearController extends Controller
 
             return redirect('/academic_years')->with('success', 'Academic Year has been updated successfully.');
         } else {
-            return back()->withErrors('Academic Year already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Academic Year already exists!']);
         }
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\AcademicYear  $academicYear
-     * @return \Illuminate\Http\Response
+     * @param  AcademicYear  $academicYear
+     * @return Response
      */
     public function destroy(Request $request)
     {
