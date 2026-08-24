@@ -117,7 +117,7 @@ class SchoolSupervisorController extends Controller
         if ($result === true) {
             return back()->with('success', 'School Supervisor has been updated successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 
@@ -216,7 +216,7 @@ class SchoolSupervisorController extends Controller
                     }
                 }
 
-                return back()->withErrors($error_messages);
+                return redirect()->to(url()->previous())->withErrors(['error' => $error_messages]);
             }
 
             DB::commit();
@@ -230,7 +230,7 @@ class SchoolSupervisorController extends Controller
         if ($result === true) {
             return redirect('/users')->with('success', 'School Head Uploader has been uploaded successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 }

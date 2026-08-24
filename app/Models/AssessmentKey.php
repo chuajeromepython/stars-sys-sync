@@ -13,4 +13,14 @@ class AssessmentKey extends Model
 
     // use \OwenIt\Auditing\Auditable;
     protected $table = 'tbl_assessment_keys';
+
+    public function assessment()
+    {
+        return $this->belongsTo(Assessment::class, 'assessment_id', 'id');
+    }
+
+    public function questions()
+    {
+        return $this->belongsTo(Question::class, 'question_id', 'id');
+    }
 }

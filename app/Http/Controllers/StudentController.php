@@ -103,7 +103,7 @@ class StudentController extends Controller
             $check_lrn = Student::where('lrn', $request->lrn)->first();
 
             if ($check_lrn) {
-                return back()->withErrors('Student already exists!');
+                return redirect()->to(url()->previous())->withErrors(['error' => 'Student already exists!']);
             } else {
 
                 $person = new Person;
@@ -141,7 +141,7 @@ class StudentController extends Controller
         if ($result === true) {
             return redirect('/students')->with('success', 'Student has been added successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 
@@ -220,7 +220,7 @@ class StudentController extends Controller
         if ($result === true) {
             return redirect('/students/'.$request->student_id.'/edit')->with('success', 'Student has been updated successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 
@@ -254,7 +254,7 @@ class StudentController extends Controller
         $teacher = Teacher::where('user_id', Auth::user()->id)->first();
 
         if (count($error) > 0) {
-            return back()->withErrors($error);
+            return redirect()->to(url()->previous())->withErrors(['error' => $error]);
         }
 
         for ($x = $cell['start']; $x <= 100; $x++) {
@@ -338,7 +338,7 @@ class StudentController extends Controller
         if ($result === true) {
             return redirect('/classrooms/'.$classroom->id)->with('success', 'SF1 has been uploaded successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 
@@ -380,7 +380,7 @@ class StudentController extends Controller
             } elseif ($sf1_2022 == 'School Year') {
                 $version = '2022';
             } else {
-                return back()->withErrors('Unknown SF1 version');
+                return redirect()->to(url()->previous())->withErrors(['error' => 'Unknown SF1 version']);
             }
 
             switch ($version) {
