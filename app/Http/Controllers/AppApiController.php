@@ -16,6 +16,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -147,8 +148,8 @@ class AppApiController extends Controller
         $validator = Validator::make(
             $request->all(),
             [
-                'assessment_id' => ['required', 'integer'],
-                'class_id' => ['required', 'integer'],
+                'assessment_id' => ['required', 'integer'], // input field from app, input type NUMBER
+                'class_id' => ['required', 'integer'], // from
                 'file_assessment' => ['required', 'mimes:csv,txt'],
             ],
             [
@@ -186,6 +187,11 @@ class AppApiController extends Controller
 
         $file_assessment = $request->file('file_assessment');
         $csv_file_path = $file_assessment->getRealPath();
+        Log::info('Incoming assessment CSV:', [
+            'assessment_id' => $request->assessment_id,
+            'class_id' => $request->class_id,
+            'raw_csv' => file_get_contents($csv_file_path),
+        ]);
         $assessment_csv = fopen($csv_file_path, 'r');
         while (! feof($assessment_csv)) {
             $sheets[] = fgetcsv($assessment_csv, 0, ';');
@@ -223,7 +229,7 @@ class AppApiController extends Controller
                     ->get();
 
                 if ($student->count() == 0 || empty($fortmattedLRN)) {
-                    $error[] = $fortmattedLRN.' does not exist on this class.';
+                    $error[] = $fortmattedLRN . ' does not exist on this class.';
                 } else {
                     $data[$student[0]->student_id] = [
                         'score' => $score,
@@ -232,6 +238,9 @@ class AppApiController extends Controller
                 }
             }
         }
+
+        Log::info('Assessment data:', $data);
+        Log::info('Server-side answer key used to score this upload:', $assessment_keys);
 
         if (count($error) == 0) {
 
@@ -385,14 +394,12 @@ class AppApiController extends Controller
                     $summative->summative_number = $request->summative_number;
                     $summative->assessment_id = $assessment->id;
                     $summative->save();
-
                 } else {
                     return back()->withErrors('Summative Test already uploaded in this class');
                 }
 
                 DB::commit();
                 $result = true;
-
             } catch (Exception $e) {
                 DB::rollBack();
                 $result = $e->getMessage();
@@ -403,7 +410,6 @@ class AppApiController extends Controller
             } else {
                 return redirect('/summatives')->withErrors($result);
             }
-
         } else {
             return redirect('/summatives')->withErrors($answer_keys);
         }
