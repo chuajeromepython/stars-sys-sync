@@ -341,7 +341,7 @@ class ClassroomController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
         $grade_level_filter = CustomFunction::filterGradeLevel($school_id);
         $grade_levels = GradeLevel::whereIn('level', $grade_level_filter)->get();
@@ -351,7 +351,7 @@ class ClassroomController extends Controller
 
         DB::beginTransaction();
         try {
-            $title = $spreadsheet->getActiveSheet()->getCell('A1');
+            $title = $spreadsheet->getSheetByName("ENCODE here")->getCell('A1');
             $is_shs = ($title == 'SHS - ADVISORY CLASS UPLOADER') ? 1 : 0;
 
             foreach ($sheet as $key => $row) {

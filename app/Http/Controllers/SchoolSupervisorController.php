@@ -143,7 +143,7 @@ class SchoolSupervisorController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
         $data = [];
         $errors = [];
         $error_messages = [];
