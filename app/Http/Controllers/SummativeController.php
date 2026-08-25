@@ -6,6 +6,7 @@ use App\Models\AcademicYear;
 use App\Models\Assessment;
 use App\Models\AssessmentKey;
 use App\Models\AssessmentOption;
+use App\Models\AssessmentType;
 use App\Models\ClassAssessment;
 use App\Models\CustomFunction;
 use App\Models\Period;
@@ -45,7 +46,7 @@ class SummativeController extends Controller
             ->join('tbl_periods', 'tbl_assessments.period_id', 'tbl_periods.id')
             ->join('tbl_summatives', 'tbl_assessments.id', 'tbl_summatives.assessment_id')
             ->where('teacher_id', $teacher_id)
-            ->where('assessment_type_id', 2)
+            ->where('assessment_type_id', AssessmentType::where('type', 'Summative')->value('id'))
             ->where('academic_year_id', AcademicYear::active()->id)
             ->get();
 

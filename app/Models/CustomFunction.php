@@ -1198,7 +1198,9 @@ class CustomFunction extends Model
 
             if ($period_id != null && $type_id != null) {
 
-                if ($type_id == 1) {
+                $term_exam_type_id = AssessmentType::where('type', 'Term Exam')->value('id');
+
+                if ($type_id == $term_exam_type_id) {
                     $existing_assessment = Assessment::where([
                         'grade_level_id' => $grade_level_id,
                         'subject_id' => $subject_id,
