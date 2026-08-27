@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class ClassAssessment extends Model
 {
@@ -14,10 +15,11 @@ class ClassAssessment extends Model
     protected $table = 'tbl_class_assessments';
 
     public static function getResults($class_assessment_id)
-    {
-
-        $path = storage_path().'\app\public\res-'.$class_assessment_id.'.json';
-        $results = json_decode(file_get_contents($path), true);
+    {   
+        $filename = "res-{$class_assessment_id}.json";
+    
+        $content = Storage::disk('public')->get($filename);
+        $results = json_decode($content, true);
 
         return $results;
     }
