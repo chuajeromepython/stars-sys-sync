@@ -216,7 +216,7 @@ class CompetencyController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $sheet = $spreadsheet->getSheetByName('ENCODE here')->toArray();
         $errors = [];
         $error_messages = [];
 

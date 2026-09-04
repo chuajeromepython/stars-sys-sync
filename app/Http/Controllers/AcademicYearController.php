@@ -56,7 +56,7 @@ class AcademicYearController extends Controller
             ['to', '=', $request->year_to],
         ])->get();
 
-        if (! count($result)) {
+        if (!count($result)) {
 
             $academicYear = new AcademicYear;
             $academicYear->from = $request->year_from;
@@ -98,8 +98,6 @@ class AcademicYearController extends Controller
      */
     public function update(Request $request)
     {
-
-        // dd($request);
         $request->validate([
             'year_from' => 'required|numeric',
             'year_to' => 'required|numeric',
@@ -111,7 +109,7 @@ class AcademicYearController extends Controller
             ['to', '=', $request->year_to],
         ])->get();
 
-        if (! count($result)) {
+        if (!count($result)) {
 
             $academicYear = AcademicYear::find($request->id);
             $academicYear->from = $request->year_from;

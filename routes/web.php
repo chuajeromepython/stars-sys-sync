@@ -98,7 +98,8 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // PERMISSION : Division Administrator
-    Route::group(['middleware' => ['auth', 'division_admin']], function () {
+    Route::get('/competencies', [CompetencyController::class, 'index']);
+    Route::group(['middleware' => ['auth', 'division_admin', 'teacher']], function () {
 
         // Academic Year
         Route::get('/academic_years', [AcademicYearController::class, 'index']);
@@ -157,7 +158,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/competencies/update', [CompetencyController::class, 'update']);
         Route::post('/competencies/destroy', [CompetencyController::class, 'destroy']);
         Route::post('/competencies/upload', [CompetencyController::class, 'upload']);
-        Route::get('/competencies', [CompetencyController::class, 'index']);
+        
         Route::get('/competencies/create', [CompetencyController::class, 'create']);
         Route::get('/competencies/{competency}/edit', [CompetencyController::class, 'edit']);
         // ECDC Domains

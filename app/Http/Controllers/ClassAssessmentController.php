@@ -6,7 +6,9 @@ use App\Models\Assessment;
 use App\Models\ClassAssessment;
 use App\Models\CustomFunction;
 use App\Models\StudentScore;
+use App\Models\TeacherClass;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 
@@ -57,11 +59,10 @@ class ClassAssessmentController extends Controller
 
     public function results(ClassAssessment $class_assessment)
     {
-
         $results = ClassAssessment::getResults($class_assessment->id);
         $assessment = CustomFunction::getAssessmentDetails($class_assessment->assessment_id);
-        $class = CustomFunction::getClassDetails($class_assessment->class_id);
-
+        $class = CustomFunction::getClassDetails(null, Auth::user()->id);
+       
         return view('class_assessments.reports.result',
             compact('results', 'assessment', 'class', 'class_assessment')
         );
@@ -72,12 +73,11 @@ class ClassAssessmentController extends Controller
 
         $results = ClassAssessment::getScoreAnalysis($class_assessment->id);
         $assessment = CustomFunction::getAssessmentDetails($class_assessment->assessment_id);
-        $class = CustomFunction::getClassDetails($class_assessment->class_id);
+        $class = CustomFunction::getClassDetails(null, Auth::user()->id);
 
         return view('class_assessments.reports.score_analysis',
             compact('results', 'assessment', 'class', 'class_assessment')
         );
-
     }
 
     public function item_analysis(ClassAssessment $class_assessment)
@@ -85,7 +85,7 @@ class ClassAssessmentController extends Controller
 
         $results = ClassAssessment::getItemAnalysis($class_assessment->id);
         $assessment = CustomFunction::getAssessmentDetails($class_assessment->assessment_id);
-        $class = CustomFunction::getClassDetails($class_assessment->class_id);
+        $class = CustomFunction::getClassDetails(null, Auth::user()->id);
 
         return view('class_assessments.reports.item_analysis',
             compact('results', 'assessment', 'class', 'class_assessment')
@@ -98,7 +98,7 @@ class ClassAssessmentController extends Controller
 
         $results = ClassAssessment::getDisriminationIndex($class_assessment->id);
         $assessment = CustomFunction::getAssessmentDetails($class_assessment->assessment_id);
-        $class = CustomFunction::getClassDetails($class_assessment->class_id);
+        $class = CustomFunction::getClassDetails(null, Auth::user()->id);
 
         return view('class_assessments.reports.discrimination_index',
             compact('results', 'assessment', 'class', 'class_assessment')

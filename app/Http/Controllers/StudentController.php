@@ -258,11 +258,11 @@ class StudentController extends Controller
         }
 
         for ($x = $cell['start']; $x <= 100; $x++) {
-            $lrn = $spreadsheet->getActiveSheet()->getCell($cell['lrn'].$x)->getValue();
+            $lrn = $spreadsheet->getSheetByName("ENCODE here")->getCell($cell['lrn'].$x)->getValue();
             if (strlen($lrn) == 12) {
-                $name = explode(',', $spreadsheet->getActiveSheet()->getCell($cell['name'].$x)->getValue());
-                $gender = $spreadsheet->getActiveSheet()->getCell($cell['gender'].$x)->getValue();
-                $birth_date = $spreadsheet->getActiveSheet()->getCell($cell['birth_date'].$x)->getValue();
+                $name = explode(',', $spreadsheet->getSheetByName("ENCODE here")->getCell($cell['name'].$x)->getValue());
+                $gender = $spreadsheet->getSheetByName("ENCODE here")->getCell($cell['gender'].$x)->getValue();
+                $birth_date = $spreadsheet->getSheetByName("ENCODE here")->getCell($cell['birth_date'].$x)->getValue();
 
                 if ($class['is_shs'] == 1) {
                     $birth_date = Carbon::createFromFormat('m/d/Y', $birth_date)->format('Y-m-d');

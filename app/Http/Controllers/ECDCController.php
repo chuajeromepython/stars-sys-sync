@@ -650,12 +650,12 @@ class ECDCController extends Controller
 
         $total_students = StudentClassroom::where('classroom_id', $request->classroom_id)->count();
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
         $data = [];
         $errors = [];
 
-        $period = $spreadsheet->getActiveSheet()->getCell('C2')->getValue();
-        $date = $spreadsheet->getActiveSheet()->getCell('C3')->getValue();
+        $period = $spreadsheet->getSheetByName("ENCODE here")->getCell('C2')->getValue();
+        $date = $spreadsheet->getSheetByName("ENCODE here")->getCell('C3')->getValue();
 
         if ($date == null) {
             $errors[] = 'Date cannot be null.';
@@ -669,8 +669,8 @@ class ECDCController extends Controller
 
         for ($i = 0; $i < $total_students; $i++) {
 
-            $lrn = $spreadsheet->getActiveSheet()->getCell($col.'1')->getValue();
-            $name = $spreadsheet->getActiveSheet()->getCell($col.'2')->getValue();
+            $lrn = $spreadsheet->getSheetByName("ENCODE here")->getCell($col.'1')->getValue();
+            $name = $spreadsheet->getSheetByName("ENCODE here")->getCell($col.'2')->getValue();
 
             if ($lrn != null) {
 
@@ -685,11 +685,11 @@ class ECDCController extends Controller
                 if ($check_lrn->count() > 0) {
                     for ($row = 5; $row < 124; $row++) {
 
-                        $competency_id = $spreadsheet->getActiveSheet()->getCell('A'.$row)->getValue();
+                        $competency_id = $spreadsheet->getSheetByName("ENCODE here")->getCell('A'.$row)->getValue();
 
                         if ($competency_id != '*') {
 
-                            $get_score = $spreadsheet->getActiveSheet()->getCell($col.$row)->getValue();
+                            $get_score = $spreadsheet->getSheetByName("ENCODE here")->getCell($col.$row)->getValue();
                             $score = ($get_score != 1) ? 0 : 1;
                             $data[$check_lrn[0]->student_id][$competency_id] = $score;
                         }

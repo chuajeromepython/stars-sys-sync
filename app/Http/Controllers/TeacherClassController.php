@@ -144,7 +144,7 @@ class TeacherClassController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
         $errors = [];
         $error_messages = [];
