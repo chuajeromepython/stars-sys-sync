@@ -62,7 +62,7 @@ class GradeLevelController extends Controller
 
             return back()->with('success', 'New grade level has been added successfully.');
         } else {
-            return back()->withErrors('Grade Level already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Grade Level already exists!']);
         }
     }
 
@@ -104,7 +104,7 @@ class GradeLevelController extends Controller
 
             return back()->with('success', 'Grade Level has been updated successfully.');
         } else {
-            return back()->withErrors('Grade Level already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Grade Level already exists!']);
         }
     }
 

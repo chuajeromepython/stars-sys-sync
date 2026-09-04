@@ -127,11 +127,11 @@ class TeacherController extends Controller
             if ($result === true) {
                 return back()->with('success', 'New teacher has been added successfully.');
             } else {
-                return back()->withErrors($result);
+                return redirect()->to(url()->previous())->withErrors(['error' => $result]);
             }
 
         } else {
-            return back()->withErrors('Username is already taken.')->withInput($request->all);
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Username is already taken.'])->withInput($request->all);
         }
     }
 
@@ -223,7 +223,7 @@ class TeacherController extends Controller
         if ($result === true) {
             return back()->with('success', 'Teacher has been updated successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 
@@ -240,7 +240,7 @@ class TeacherController extends Controller
         $has_record = TeacherClass::where('teacher_id', $teacher->id)->get();
 
         if ($has_record->count() > 0) {
-            return back()->withErrors('Teacher "'.$user->username.'" has Class Record.');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Teacher "'.$user->username.'" has Class Record.']);
         } else {
             $user->delete();
         }
@@ -330,7 +330,7 @@ class TeacherController extends Controller
                     }
                 }
 
-                return back()->withErrors($error_messages);
+                return redirect()->to(url()->previous())->withErrors(['error' => $error_messages]);
             }
 
             DB::commit();
@@ -344,7 +344,7 @@ class TeacherController extends Controller
         if ($result === true) {
             return redirect('/teachers')->with('success', 'Teacher Uploader has been uploaded successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
 
     }

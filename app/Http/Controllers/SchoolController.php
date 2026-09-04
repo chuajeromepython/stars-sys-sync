@@ -104,7 +104,7 @@ class SchoolController extends Controller
             return redirect('/schools')->with('success', 'New school has been added successfully.');
 
         } else {
-            return back()->withErrors('School already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'School already exists!']);
         }
     }
 
@@ -182,7 +182,7 @@ class SchoolController extends Controller
             return redirect('/schools')->with('success', 'School has been updated successfully.');
 
         } else {
-            return back()->withErrors('School already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'School already exists!']);
         }
     }
 
@@ -227,7 +227,7 @@ class SchoolController extends Controller
                 : $department_heads->count().' active Department Heads found.';
             }
 
-            return back()->withErrors($errors);
+            return redirect()->to(url()->previous())->withErrors(['error' => $errors]);
         }
     }
 }

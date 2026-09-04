@@ -183,7 +183,7 @@ class ClassificationHistoryController extends Controller
         if ($result === true) {
             return back()->with('success', 'User Classification has been added successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 
