@@ -14,12 +14,12 @@ class AdminMiddleware
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
-    {
 
-        if (Auth::user()->classification == 'System Administrator' ||
-            Auth::user()->classification == 'Division Administrator') {
+    public function handle(Request $request, Closure $next, ...$roles): Response
+    {
+        if (in_array(Auth::user()->classification, $roles)) {
             return $next($request);
         }
+        return redirect('/forbidden');
     }
 }
