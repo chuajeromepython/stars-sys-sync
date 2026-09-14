@@ -117,7 +117,7 @@ class StudentClassController extends Controller
         if ($result === true) {
             return back()->with('success', $student_count.'/'.$students->count().' Students has been synced successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 }

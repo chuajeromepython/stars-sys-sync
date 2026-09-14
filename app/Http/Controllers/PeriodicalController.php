@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcademicYear;
 use App\Models\Assessment;
 use App\Models\AssessmentKey;
+use App\Models\AssessmentType;
 use App\Models\AssessmentOption;
 use App\Models\ClassAssessment;
 use App\Models\CustomFunction;
@@ -38,7 +39,7 @@ class PeriodicalController extends Controller
             ->join('tbl_subjects', 'tbl_assessments.subject_id', 'tbl_subjects.id')
             ->join('tbl_periods', 'tbl_assessments.period_id', 'tbl_periods.id')
             ->where('teacher_id', $teacher_id)
-            ->where('assessment_type_id', 1)
+            ->where('assessment_type_id', AssessmentType::where('type', 'Term Exam')->value('id'))
             ->where('academic_year_id', AcademicYear::active()->id)
             ->get();
 
@@ -73,17 +74,18 @@ class PeriodicalController extends Controller
 
             } catch (Exception $e) {
                 DB::rollBack();
+
                 $result = $e->getMessage();
             }
 
             if ($result === true) {
                 return redirect('/periodicals')->with('success', 'Term Exam Successfully uploaded');
             } else {
-                return redirect('/periodicals')->withErrors($result);
+                return redirect('/periodicals')->withErrors(['error' => $result]);
             }
 
         } else {
-            return redirect('/periodicals')->withErrors($answer_keys);
+            return redirect('/periodicals')->withErrors(['error' => $answer_keys]);
         }
 
     }

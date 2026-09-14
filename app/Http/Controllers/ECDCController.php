@@ -89,7 +89,7 @@ class ECDCController extends Controller
             //         "mosy" => 0,
             //     )
             // ];
-            return back()->withErrors('No classroom for kinder found!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'No classroom for kinder found!']);
         }
 
         return view('ecdc.index', compact(
@@ -118,7 +118,7 @@ class ECDCController extends Controller
 
             return back()->with('success', 'ECDC Successfully Updated');
         } else {
-            return back()->withErrors($error);
+            return redirect()->to(url()->previous())->withErrors(['error' => $error]);
         }
 
     }
@@ -185,7 +185,7 @@ class ECDCController extends Controller
             ])->count();
 
             if ($existing > 0) {
-                return back()->withErrors('Oops. A Student with same ECDC period already exist');
+                return redirect()->to(url()->previous())->withErrors(['error' => 'Oops. A Student with same ECDC period already exist']);
             } //
 
             $ecdc = new ECDC;
@@ -229,7 +229,7 @@ class ECDCController extends Controller
         if ($result === true) {
             return redirect('/ecdcs/classroom/'.$request->classroom_id)->with('success', 'ECDC Successfully Encoded');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
 
     }
@@ -650,12 +650,12 @@ class ECDCController extends Controller
 
         $total_students = StudentClassroom::where('classroom_id', $request->classroom_id)->count();
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
         $data = [];
         $errors = [];
 
-        $period = $spreadsheet->getActiveSheet()->getCell('C2')->getValue();
-        $date = $spreadsheet->getActiveSheet()->getCell('C3')->getValue();
+        $period = $spreadsheet->getSheetByName("ENCODE here")->getCell('C2')->getValue();
+        $date = $spreadsheet->getSheetByName("ENCODE here")->getCell('C3')->getValue();
 
         if ($date == null) {
             $errors[] = 'Date cannot be null.';
@@ -669,8 +669,8 @@ class ECDCController extends Controller
 
         for ($i = 0; $i < $total_students; $i++) {
 
-            $lrn = $spreadsheet->getActiveSheet()->getCell($col.'1')->getValue();
-            $name = $spreadsheet->getActiveSheet()->getCell($col.'2')->getValue();
+            $lrn = $spreadsheet->getSheetByName("ENCODE here")->getCell($col.'1')->getValue();
+            $name = $spreadsheet->getSheetByName("ENCODE here")->getCell($col.'2')->getValue();
 
             if ($lrn != null) {
 
@@ -685,11 +685,11 @@ class ECDCController extends Controller
                 if ($check_lrn->count() > 0) {
                     for ($row = 5; $row < 124; $row++) {
 
-                        $competency_id = $spreadsheet->getActiveSheet()->getCell('A'.$row)->getValue();
+                        $competency_id = $spreadsheet->getSheetByName("ENCODE here")->getCell('A'.$row)->getValue();
 
                         if ($competency_id != '*') {
 
-                            $get_score = $spreadsheet->getActiveSheet()->getCell($col.$row)->getValue();
+                            $get_score = $spreadsheet->getSheetByName("ENCODE here")->getCell($col.$row)->getValue();
                             $score = ($get_score != 1) ? 0 : 1;
                             $data[$check_lrn[0]->student_id][$competency_id] = $score;
                         }
@@ -765,12 +765,12 @@ class ECDCController extends Controller
             if ($result === true) {
                 return back()->with('success', 'ECDC Successfully Uploaded. Total of '.$duplicates.' duplicate record(s) found.');
             } else {
-                return back()->withErrors($result);
+                return redirect()->to(url()->previous())->withErrors(['error' => $result]);
             }
 
         } else {
 
-            return back()->withErrors($errors);
+            return redirect()->to(url()->previous())->withErrors(['error' => $errors]);
 
         }
 

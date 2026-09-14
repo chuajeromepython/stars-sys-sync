@@ -118,6 +118,15 @@
 						</p>
 					</a>
 				</li>
+				<li class="nav-item ">
+						<a href="/competencies" class="nav-link 
+							{{ ($page['name'] == "Competency") ? 'active' : '' }}">
+						<i class="nav-icon fa fa-check"></i>
+						<p>
+							Competencies
+						</p>
+						</a>
+					</li>
 				@endif
 				@if($class == "System Administrator")
 				<li class="nav-item ">

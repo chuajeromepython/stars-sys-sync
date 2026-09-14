@@ -234,11 +234,11 @@ class UserController extends Controller
             if ($result === true) {
                 return redirect('/users')->with('success', 'New user has been added successfully.');
             } else {
-                return back()->withErrors($result);
+                return redirect()->to(url()->previous())->withErrors(['error' => $result]);
             }
 
         } else {
-            return back()->withErrors('Username is already taken.')->withInput($request->all);
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Username is already taken.'])->withInput($request->all);
         }
 
     }

@@ -891,9 +891,33 @@ class CustomFunction extends Model
         return $assessment;
     }
 
-    public static function getClassDetails($class_id)
+    public static function getAssessmentsDetailsByTeacherId($teacher_id)
     {
+        $assessment = Assessment::select(
+            'tbl_assessments.title as assessment',
+            'tbl_assessments.id as id',
+            'tbl_assessments.number_of_items',
+            'tbl_assessments.date',
+            'from',
+            'to',
+            'level',
+            'tbl_subjects.title as subject',
+            'type',
+            'period'
+        )
+            ->join('tbl_grade_levels', 'tbl_assessments.grade_level_id', 'tbl_grade_levels.id')
+            ->join('tbl_subjects', 'tbl_assessments.subject_id', 'tbl_subjects.id')
+            ->join('tbl_periods', 'tbl_assessments.period_id', 'tbl_periods.id')
+            ->join('tbl_assessment_types', 'tbl_assessments.assessment_type_id', 'tbl_assessment_types.id')
+            ->join('tbl_academic_years', 'tbl_assessments.academic_year_id', 'tbl_academic_years.id')
+            ->where('tbl_assessments.teacher_id', $teacher_id)
+            ->get();
 
+        return $assessment;
+    }
+
+    public static function getClassDetails($class_id = null, $teacherUserId = null)
+    {
         $class = TeacherClass::select(
             'tbl_teacher_classes.id as id',
             'first_name',
@@ -910,7 +934,12 @@ class CustomFunction extends Model
             ->join('tbl_sections', 'tbl_classrooms.section_id', 'tbl_sections.id')
             ->join('tbl_grade_levels', 'tbl_classrooms.grade_level_id', 'tbl_grade_levels.id')
             ->join('tbl_subjects', 'tbl_teacher_classes.subject_id', 'tbl_subjects.id')
-            ->where('tbl_teacher_classes.id', $class_id)
+            ->when($class_id, function($q) use ($class_id) {
+                $q->where('tbl_teacher_classes.id', $class_id);
+            })
+            ->when($teacherUserId, function($q) use ($teacherUserId) {
+                $q->where('tbl_teachers.user_id', $teacherUserId);
+            })
             ->first();
 
         return $class;
@@ -1063,8 +1092,7 @@ class CustomFunction extends Model
                 'achievement' => $achievement,
                 'answers' => $answers,
             ];
-        }
-
+        }           
         Storage::disk('public')->put('res-'.$class_assessment_id.'.json', json_encode($result));
 
         return $result;
@@ -1173,7 +1201,9 @@ class CustomFunction extends Model
 
             if ($period_id != null && $type_id != null) {
 
-                if ($type_id == 1) {
+                $term_exam_type_id = AssessmentType::where('type', 'Term Exam')->value('id');
+
+                if ($type_id == $term_exam_type_id) {
                     $existing_assessment = Assessment::where([
                         'grade_level_id' => $grade_level_id,
                         'subject_id' => $subject_id,

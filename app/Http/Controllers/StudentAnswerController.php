@@ -224,11 +224,11 @@ class StudentAnswerController extends Controller
             if ($result === true) {
                 return redirect('/periodicals/'.$request->assessment_id)->with('success', 'Class Assessment uploaded successfully.');
             } else {
-                return back()->withErrors($result);
+                return redirect()->to(url()->previous())->withErrors(['error' => $result]);
             }
 
         } else {
-            return back()->withErrors($error);
+            return redirect()->to(url()->previous())->withErrors(['error' => $error]);
         }
 
     }
@@ -272,7 +272,7 @@ class StudentAnswerController extends Controller
             return redirect('/class_assessments/'.$request->class_assessment_id)
                 ->with('success', 'Student Answers successfully updated.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 }

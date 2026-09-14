@@ -69,7 +69,7 @@ class DistrictController extends Controller
             return redirect('/districts')->with('success', 'New district has been added successfully.');
 
         } else {
-            return back()->withErrors('District already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'District already exists!']);
         }
     }
 
@@ -110,7 +110,7 @@ class DistrictController extends Controller
 
             return back()->with('success', 'District has been updated successfully.');
         } else {
-            return back()->withErrors('District already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'District already exists!']);
         }
 
     }
@@ -135,7 +135,7 @@ class DistrictController extends Controller
             $noun = ($school->count() == 1) ? 'school' : 'schools';
             $message = $school->count().' '.$noun.' '.'found under '.$district->name.' district.';
 
-            return back()->withErrors($message);
+            return redirect()->to(url()->previous())->withErrors(['error' => $message]);
         }
 
     }

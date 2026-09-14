@@ -41,7 +41,7 @@ class ClassroomController extends Controller
 
         $academic_year = AcademicYear::active();
         if ($academic_year == null) {
-            return back()->withErrors('No Active Academic Year. Please Contact the Division Administrator.');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'No Active Academic Year. Please Contact the Division Administrator.']);
         }
 
         $school_id = (Auth::user()->classification == 'Teacher')
@@ -95,7 +95,7 @@ class ClassroomController extends Controller
         $semesters = Semester::all();
 
         if ($academic_year == null) {
-            return back()->withErrors('No Active Academic Year. Please Contact the Division Administrator.');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'No Active Academic Year. Please Contact the Division Administrator.']);
         }
 
         return view('classrooms.create', compact(
@@ -172,11 +172,11 @@ class ClassroomController extends Controller
             if ($result === true) {
                 return back()->with('success', 'New classroom has been added successfully.');
             } else {
-                return back()->withErrors($result);
+                return redirect()->to(url()->previous())->withErrors(['error' => $result]);
             }
 
         } else {
-            return back()->withErrors('Classroom already exists.');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Classroom already exists.']);
         }
 
     }
@@ -291,7 +291,7 @@ class ClassroomController extends Controller
             ->get();
 
         if ($is_existing->count() > 0) {
-            return back()->withErrors('Classroom already exist!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Classroom already exist!']);
         } else {
             $classroom->section_id = $request->section_id;
             $classroom->save();
@@ -321,7 +321,7 @@ class ClassroomController extends Controller
             ->where('classroom_id', $classroom->id)
             ->get();
         if ($has_record->count() > 0) {
-            return back()->withErrors('Classroom contains assessment.');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Classroom contains assessment.']);
         } else {
             $classroom->delete();
 
@@ -341,7 +341,7 @@ class ClassroomController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
         $grade_level_filter = CustomFunction::filterGradeLevel($school_id);
         $grade_levels = GradeLevel::whereIn('level', $grade_level_filter)->get();
@@ -351,7 +351,7 @@ class ClassroomController extends Controller
 
         DB::beginTransaction();
         try {
-            $title = $spreadsheet->getActiveSheet()->getCell('A1');
+            $title = $spreadsheet->getSheetByName("ENCODE here")->getCell('A1');
             $is_shs = ($title == 'SHS - ADVISORY CLASS UPLOADER') ? 1 : 0;
 
             foreach ($sheet as $key => $row) {
@@ -508,7 +508,7 @@ class ClassroomController extends Controller
                     }
                 }
 
-                return back()->withErrors($error_messages);
+                return redirect()->to(url()->previous())->withErrors(['error' => $error_messages]);
             }
 
             DB::commit();
@@ -522,7 +522,7 @@ class ClassroomController extends Controller
         if ($result === true) {
             return redirect('/classrooms')->with('success', 'Classroom Uploader has been uploaded successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
 
     }
