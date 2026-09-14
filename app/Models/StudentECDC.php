@@ -14,7 +14,7 @@ class StudentECDC extends Model
 
     public static function scopeGetECD($query, $filter): void
     {
-        $query->select()
+        $query->select('tbl_student_ecdcs.ecdc_id', 'tbl_ecdcs.*')
             ->join('tbl_ecdcs', 'tbl_student_ecdcs.ecdc_id', 'tbl_ecdcs.id')
             ->where($filter);
 

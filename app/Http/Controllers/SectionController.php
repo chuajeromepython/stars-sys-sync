@@ -141,7 +141,7 @@ class SectionController extends Controller
 
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
         $errors = [];
         $sheet = array_unique($sheet, SORT_REGULAR);
 

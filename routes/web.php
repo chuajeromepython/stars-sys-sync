@@ -83,22 +83,22 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/teachers/upload', [TeacherController::class, 'upload']);
 
     // PERMISSION : System Administrator
-    Route::group(['middleware' => ['auth', 'system_admin']], function () {
-
-        // Division
-        Route::get('/divisions', [DivisionController::class, 'index']);
-        Route::post('/divisions/store', [DivisionController::class, 'store']);
-        Route::post('/divisions/update', [DivisionController::class, 'update']);
-        Route::post('/divisions/destroy', [DivisionController::class, 'destroy']);
+    Route::middleware(['role:System Administrator'])
+        ->group(function () {
+            // Division
+            Route::get('/divisions', [DivisionController::class, 'index']);
+            Route::post('/divisions/store', [DivisionController::class, 'store']);
+            Route::post('/divisions/update', [DivisionController::class, 'update']);
+            Route::post('/divisions/destroy', [DivisionController::class, 'destroy']);
 
         // Trails
         Route::get('/trails', [TrailController::class, 'index']);
         Route::get('/trails/{model}', [TrailController::class, 'getTrails']);
-
-    });
+        });
 
     // PERMISSION : Division Administrator
-    Route::group(['middleware' => ['auth', 'division_admin']], function () {
+    Route::get('/competencies', [CompetencyController::class, 'index']);
+    Route::middleware(['role:System Administrator,Division Administrator'])->group(function () {
 
         // Academic Year
         Route::get('/academic_years', [AcademicYearController::class, 'index']);
@@ -157,7 +157,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/competencies/update', [CompetencyController::class, 'update']);
         Route::post('/competencies/destroy', [CompetencyController::class, 'destroy']);
         Route::post('/competencies/upload', [CompetencyController::class, 'upload']);
-        Route::get('/competencies', [CompetencyController::class, 'index']);
+        
         Route::get('/competencies/create', [CompetencyController::class, 'create']);
         Route::get('/competencies/{competency}/edit', [CompetencyController::class, 'edit']);
         // ECDC Domains
@@ -171,7 +171,8 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // PERMISSION : System and Division Administrator
-    Route::group(['middleware' => ['auth', 'admin']], function () {
+    Route::middleware(['role:System Administrator,Division Administrator'])
+        ->group(function () {
 
         // User
         Route::get('/users', [UserController::class, 'index']);
