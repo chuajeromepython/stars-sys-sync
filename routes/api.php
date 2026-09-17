@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 Route::get('/authenticate/{username}/{password}/', [AppApiController::class, 'authenticate']);
+Route::get('/ecdc/domains', [AppApiController::class, 'getEcdcDomains']);
+Route::post('/ecdc/domains/sync', [AppApiController::class, 'syncEcdcDomains']);
 Route::post('/classrooms/sync', [AppApiController::class, 'syncClassroomsByTeacherUserId']);
 Route::post('/students/sync', [AppApiController::class, 'studentsPerClassroom']);
 Route::post('/assessment/sync', [AppApiController::class, 'syncAssessment']);
