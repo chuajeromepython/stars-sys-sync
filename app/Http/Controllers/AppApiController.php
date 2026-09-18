@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
-use App\Models\AssessmentKey;
 use App\Models\ClassAssessment;
 use App\Models\CustomFunction;
+use App\Models\ECDCCompetency;
+use App\Models\ECDCDomain;
 use App\Models\Student;
 use App\Models\StudentAnswer;
 use App\Models\StudentScore;
@@ -133,7 +134,7 @@ class AppApiController extends Controller
         $classroom_id = $request->input('classroom_id');
 
         $students = CustomFunction::getStudentsPerClassroom($classroom_id);
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Students retrieved successfully.',
@@ -141,6 +142,148 @@ class AppApiController extends Controller
                 ->map(fn ($u) => $u->only(['lrn', 'sectionId', 'gradeLevelId', 'classroomId', 'first_name', 'middle_name', 'last_name']))
                 ->toArray(),
         ]);
+    }
+
+    public function getEcdcDomains()
+    {
+        $domains = ECDCDomain::query()
+            ->orderBy('id')
+            ->get()
+            ->map(function ($domain) {
+                return [
+                    'id' => $domain->id,
+                    'domain' => $domain->domain,
+                    'competencies' => $domain->competencies()
+                        ->orderBy('id')
+                        ->get()
+                        ->map(fn($competency) => [
+                            'id' => $competency->id,
+                            'domain_id' => $competency->domain_id,
+                            'competency' => $competency->competency,
+                        ])
+                        ->toArray(),
+                ];
+            })
+            ->toArray();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ECDC domains retrieved successfully.',
+            'data' => $domains,
+        ]);
+    }
+
+    public function syncEcdcDomains(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'domains' => ['required', 'array', 'min:1'],
+            'domains.*.domain' => ['required', 'string', 'min:1'],
+            'domains.*.competencies' => ['required', 'array', 'min:1'],
+            'domains.*.competencies.*.competency' => ['required', 'string', 'min:1'],
+        ], [
+            'domains.required' => 'The ECDC domains payload is required.',
+            'domains.min' => 'At least one domain is required.',
+            'domains.*.domain.required' => 'Each domain name is required.',
+            'domains.*.competencies.required' => 'Each domain must contain at least one competency.',
+            'domains.*.competencies.min' => 'Each domain must contain at least one competency.',
+            'domains.*.competencies.*.competency.required' => 'Each competency name is required.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+                'data' => null,
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $savedDomains = [];
+
+            foreach ($request->input('domains', []) as $domainPayload) {
+                $domainName = trim((string) ($domainPayload['domain'] ?? ''));
+
+                $domain = ECDCDomain::query()
+                    ->whereRaw('LOWER(domain) = ?', [mb_strtolower($domainName)])
+                    ->first();
+
+                if (! $domain) {
+                    $domain = new ECDCDomain;
+                    $domain->domain = $domainName;
+                    $domain->save();
+                }
+
+                $competencyNames = [];
+
+                foreach ($domainPayload['competencies'] ?? [] as $competencyPayload) {
+                    $competencyName = trim((string) ($competencyPayload['competency'] ?? $competencyPayload['name'] ?? ''));
+
+                    if ($competencyName === '') {
+                        continue;
+                    }
+
+                    ECDCCompetency::query()
+                        ->where('domain_id', $domain->id)
+                        ->whereRaw('LOWER(competency) = ?', [mb_strtolower($competencyName)])
+                        ->firstOrCreate([
+                            'domain_id' => $domain->id,
+                            'competency' => $competencyName,
+                        ]);
+
+                    $competencyNames[] = mb_strtolower($competencyName);
+                }
+
+                if (empty($competencyNames)) {
+                    ECDCCompetency::query()->where('domain_id', $domain->id)->delete();
+                } else {
+                    ECDCCompetency::query()
+                        ->where('domain_id', $domain->id)
+                        ->whereNotIn(DB::raw('LOWER(competency)'), $competencyNames)
+                        ->delete();
+                }
+
+                $savedDomains[] = [
+                    'id' => $domain->id,
+                    'domain' => $domain->domain,
+                    'competencies' => $domain->competencies()
+                        ->orderBy('id')
+                        ->get()
+                        ->map(fn($competency) => [
+                            'id' => $competency->id,
+                            'domain_id' => $competency->domain_id,
+                            'competency' => $competency->competency,
+                        ])
+                        ->toArray(),
+                ];
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ECDC domains synced successfully',
+                'data' => $savedDomains,
+            ]);
+        } catch (Exception $exception) {
+            DB::rollBack();
+
+            Log::error('ECDC domain sync failed', [
+                'exception' => $exception->getMessage(),
+                'payload' => $request->all(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ECDC domain sync failed.',
+                'errors' => [
+                    'general' => [$exception->getMessage()],
+                ],
+                'data' => null,
+            ], 500);
+        }
     }
 
     public function uploadAssessment(Request $request)
@@ -457,7 +600,7 @@ class AppApiController extends Controller
                             ];
                         }),
                     ];
-                })
+                }),
             ],
         ]);
     }

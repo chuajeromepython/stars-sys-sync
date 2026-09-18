@@ -11,4 +11,11 @@ class ECDCCompetency extends Model
     // use \OwenIt\Auditing\Auditable;
 
     protected $table = 'tbl_ecdc_competencies';
+
+    protected $fillable = ['domain_id', 'competency'];
+
+    public function domain()
+    {
+        return $this->belongsTo(ECDCDomain::class, 'domain_id');
+    }
 }
