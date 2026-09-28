@@ -222,7 +222,7 @@ class StudentAnswerController extends Controller
             }
 
             if ($result === true) {
-                return redirect('/periodicals/'.$request->assessment_id)->with('success', 'Class Assessment uploaded successfully.');
+                return redirect('/term-exams/'.$request->assessment_id)->with('success', 'Class Assessment uploaded successfully.');
             } else {
                 return redirect()->to(url()->previous())->withErrors(['error' => $result]);
             }

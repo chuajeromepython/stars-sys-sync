@@ -19,7 +19,7 @@ $(function() {
 	    'scrollX': (screen_height > screen_width) ? true : false
 	});
 
-	$('#dt_periodicals').dataTable({
+	$('#dt_term_exams').dataTable({
 	    'language':{
 	        'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
 	    },

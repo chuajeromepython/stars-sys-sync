@@ -5,7 +5,7 @@
 @section('page_title', $page['title'])
 
 @section('page_script')
-    <script type="text/javascript" src="/js/periodicals.js"></script>
+    <script type="text/javascript" src="/js/term-exams.js"></script>
 @endsection
 
 @section('content')
@@ -23,7 +23,7 @@
                     </a>
                 </div>
                 <div class="card-body" >
-                    <table class="table table-bordered mb-3" id="dt_periodicals">
+                    <table class="table table-bordered mb-3" id="dt_term_exams">
                         <thead>
                             <tr>
                                 <th>ID</th>

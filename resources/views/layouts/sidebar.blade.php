@@ -57,9 +57,9 @@
 					</a>
 					<ul class="nav nav-treeview">
 						<li class="nav-item">
-							<a href="/periodicals" class="nav-link
+							<a href="/term-exams" class="nav-link
 								@if(array_key_exists("sub_name", $page))
-									{{ ($page['sub_name'] == "Periodical") ? 'bg-info' : '' }}
+									{{ ($page['sub_name'] == "Term Exam") ? 'bg-info' : '' }}
 								@endif">
 								<i class="far fa-circle nav-icon"></i>
 								<p>Term Exam</p>

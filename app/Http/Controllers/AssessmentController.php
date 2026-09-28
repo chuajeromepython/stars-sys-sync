@@ -17,9 +17,9 @@ class AssessmentController extends Controller
             'title' => 'Term Exam',
             'sub_name' => 'Term',
             'crumb' => [
-                'Assessments' => '/periodicals',
-                'Term Exam' => '/periodicals',
-                'View' => '/periodicals/'.$assessment->id,
+                'Assessments' => '/term-exams',
+                'Term Exam' => '/term-exams',
+                'View' => '/term-exams/'.$assessment->id,
 
             ],
         ];

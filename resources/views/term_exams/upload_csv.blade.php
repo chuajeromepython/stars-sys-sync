@@ -34,7 +34,7 @@
                             </center>
                             <input type="file" name="file_assessment" id="file_assessment"  style="display: none;">
                             <input type="hidden" name="assessment_id" value="{{$assessment->id}}">
-                            <input type="hidden" name="assessment_path" value="periodicals">
+                            <input type="hidden" name="assessment_path" value="term-exams">
                         </div>
                     </div>
                 </div>

@@ -16,14 +16,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
-class PeriodicalController extends Controller
+class TermExamController extends Controller
 {
     public function index()
     {
 
         $page = [
             'name' => 'Assessment',
-            'sub_name' => 'Periodical',
+            'sub_name' => 'Term Exam',
             'title' => 'Term Exam Management',
             'crumb' => ['Assessments' => '/assessments'],
         ];
@@ -43,7 +43,7 @@ class PeriodicalController extends Controller
             ->where('academic_year_id', AcademicYear::active()->id)
             ->get();
 
-        return view('periodicals.index', compact(
+        return view('term_exams.index', compact(
             'page', 'assessments'
         ));
     }
@@ -79,13 +79,13 @@ class PeriodicalController extends Controller
             }
 
             if ($result === true) {
-                return redirect('/periodicals')->with('success', 'Term Exam Successfully uploaded');
+                return redirect('/term-exams')->with('success', 'Term Exam Successfully uploaded');
             } else {
-                return redirect('/periodicals')->withErrors(['error' => $result]);
+                return redirect('/term-exams')->withErrors(['error' => $result]);
             }
 
         } else {
-            return redirect('/periodicals')->withErrors(['error' => $answer_keys]);
+            return redirect('/term-exams')->withErrors(['error' => $answer_keys]);
         }
 
     }
@@ -96,11 +96,11 @@ class PeriodicalController extends Controller
         $page = [
             'name' => 'Assessment',
             'title' => 'Term Exam',
-            'sub_name' => 'Periodical',
+            'sub_name' => 'Term Exam',
             'crumb' => [
-                'Assessments' => '/periodicals',
-                'Term Exam' => '/periodicals',
-                'View' => '/periodicals/'.$assessment->id,
+                'Assessments' => '/term-exams',
+                'Term Exam' => '/term-exams',
+                'View' => '/term-exams/'.$assessment->id,
 
             ],
         ];
@@ -156,7 +156,7 @@ class PeriodicalController extends Controller
 
         $assessment = CustomFunction::getAssessmentDetails($assessment->id);
 
-        return view('periodicals.show', compact(
+        return view('term_exams.show', compact(
             'page', 'answer_keys', 'classes', 'assessment', 'rooms',
             'class_assessments'
         ));

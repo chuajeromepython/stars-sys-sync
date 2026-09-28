@@ -6,7 +6,6 @@ use App\Models\Assessment;
 use App\Models\ClassAssessment;
 use App\Models\CustomFunction;
 use App\Models\StudentScore;
-use App\Models\TeacherClass;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -20,13 +19,13 @@ class ClassAssessmentController extends Controller
         $assessment = Assessment::find($class_assessment->assessment_id);
         $assessment_details = CustomFunction::getAssessmentDetails($assessment->id);
 
-        if ($assessment_details->type == 'Periodical') {
+        if ($assessment_details->type == 'Term Exam') {
             if ($request->assessment_path == 'diagnostics') {
                 $key = 'Diagnostic Test';
                 $link = '/diagnostics';
             } else {
                 $key = 'Term Exam';
-                $link = '/periodicals';
+                $link = '/term-exams';
             }
         } else {
             $key = 'Summative';
@@ -62,7 +61,7 @@ class ClassAssessmentController extends Controller
         $results = ClassAssessment::getResults($class_assessment->id);
         $assessment = CustomFunction::getAssessmentDetails($class_assessment->assessment_id);
         $class = CustomFunction::getClassDetails(null, Auth::user()->id);
-       
+
         return view('class_assessments.reports.result',
             compact('results', 'assessment', 'class', 'class_assessment')
         );

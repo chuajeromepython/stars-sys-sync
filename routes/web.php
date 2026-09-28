@@ -25,7 +25,6 @@ use App\Http\Controllers\ECDCController;
 use App\Http\Controllers\ECDCDomainController;
 use App\Http\Controllers\GradeLevelController;
 use App\Http\Controllers\ItemBankController;
-use App\Http\Controllers\PeriodicalController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SchoolController;
@@ -41,6 +40,7 @@ use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SummativeController;
 use App\Http\Controllers\TeacherClassController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\TermExamController;
 use App\Http\Controllers\TrackController;
 use App\Http\Controllers\TrailController;
 use App\Http\Controllers\UserController;
@@ -91,9 +91,9 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/divisions/update', [DivisionController::class, 'update']);
             Route::post('/divisions/destroy', [DivisionController::class, 'destroy']);
 
-        // Trails
-        Route::get('/trails', [TrailController::class, 'index']);
-        Route::get('/trails/{model}', [TrailController::class, 'getTrails']);
+            // Trails
+            Route::get('/trails', [TrailController::class, 'index']);
+            Route::get('/trails/{model}', [TrailController::class, 'getTrails']);
         });
 
     // PERMISSION : Division Administrator
@@ -157,7 +157,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/competencies/update', [CompetencyController::class, 'update']);
         Route::post('/competencies/destroy', [CompetencyController::class, 'destroy']);
         Route::post('/competencies/upload', [CompetencyController::class, 'upload']);
-        
+
         Route::get('/competencies/create', [CompetencyController::class, 'create']);
         Route::get('/competencies/{competency}/edit', [CompetencyController::class, 'edit']);
         // ECDC Domains
@@ -174,55 +174,55 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:System Administrator,Division Administrator'])
         ->group(function () {
 
-        // User
-        Route::get('/users', [UserController::class, 'index']);
-        Route::get('/users/create', [UserController::class, 'create']);
-        Route::get('/users/{user}/edit', [UserController::class, 'edit']);
-        Route::get('/users/{user}', [UserController::class, 'show']);
-        Route::post('/users/reset', [UserController::class, 'reset']);
-        Route::post('/users/store', [UserController::class, 'store']);
-        Route::post('/users/update', [UserController::class, 'update']);
-        Route::post('/users/destroy', [UserController::class, 'destroy']);
+            // User
+            Route::get('/users', [UserController::class, 'index']);
+            Route::get('/users/create', [UserController::class, 'create']);
+            Route::get('/users/{user}/edit', [UserController::class, 'edit']);
+            Route::get('/users/{user}', [UserController::class, 'show']);
+            Route::post('/users/reset', [UserController::class, 'reset']);
+            Route::post('/users/store', [UserController::class, 'store']);
+            Route::post('/users/update', [UserController::class, 'update']);
+            Route::post('/users/destroy', [UserController::class, 'destroy']);
 
-        // USERS : EDIT
-        Route::get('/division_supervisors/{division_supervisor}/edit',
-            [DivisionSupervisorController::class, 'edit']);
-        Route::post('/division_supervisors/update',
-            [DivisionSupervisorController::class, 'update']);
+            // USERS : EDIT
+            Route::get('/division_supervisors/{division_supervisor}/edit',
+                [DivisionSupervisorController::class, 'edit']);
+            Route::post('/division_supervisors/update',
+                [DivisionSupervisorController::class, 'update']);
 
-        Route::get('/division_administrators/{division_administrator}/edit',
-            [DivisionAdministratorController::class, 'edit']);
-        Route::post('/division_administrators/update',
-            [DivisionAdministratorController::class, 'update']);
+            Route::get('/division_administrators/{division_administrator}/edit',
+                [DivisionAdministratorController::class, 'edit']);
+            Route::post('/division_administrators/update',
+                [DivisionAdministratorController::class, 'update']);
 
-        Route::get('/district_supervisors/{district_supervisor}/edit',
-            [DistrictSupervisorController::class, 'edit']);
-        Route::post('/district_supervisors/update',
-            [DistrictSupervisorController::class, 'update']);
+            Route::get('/district_supervisors/{district_supervisor}/edit',
+                [DistrictSupervisorController::class, 'edit']);
+            Route::post('/district_supervisors/update',
+                [DistrictSupervisorController::class, 'update']);
 
-        Route::get('/division_superintendents/{division_superintendent}/edit',
-            [DivisionSuperIntendentController::class, 'edit']);
-        Route::post('/division_superintendents/update',
-            [DivisionSuperIntendentController::class, 'update']);
+            Route::get('/division_superintendents/{division_superintendent}/edit',
+                [DivisionSuperIntendentController::class, 'edit']);
+            Route::post('/division_superintendents/update',
+                [DivisionSuperIntendentController::class, 'update']);
 
-        Route::get('/asst_division_superintendents/{asst_division_superintendent}/edit',
-            [AssistantDivisionSuperIntendentController::class, 'edit']);
-        Route::post('/asst_division_superintendents/update',
-            [AssistantDivisionSuperIntendentController::class, 'update']);
+            Route::get('/asst_division_superintendents/{asst_division_superintendent}/edit',
+                [AssistantDivisionSuperIntendentController::class, 'edit']);
+            Route::post('/asst_division_superintendents/update',
+                [AssistantDivisionSuperIntendentController::class, 'update']);
 
-        Route::get('/chief_cids/{chief_cid}/edit', [ChiefCIDController::class, 'edit']);
-        Route::post('/chief_cids/update', [ChiefCIDController::class, 'update']);
+            Route::get('/chief_cids/{chief_cid}/edit', [ChiefCIDController::class, 'edit']);
+            Route::post('/chief_cids/update', [ChiefCIDController::class, 'update']);
 
-        Route::get('/chief_sgods/{chief_sgod}/edit', [ChiefSGODController::class, 'edit']);
-        Route::post('/chief_sgods/update', [ChiefSGODController::class, 'update']);
+            Route::get('/chief_sgods/{chief_sgod}/edit', [ChiefSGODController::class, 'edit']);
+            Route::post('/chief_sgods/update', [ChiefSGODController::class, 'update']);
 
-        Route::get('/school_supervisors/{school_supervisor}/edit', [SchoolSupervisorController::class, 'edit']);
-        Route::post('/school_supervisors/update', [SchoolSupervisorController::class, 'update']);
-        Route::post('/school_supervisors/upload', [SchoolSupervisorController::class, 'upload']);
+            Route::get('/school_supervisors/{school_supervisor}/edit', [SchoolSupervisorController::class, 'edit']);
+            Route::post('/school_supervisors/update', [SchoolSupervisorController::class, 'update']);
+            Route::post('/school_supervisors/upload', [SchoolSupervisorController::class, 'upload']);
 
-        Route::post('/users/classifications/{user}/update', [ClassificationHistoryController::class, 'update']);
+            Route::post('/users/classifications/{user}/update', [ClassificationHistoryController::class, 'update']);
 
-    });
+        });
 
     // API
     Route::post('/getArea', [APIController::class, 'getArea']);
@@ -290,10 +290,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/assessments/update', [AssessmentController::class, 'update']);
     Route::post('/assessments/destroy', [AssessmentController::class, 'destroy']);
     Route::post('/assessments/upload', [AssessmentController::class, 'upload']);
-    // Periodicals
-    Route::get('/periodicals/', [PeriodicalController::class, 'index']);
-    Route::post('/periodicals/upload', [PeriodicalController::class, 'upload']);
-    Route::get('/periodicals/{assessment}', [PeriodicalController::class, 'show']);
+    // Term Exams
+    Route::get('/term-exams/', [TermExamController::class, 'index']);
+    Route::post('/term-exams/upload', [TermExamController::class, 'upload']);
+    Route::get('/term-exams/{assessment}', [TermExamController::class, 'show']);
     // Diagnostics
     Route::get('/diagnostics/', [DiagnosticController::class, 'index']);
     Route::post('/diagnostics/upload', [DiagnosticController::class, 'upload']);

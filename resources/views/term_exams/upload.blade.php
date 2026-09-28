@@ -1,7 +1,7 @@
 <div class="modal fade" tabindex="-1" role="dialog"  id="upload_modal_assessments">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
-            <form method="post" action="/periodicals/upload" class="form" enctype='multipart/form-data'>
+            <form method="post" action="/term-exams/upload" class="form" enctype='multipart/form-data'>
                 @csrf()
                 <div class="modal-header">
                     <b class="modal-title text-info"><i class="fa fa-upload mr-2"></i>Upload Assessment</b>

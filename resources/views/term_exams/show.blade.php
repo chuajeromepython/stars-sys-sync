@@ -5,7 +5,7 @@
 @section('page_title', $page['title'])
 
 @section('page_script')
-    <script type="text/javascript" src="/js/periodicals.js"></script>
+    <script type="text/javascript" src="/js/term-exams.js"></script>
     <script>
 
     </script>
@@ -13,8 +13,8 @@
 
 @section('content')
 	@include('layouts.message')
-    @include('periodicals.upload_csv')
-    @include('periodicals.edit_answer_key')
+    @include('term_exams.upload_csv')
+    @include('term_exams.edit_answer_key')
     <a href="/summatives" class="btn btn-danger mr-3 mb-3">
         <i class="fa fa-angle-left mr-2"></i> Back
     </a>
@@ -48,7 +48,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <a href="/periodicals" class="btn btn-danger float-left mr-3">
+                    <a href="/term-exams" class="btn btn-danger float-left mr-3">
                         <i class="fa fa-angle-left mr-2"></i> Back
                     </a>
                     <a href="#" class="btn btn-info" 
@@ -76,7 +76,7 @@
                                     <td>{{$class_assessment->section}}</td>
                                     <td>
                                         <center>
-                                            <a href="/class_assessments/{{$class_assessment->id}}?assessment_path=periodicals"
+                                            <a href="/class_assessments/{{$class_assessment->id}}?assessment_path=term-exams"
                                             class="btn btn-primary btn-sm">
                                                 <i class="fa fa-arrow-right"></i>
                                             </a>

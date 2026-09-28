@@ -29,7 +29,7 @@
 				</tr>
 				<tr>
 					<th>Type</th>
-					<td>Periodical</td>
+					<td>Term Exam</td>
 					<th>Period</th>
 					<td>{{$assessment->period}}</td>
 					<th>No. of Items</th>
