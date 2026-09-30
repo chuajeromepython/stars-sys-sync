@@ -1144,7 +1144,6 @@ class CustomFunction extends Model
 
         $cell = [
 
-            'title' => 'C1',
             'subject' => 'C2',
             'date' => 'C3',
             'type' => 'C4',
@@ -1170,7 +1169,6 @@ class CustomFunction extends Model
 
         // TODO: change getActiveSheet to getSheetByName('Answer Keys')
         $assessment = [
-            'title' => $spreadsheet->getActiveSheet()->getCell($cell['title'])->getValue(),
             'subject' => $spreadsheet->getActiveSheet()->getCell($cell['subject'])->getValue(),
             'date' => $spreadsheet->getActiveSheet()->getCell($cell['date'])->getValue(),
             'type' => $spreadsheet->getActiveSheet()->getCell($cell['type'])->getValue(),
@@ -1184,6 +1182,13 @@ class CustomFunction extends Model
             'strand' => $spreadsheet->getActiveSheet()->getCell($cell['strand'])->getValue(),
             'keys' => [],
         ];
+
+        $assessment['title'] = self::composeAssessmentTitle(
+            $assessment['period'],
+            $assessment['type'],
+            $assessment['subject'],
+            $assessment['grade'],
+        );
 
         $error = [];
         $teacher_id = Teacher::where('user_id', Auth::user()->id)->value('id');
@@ -1302,5 +1307,31 @@ class CustomFunction extends Model
         } else {
             return $error;
         }
+    }
+
+    /**
+     * Compose the assessment title from the answer key upload details.
+     *
+     * The title is no longer read from the uploaded title cell, it is built from
+     * the period, type, subject and grade level so every uploaded assessment gets
+     * a consistent title. The "Grade " prefix of the grade level is dropped.
+     *
+     * Example: First + Term Exam + Science + Grade 9
+     * becomes "First Term Exam in Science 9".
+     */
+    public static function composeAssessmentTitle(?string $period, ?string $type, ?string $subject, ?string $grade): string
+    {
+        $heading = trim(trim((string) $period).' '.trim((string) $type));
+        $details = trim(trim((string) $subject).' '.trim(str_replace('Grade ', '', (string) $grade)));
+
+        if ($heading === '') {
+            return $details;
+        }
+
+        if ($details === '') {
+            return $heading;
+        }
+
+        return $heading.' in '.$details;
     }
 }
