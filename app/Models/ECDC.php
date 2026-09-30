@@ -21,6 +21,36 @@ class ECDC extends Model
     protected $table = 'tbl_ecdcs';
 
     /**
+     * The assessment period as the ECDC module stores it. The mobile app
+     * labels the periods (BOSY, MOSY, EOSY) while the module and its reports
+     * keep the numeric values of the constants above.
+     */
+    public static function normalizePeriod(mixed $period): ?string
+    {
+        $label = strtoupper(trim((string) $period));
+
+        return match ($label) {
+            'BOSY', (string) self::BOSY => (string) self::BOSY,
+            'MOSY', (string) self::MOSY => (string) self::MOSY,
+            'EOSY', (string) self::EOSY => (string) self::EOSY,
+            default => null,
+        };
+    }
+
+    /**
+     * The label the mobile app and the printed forms use for a stored period.
+     */
+    public static function periodLabel(mixed $period): ?string
+    {
+        return match (self::normalizePeriod($period)) {
+            (string) self::BOSY => 'BOSY',
+            (string) self::MOSY => 'MOSY',
+            (string) self::EOSY => 'EOSY',
+            default => null,
+        };
+    }
+
+    /**
      * The AdminLTE palette used to colour the domain bands in the ECDC forms
      * and printed reports. The palette repeats, so the module keeps working
      * once more domains exist than the palette has colours.
