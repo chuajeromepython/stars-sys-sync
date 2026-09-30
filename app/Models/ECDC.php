@@ -156,8 +156,7 @@ class ECDC extends Model
 
     public static function getJsonResult($ecdc_id)
     {
-        $path = storage_path().'\app\public\ecdc-'.$ecdc_id.'.json';
-        $results = json_decode(file_get_contents($path), true);
+        $results = json_decode(Storage::disk('public')->get('ecdc-'.$ecdc_id.'.json'), true);
 
         return $results;
     }

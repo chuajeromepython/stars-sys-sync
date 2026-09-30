@@ -20,8 +20,12 @@ use Carbon\Carbon;
 use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ECDCController extends Controller
 {
@@ -586,6 +590,197 @@ class ECDCController extends Controller
         $spreadsheet = $reader->load(public_path('/templates/Template-ECDC-Uploader.xlsx'));
         $sheet = $spreadsheet->getActiveSheet();
 
+    }
+
+    public function download_classroom_report(Classroom $classroom): StreamedResponse
+    {
+        $academicYear = AcademicYear::active();
+        abort_if($academicYear === null, 404, 'No active academic year was found.');
+
+        $classroomDetails = CustomFunction::getClassroomDetails($classroom->id);
+        $schoolDetails = DB::table('tbl_schools')
+            ->leftJoin('tbl_districts', 'tbl_schools.district_id', 'tbl_districts.id')
+            ->leftJoin('tbl_divisions', 'tbl_districts.division_id', 'tbl_divisions.id')
+            ->where('tbl_schools.id', $classroom->school_id)
+            ->select(
+                'tbl_schools.code', 'tbl_schools.name',
+                'tbl_districts.name as district', 'tbl_divisions.name as division'
+            )
+            ->first();
+
+        $students = StudentClassroom::query()
+            ->select(
+                'tbl_students.id as student_id', 'tbl_students.lrn',
+                'tbl_persons.first_name', 'tbl_persons.middle_name', 'tbl_persons.last_name',
+                'tbl_persons.gender'
+            )
+            ->join('tbl_students', 'tbl_student_classrooms.student_id', 'tbl_students.id')
+            ->join('tbl_users', 'tbl_students.user_id', 'tbl_users.id')
+            ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
+            ->where('tbl_student_classrooms.classroom_id', $classroom->id)
+            ->where('tbl_student_classrooms.status', 1)
+            ->orderBy('tbl_persons.last_name')
+            ->orderBy('tbl_persons.first_name')
+            ->orderBy('tbl_students.lrn')
+            ->get();
+
+        $reader = new Xlsx;
+        $reader->setLoadSheetsOnly(['SF5-K 1st Session']);
+        $spreadsheet = $reader->load(public_path('/templates/Template-ECDC-Report-SF5-K.xlsx'));
+        $sheet = $spreadsheet->getSheetByName('SF5-K 1st Session');
+        if ($sheet === null) {
+            abort(500, 'The SF5-K session worksheet is missing from the template.');
+        }
+
+        $maleRows = $this->getRosterRows($sheet, 15, 53);
+        $femaleRows = $this->getRosterRows($sheet, 59, 89);
+        $maleStudents = [];
+        $femaleStudents = [];
+
+        foreach ($students as $student) {
+            $filter = [
+                'academic_year_id' => $academicYear->id,
+                'classroom_id' => $classroom->id,
+                'student_id' => $student->student_id,
+            ];
+            $ecdcId = StudentECDC::getECD($filter)
+                ->where('period', ECDC::EOSY)
+                ->groupBy('ecdc_id')
+                ->value('ecdc_id');
+
+            $result = null;
+            if ($ecdcId) {
+                $cachePath = 'ecdc-'.$ecdcId.'.json';
+                $periodResults = Storage::disk('public')->exists($cachePath)
+                    ? ECDC::getJsonResult($ecdcId)
+                    : ECDC::getResults($ecdcId);
+                $result = $periodResults[$student->student_id] ?? null;
+            }
+
+            $entry = [
+                'student' => $student,
+                'result' => $result,
+            ];
+            if (strtoupper((string) $student->gender) === 'F') {
+                $femaleStudents[] = $entry;
+            } else {
+                $maleStudents[] = $entry;
+            }
+        }
+
+        abort_if(count($maleStudents) > count($maleRows), 422, 'The SF5-K template has no remaining male learner rows.');
+        abort_if(count($femaleStudents) > count($femaleRows), 422, 'The SF5-K template has no remaining female learner rows.');
+
+        $sheet->setCellValue('D4', $schoolDetails->name ?? $classroomDetails->name);
+        $sheet->setCellValue('G4', $schoolDetails->district ?? '');
+        $sheet->setCellValue('J4', $schoolDetails->division ?? '');
+        $sheet->setCellValue('S4', 'Region IV – A CALABARZON');
+        $sheet->setCellValueExplicit('D6', (string) ($schoolDetails->code ?? ''), DataType::TYPE_STRING);
+        $sheet->setCellValue('G6', $classroomDetails->section);
+        $sheet->setCellValue('L6', $academicYear->from.'-'.$academicYear->to);
+
+        $summary = [
+            'ready' => ['M' => 0, 'F' => 0],
+            'intervention' => ['M' => 0, 'F' => 0],
+            'highly_advanced' => ['M' => 0, 'F' => 0],
+            'slightly_advanced' => ['M' => 0, 'F' => 0],
+            'average' => ['M' => 0, 'F' => 0],
+            'slight_delay' => ['M' => 0, 'F' => 0],
+            'significant_delay' => ['M' => 0, 'F' => 0],
+        ];
+
+        foreach ([['M', $maleStudents, $maleRows], ['F', $femaleStudents, $femaleRows]] as [$gender, $genderStudents, $rows]) {
+            foreach ($genderStudents as $index => $entry) {
+                $row = $rows[$index];
+                $student = $entry['student'];
+                $result = $entry['result'];
+                $name = trim($student->last_name.', '.$student->first_name.' '.$student->middle_name);
+
+                $sheet->setCellValueExplicit('B'.$row, (string) $student->lrn, DataType::TYPE_STRING);
+                $sheet->setCellValue('C'.$row, $result['name'] ?? $name);
+
+                if ($result === null || ! isset($result['standard_score'])) {
+                    continue;
+                }
+
+                $score = (float) $result['standard_score'];
+                $interpretation = $result['interpretation'] ?? ECDC::getInterpretation($score);
+                $sheet->setCellValue('G'.$row, $result['standard_score']);
+                $sheet->setCellValue('H'.$row, $interpretation);
+                $sheet->setCellValue('I'.$row, $score >= 80 ? 'GRADE ONE READY' : 'NEEDS FURTHER INTERVENTION');
+
+                $summary[$score >= 80 ? 'ready' : 'intervention'][$gender]++;
+                if ($score >= 130) {
+                    $summary['highly_advanced'][$gender]++;
+                } elseif ($score >= 120) {
+                    $summary['slightly_advanced'][$gender]++;
+                } elseif ($score >= 80) {
+                    $summary['average'][$gender]++;
+                } elseif ($score >= 70) {
+                    $summary['slight_delay'][$gender]++;
+                } else {
+                    $summary['significant_delay'][$gender]++;
+                }
+            }
+        }
+
+        foreach ([
+            'ready' => ['O12', 'R12', 'T12'],
+            'intervention' => ['O14', 'R14', 'T14'],
+        ] as $category => [$maleCell, $femaleCell, $totalCell]) {
+            $sheet->setCellValue($maleCell, $summary[$category]['M']);
+            $sheet->setCellValue($femaleCell, $summary[$category]['F']);
+            $sheet->setCellValue($totalCell, $summary[$category]['M'] + $summary[$category]['F']);
+        }
+
+        foreach ([
+            'highly_advanced' => ['P25', 'S25', 'T25'],
+            'slightly_advanced' => ['P28', 'S28', 'T28'],
+            'average' => ['P31', 'S31', 'T31'],
+            'slight_delay' => ['P35', 'S35', 'T35'],
+            'significant_delay' => ['P38', 'S38', 'T38'],
+        ] as $category => [$maleCell, $femaleCell, $totalCell]) {
+            $sheet->setCellValue($maleCell, $summary[$category]['M']);
+            $sheet->setCellValue($femaleCell, $summary[$category]['F']);
+            $sheet->setCellValue($totalCell, $summary[$category]['M'] + $summary[$category]['F']);
+        }
+
+        $sheet->setCellValue('P41', count($maleStudents));
+        $sheet->setCellValue('S41', count($femaleStudents));
+        $sheet->setCellValue('A54', count($maleStudents));
+        $sheet->setCellValue('A90', count($femaleStudents));
+        $sheet->setCellValue('A91', count($students));
+
+        $fileName = sprintf(
+            'ECDC SF5-K - %s - %s - %s.xlsx',
+            $classroomDetails->level,
+            $classroomDetails->section,
+            $academicYear->from.'-'.$academicYear->to
+        );
+
+        return response()->streamDownload(
+            static function () use ($spreadsheet): void {
+                (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save('php://output');
+            },
+            $fileName,
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function getRosterRows(Worksheet $sheet, int $firstRow, int $lastRow): array
+    {
+        $rows = [];
+        for ($row = $firstRow; $row <= $lastRow; $row++) {
+            $value = $sheet->getCell('A'.$row)->getValue();
+            if (is_numeric($value) && (int) $value === count($rows) + 1) {
+                $rows[] = $row;
+            }
+        }
+
+        return $rows;
     }
 
     public function download_template($classroom_id)
