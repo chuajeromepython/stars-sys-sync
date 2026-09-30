@@ -7,7 +7,6 @@ use App\Models\CustomFunction;
 use App\Models\DivisionAdministrator;
 use App\Models\Person;
 use App\Models\School;
-use App\Models\SchoolSupervisor;
 use App\Models\Teacher;
 use App\Models\TeacherClass;
 use App\Models\User;
@@ -34,7 +33,7 @@ class TeacherController extends Controller
             'crumb' => ['Teacher' => '/teachers'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
 
         return view('teachers.index', [
             'page' => $page,
@@ -46,7 +45,7 @@ class TeacherController extends Controller
      */
     public function data(Request $request, DataTablePaginator $paginator): JsonResponse
     {
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
 
         $query = User::select(
             'tbl_teachers.id as id', 'username', 'user_id',
@@ -92,7 +91,7 @@ class TeacherController extends Controller
             'crumb' => ['Teacher' => '/teachers', 'Add Teacher' => '/teachers/create'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
 
         $school = School::find($school_id);
 
@@ -190,7 +189,7 @@ class TeacherController extends Controller
         ];
 
         if (Auth::user()->classification == 'School Head') {
-            $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+            $school_id = CustomFunction::resolveSchoolIdForUser();
             $schools = School::where('id', $school_id)->get();
         } elseif (Auth::user()->classification == 'Division Administrator') {
             $division_id = DivisionAdministrator::find(Auth::user()->id)->value('division_id');
@@ -291,7 +290,7 @@ class TeacherController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file'));
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
         $sheet = $spreadsheet->getSheetByName('ENCODE here')->toArray();
         $data = [];
         $errors = [];

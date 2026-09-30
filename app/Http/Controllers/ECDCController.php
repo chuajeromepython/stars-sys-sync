@@ -149,14 +149,13 @@ class ECDCController extends Controller
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
             ->where('classroom_id', $classroom->id)->get();
 
-        $get_domains = ECDCDomain::all();
+        $get_domains = ECDCDomain::orderBy('id')->get();
         $domains = [];
-        $colors = ['red', 'orange', 'yellow', 'green', 'primary', 'info', 'purple'];
 
         foreach ($get_domains as $key => $domain) {
             $domains[$domain->id] = [
                 'domain' => $domain->domain,
-                'color' => $colors[$key],
+                'color' => ECDC::domainColor($key),
                 'competencies' => ECDCCompetency::where('domain_id', $domain->id)->get(),
 
             ];
@@ -650,12 +649,12 @@ class ECDCController extends Controller
 
         $total_students = StudentClassroom::where('classroom_id', $request->classroom_id)->count();
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
+        $sheet = $spreadsheet->getSheetByName('ENCODE here')->toArray();
         $data = [];
         $errors = [];
 
-        $period = $spreadsheet->getSheetByName("ENCODE here")->getCell('C2')->getValue();
-        $date = $spreadsheet->getSheetByName("ENCODE here")->getCell('C3')->getValue();
+        $period = $spreadsheet->getSheetByName('ENCODE here')->getCell('C2')->getValue();
+        $date = $spreadsheet->getSheetByName('ENCODE here')->getCell('C3')->getValue();
 
         if ($date == null) {
             $errors[] = 'Date cannot be null.';
@@ -666,11 +665,12 @@ class ECDCController extends Controller
         }
 
         $col = 'D';
+        $available_competencies = ECDCCompetency::pluck('id');
 
         for ($i = 0; $i < $total_students; $i++) {
 
-            $lrn = $spreadsheet->getSheetByName("ENCODE here")->getCell($col.'1')->getValue();
-            $name = $spreadsheet->getSheetByName("ENCODE here")->getCell($col.'2')->getValue();
+            $lrn = $spreadsheet->getSheetByName('ENCODE here')->getCell($col.'1')->getValue();
+            $name = $spreadsheet->getSheetByName('ENCODE here')->getCell($col.'2')->getValue();
 
             if ($lrn != null) {
 
@@ -685,11 +685,14 @@ class ECDCController extends Controller
                 if ($check_lrn->count() > 0) {
                     for ($row = 5; $row < 124; $row++) {
 
-                        $competency_id = $spreadsheet->getSheetByName("ENCODE here")->getCell('A'.$row)->getValue();
+                        $competency_id = $spreadsheet->getSheetByName('ENCODE here')->getCell('A'.$row)->getValue();
 
-                        if ($competency_id != '*') {
+                        // The template is generated from a fixed instrument, so
+                        // a stale upload may reference a competency that has
+                        // since been removed from the library.
+                        if ($competency_id != '*' && $available_competencies->contains($competency_id)) {
 
-                            $get_score = $spreadsheet->getSheetByName("ENCODE here")->getCell($col.$row)->getValue();
+                            $get_score = $spreadsheet->getSheetByName('ENCODE here')->getCell($col.$row)->getValue();
                             $score = ($get_score != 1) ? 0 : 1;
                             $data[$check_lrn[0]->student_id][$competency_id] = $score;
                         }
@@ -841,18 +844,9 @@ class ECDCController extends Controller
         $get_results = ECDC::getResults($ecdc_id);
         $result = $get_results[$student_id];
 
-        $domains = ECDCDomain::all();
-        $colors = [
-            'red',
-            'orange',
-            'yellow',
-            'green',
-            'primary',
-            'info',
-            'purple',
-        ];
+        $domains = ECDCDomain::orderBy('id')->get();
 
-        foreach ($domains as $domain) {
+        foreach ($domains as $key => $domain) {
             $student_ecdcs = StudentECDC::select(
                 'tbl_student_ecdcs.id as id', 'competency', 'p', 'o', 'r'
             )->join('tbl_ecdc_competencies', 'tbl_student_ecdcs.ecdc_competency_id', 'tbl_ecdc_competencies.id')
@@ -862,7 +856,7 @@ class ECDCController extends Controller
                 ->get();
 
             $data[$domain->id] = [
-                'color' => $colors[$domain->id - 1],
+                'color' => ECDC::domainColor($key),
                 'domain' => $domain->domain,
                 'competencies' => $student_ecdcs,
             ];

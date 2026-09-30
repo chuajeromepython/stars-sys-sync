@@ -62,7 +62,7 @@ class ClassroomController extends Controller
             return redirect()->to(url()->previous())->withErrors(['error' => 'Your account is not linked to a school. Please contact the Division Administrator.']);
         }
 
-        $message = $canManageClassrooms()
+        $message = $this->canManageClassrooms()
             ? 'You can create new classroom by clicking "Add Classroom" or "Upload Classroom"'
             : 'You can contact your School Head for Classroom Management.';
 

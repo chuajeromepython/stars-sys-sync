@@ -11,7 +11,6 @@ use App\Models\CustomFunction;
 use App\Models\GradeLevel;
 use App\Models\Person;
 use App\Models\School;
-use App\Models\SchoolSupervisor;
 use App\Models\Section;
 use App\Models\Semester;
 use App\Models\Strand;
@@ -43,7 +42,7 @@ class StudentController extends Controller
             'crumb' => ['Student' => '/students'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
 
         return view('students.index', [
             'page' => $page,
@@ -55,7 +54,7 @@ class StudentController extends Controller
      */
     public function data(Request $request, DataTablePaginator $paginator): JsonResponse
     {
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
 
         $query = Student::select(
             'tbl_students.id as id', 'lrn',
@@ -110,7 +109,7 @@ class StudentController extends Controller
             'crumb' => ['Student' => '/students'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
         $school = School::find($school_id);
 
         return view('students.create', compact(
@@ -135,7 +134,7 @@ class StudentController extends Controller
                 'gender' => 'required',
             ]);
 
-            $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+            $school_id = CustomFunction::resolveSchoolIdForUser();
             $check_lrn = Student::where('lrn', $request->lrn)->first();
 
             if ($check_lrn) {
@@ -577,7 +576,16 @@ class StudentController extends Controller
         ];
 
         $student = Student::where('user_id', Auth::user()->id)->first();
+
+        // This screen is a student's own results page. Roles that hold the
+        // permission but are not a student have no record to read, and the null
+        // used to be dereferenced straight away.
+        abort_if($student === null, 403, 'Only a student account can view class assessments.');
+
         $academic_year = AcademicYear::active();
+
+        abort_if($academic_year === null, 404, 'No Active Academic Year. Please Contact the Division Administrator.');
+
         $assessments = ClassAssessment::select(
             'tbl_class_assessments.id as id',
             'tbl_assessments.title as assessment', 'date', 'number_of_items',
@@ -618,9 +626,19 @@ class StudentController extends Controller
         ];
 
         $student = Student::where('user_id', Auth::user()->id)->first();
+
+        abort_if($student === null, 403, 'Only a student account can view class assessments.');
+
         $assessment = Assessment::find($class_assessment->assessment_id);
+        abort_if($assessment === null, 404);
+
         $get_result = ClassAssessment::getResults($class_assessment->id);
-        $result = $get_result[$student->id];
+
+        // A result file that has not been generated yet, or that no longer
+        // carries this student, is a missing record rather than a fatal error.
+        $result = $get_result[$student->id] ?? null;
+
+        abort_if($result === null, 404, 'No result has been recorded for this assessment yet.');
 
         $questions = AssessmentKey::where('assessment_id', $assessment->id)
             ->select('code', 'item_number', 'tbl_questions.id as id', 'description')
@@ -631,7 +649,7 @@ class StudentController extends Controller
 
         foreach ($questions as $key => $question) {
 
-            $is_correct = $result['answers'][$question->item_number]['is_correct'];
+            $is_correct = $result['answers'][$question->item_number]['is_correct'] ?? 0;
             if (isset($competencies[$question->code]['total_corrects'])) {
                 $competencies[$question->code]['total_corrects'] += $is_correct;
             } else {

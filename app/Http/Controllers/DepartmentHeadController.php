@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClassificationHistory;
+use App\Models\CustomFunction;
 use App\Models\DepartmentHead;
 use App\Models\DivisionAdministrator;
 use App\Models\Person;
 use App\Models\School;
-use App\Models\SchoolSupervisor;
 use App\Models\Subject;
 use App\Models\User;
 use Auth;
@@ -30,7 +30,7 @@ class DepartmentHeadController extends Controller
             'crumb' => ['Department Head' => '/department_heads'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
         $department_heads = User::select(
             'tbl_department_heads.id', 'username', 'tbl_department_heads.subject_id',
             'first_name', 'middle_name', 'last_name', 'suffix', 'user_id'
@@ -67,7 +67,7 @@ class DepartmentHeadController extends Controller
             'crumb' => ['Department Head' => '/department_heads', 'Add Department Head' => '/Department Heads/create'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
 
         $school = School::find($school_id);
         $subjects = Subject::all();
@@ -167,7 +167,7 @@ class DepartmentHeadController extends Controller
         ];
 
         if (Auth::user()->classification == 'School Head') {
-            $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+            $school_id = CustomFunction::resolveSchoolIdForUser();
             $schools = School::where('id', $school_id)->get();
         } elseif (Auth::user()->classification == 'Division Administrator') {
             $division_id = DivisionAdministrator::find(Auth::user()->id)->value('division_id');

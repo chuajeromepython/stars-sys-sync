@@ -1,195 +1,249 @@
 # Implementation Plan
 
+Status: **implemented and verified** - full suite green (155 tests, 1190 assertions) and verified against the live `stars` database.
+
 ## Overview
-Refine the User Management module (Users / Roles / Permissions tabs) by adding a real filtering capability to every tab, removing the Classification column from the users table, and moving the whole application from the AdminLTE3-bundled DataTables 1.11.4 to the DataTables 3.1.2 combined build already present in `public/vendor/DataTables`.
 
-The module already has a server-side skeleton (`UserManagementDataTable` + `DataTablePaginator` + `/user-management/data` + `public/js/user-management.js`). This work extends that skeleton: filters are expressed with DataTables 3 **ColumnControl `searchList`** and **SearchBuilder**, both of which post structured criteria to the same endpoint, and the paginator learns to translate those criteria into query constraints.
+Fix the defects blocking the Teacher and School Head accounts by replacing the legacy `SchoolSupervisor::where('user_id', ...)` school lookup with the existing `CustomFunction::resolveSchoolIdForUser()` everywhere, scoping the dashboard directory and its statistics to what each role is actually entitled to, making the "Class Assessment" page a student-only screen that students can actually open, and deleting the dead `/assessments` module whose route targets a controller method that does not exist.
 
-Decisions confirmed with the user:
-- DataTables 3.1.2 is wired in **globally** in `resources/views/layouts/master.blade.php`, replacing the AdminLTE3 DataTables assets so two DataTables never register on one page.
-- Filters are rendered by **ColumnControl / SearchBuilder** in the table header, mapping to the same server-side params.
-- The users tab filters by **role** and **area**; area is resolved for real from each user's linked profile table (division / district / school), as the legacy listing did.
-- The roles tab gets a **Users** column that doubles as the user filter; the permissions tab gets **Module** + **Roles** columns, where Roles is the role filter.
+Every root cause below was reproduced against the live `stars` database, not inferred from reading alone.
 
----
+## Root causes
+
+| # | Symptom | Verified root cause |
+|---|---|---|
+| 1 | `ClassroomController.php:65` Undefined variable | Line 65 called `$canManageClassrooms()` as a bare function. The method is declared `private function canManageClassrooms(): bool` at line 36. 500 for every role. |
+| 2 | `StudentController.php:595` Attempt to read `id` on null | `/students/class_assessments` is a student-only page, but the sidebar offered the link to any role holding `class_assessments.view`. The route was also guarded by `students.view`, which the Student role does not hold, so a real student got `302 -> /forbidden`. Broken for everyone. |
+| 3 | Student / Teacher / Department Head tables empty | Those controllers resolved the school from `tbl_school_supervisors` only. A Teacher or Department Head has no row there, so `school_id` was null, `where('school_id', null)` matched nothing. |
+| 4 | Dashboard directory unfiltered | `DashboardDataTable` had no scoping whatsoever on any of its three queries. |
+| 5 | Dashboard statistics global | `DashboardController::index()` counted whole tables. |
+| 6 | School Head sees 0 classrooms | `CustomFunction::getClassrooms()` delegated to `getClassroomsByTeacherUserId()`, which returns `[]` when the user has no `tbl_teachers` row. A School Head never has one. |
+| 7 | School Head has assessments permission | `RolePermissionMatrix` granted `assessments.view` to `SchoolHead`, and `routes/web.php` mapped it to `AssessmentController::index()`, a method that does not exist. The permission could only ever lead to a crash. |
 
 ## Types
 
-### New enum: `app/Enums/UserManagementFilter.php`
-Backed string enum describing the filterable dimensions per tab, used to validate incoming request criteria against a known allow-list (never trust client-supplied column names).
+No new types. Scoping is data-driven from the roles already modelled in `App\Enums\Role`, mirroring the existing `App\Support\AssessmentTab` and `App\Support\ReportScope` pattern.
+
+New public methods on `App\Services\DataTable\DashboardDataTable`:
 
 ```php
-enum UserManagementFilter: string
-{
-    case Role = 'roles';
-    case Area = 'area';
-    case User = 'users';
-    case Module = 'module';
+/**
+ * @return list<'teachers'|'students'|'classrooms'>
+ */
+public function typesFor(?Authenticatable $user = null): array;
 
-    public static function forTab(string $tab): array;          // list<self>
-    public static function tryFromColumn(string $tab, string $data): ?self;
-    public function tab(): string;                               // 'users' | 'roles' | 'permissions'
-}
+/**
+ * @return array{teacher_id: int|null, school_id: int|null}
+ */
+public function scope(?Authenticatable $user = null): array;
+
+public function allows(?string $type, ?Authenticatable $user = null): bool;
 ```
 
-### Extended column definition shape (`array<string, mixed>` per column)
-The `columns` array returned by `UserManagementDataTable::resolve()` gains three optional keys, consumed by `DataTablePaginator`:
-
-| key | type | purpose |
-|---|---|---|
-| `filterOptions` | `callable(): list<array{label: string, value: string}>` | Distinct values offered by the ColumnControl `searchList` dropdown and by SearchBuilder's `=` condition. Returned to the client in the JSON response. |
-| `applyListFilter` | `callable(Builder $query, list<string> $values): void` | Applies a `searchList` selection (always an IN / OR-of-equals). |
-| `applyCriteria` | `callable(Builder $query, string $condition, list<string> $values): void` | Applies a single SearchBuilder criterion (`=`, `!=`, `contains`, `notContains`, `starts`, `ends`, `empty`, `notEmpty`, `in`, `notIn`). |
-
-### Request shapes the paginator must understand
-- ColumnControl: `columns[<i>][columnControl][list][<value>] = "true"`
-- SearchBuilder: `searchBuilder[<g>][logic] = AND|OR`, `searchBuilder[<g>][criteria][<c>][data|origData|type|condition]`, `[value][]`, `[value1]`, `[value2]`
-
-### Response additions
-```php
-array{
-  draw: int, recordsTotal: int, recordsFiltered: int,
-  data: array<int, array<string, mixed>>,
-  columnControl: array<string, list<array{label: string, value: string}>>,
-  searchBuilder: array{options: array<string, list<array{label: string, value: string}>>},
-}
-```
-
----
+A Teacher gets `['students', 'classrooms']`; a School Head, Department Head or division office role gets all three; a Student gets `[]` and the directory is hidden.
 
 ## Files
 
 ### New files
 | Path | Purpose |
 |---|---|
-| `app/Enums/UserManagementFilter.php` | Allow-list of filterable dimensions per tab. |
-| `app/Services/DataTable/UserAreaQuery.php` | Builds the `user_areas` derived table (UNION of every profile table joined to its division/district/school) and exposes `join()` + `options()`. |
-| `tests/Feature/UserManagementFilterTest.php` | Feature tests for every filter on every tab, plus the removed classification column. |
+| `tests/Feature/SchoolScopedListingTest.php` | Covers fixes 1, 3, 6: scoping of Students, Teachers, Department Heads and Classrooms per role. 10 tests. |
 
 ### Modified files
 | Path | Changes |
+|---|---|
+| `app/Http/Controllers/ClassroomController.php` | `$canManageClassrooms()` -> `$this->canManageClassrooms()`. |
+| `app/Models/CustomFunction.php` | Added `getClassroomsForSchool(int $schoolId)`; `getClassrooms()` now branches on whether the user holds a `Teacher` row. |
+| `app/Http/Controllers/StudentController.php` | All 5 school lookups -> `resolveSchoolIdForUser()`; added null and missing-record guards to `studentsClassAssessment()` and `studentsClassAssessmentShow()`. |
+| `app/Http/Controllers/TeacherController.php` | All 5 school lookups -> `resolveSchoolIdForUser()`. |
+| `app/Http/Controllers/DepartmentHeadController.php` | All 3 school lookups -> `resolveSchoolIdForUser()`. |
+| `app/Services/DataTable/DashboardDataTable.php` | `scope()`, `typesFor()`, `allows()`; all three queries scoped. |
+| `app/Http/Controllers/DashboardController.php` | Role-aware `statistics()`; `records()` enforces `allows()`. |
+| `resources/views/layouts/dashboard.blade.php` | Stat cards from `$statistics`; record-type select from `$recordTypes`; the whole directory hidden for a student. |
+| `resources/views/layouts/sidebar.blade.php` | Class Assessment link gated to a student account. |
+| `app/Services/Rbac/RolePermissionMatrix.php` | Removed `assessments.view` from `Role::SchoolHead`. |
+| `routes/web.php` | Dead `/assessments` routes removed; the two `/students/class_assessments` routes moved into the `class_assessments.view` group. |
+| `tests/Feature/DashboardRecordsServerSideTest.php` | Retargeted from Teacher to School Head; scoping assertions added. |
+| `tests/Feature/RoleBasedAccessControlTest.php` | Route-guard expectations updated; permission and sidebar assertions added. |
+| `tests/Feature/CustomFunctionClassroomsTest.php` | School Head (non-teacher) and cross-school cases added. |
 
----
+### Deleted files
+- `resources/views/assessments/index.blade.php`, `resources/views/assessments/upload.blade.php`, `public/js/assessments.js`
+- `app/Http/Controllers/AssessmentController.php` - its only method, `show()`, was routed nowhere, and `index` / `store` / `update` / `destroy` / `upload` did not exist.
+
+`assessments.manage` and `assessments.upload` remain in the matrix for Teacher and Department Head. The live endpoints `/questions/{id}/update-answer-key`, `/student_answers/upload` and `/student_answers/batch_update` were preserved and re-grouped.
+
+### Not modified
+`composer.json`, `database/**`, `config/**`, `app/Services/DataTable/DataTablePaginator.php`, `app/Services/DataTable/UserManagementDataTable.php`, `public/vendor/**`.
 
 ## Functions
 
-### `app/Services/DataTable/DataTablePaginator.php`
+### `app/Models/CustomFunction.php`
 | Function | Change |
 |---|---|
-| `paginate(Builder, Request, array): array` | **Modified** — insert `applyListFilters()` + `applySearchBuilder()` between `applySearch()` and `applyOrder()`; add `columnControl` and `searchBuilder` keys. |
-| `applyListFilters` | **New** — read `columns[i].columnControl.list`; invoke `applyListFilter` when present. |
-| `applySearchBuilder` | **New** — flatten `searchBuilder[*].criteria[*]`, resolve each criterion to a known column **by position in the server-side `$columns` array**, honour group `AND`/`OR`. Unknown columns are skipped, never interpolated. |
-| `filterOptions`, `criteriaMap` | **New** — collect filter options and normalise `value`/`value1`/`value2` into a flat list of strings. |
-| `searchableColumns`, `applyOrder`, `mapRow`, `expression`, `resolveLength` | Unchanged. |
+| `getClassroomsForSchool(int $schoolId): array` | **New.** Every classroom of a school for the active AY, grouped by grade level, same shape and the same eager loading as the teacher variant, plus a `withCount('teacherClasses')`. No teacher filter, so every room is included. |
+| `getClassrooms(): array` | **Modified.** Now branches: the user has a `Teacher` row -> teacher-scoped (unchanged behaviour); otherwise resolve the school and return `getClassroomsForSchool()`; a null school still returns `[]`. |
+| `getClassroomsByTeacherUserId($id)` | **Unchanged.** Still teacher-only, still used by the classroom-sync API, still covered by the 12-query budget test. |
+| `resolveSchoolIdForUser()` | **Unchanged.** The correct helper already existed; the controllers simply were not using it. |
 
-### `app/Services/DataTable/UserAreaQuery.php` (new)
-| Function | Signature | Purpose |
-|---|---|---|
-| `subQuery` | `private function subQuery(): Builder` | `(SELECT user_id, MIN(name) AS area FROM ( …UNION ALL… ) x GROUP BY user_id)`. Branches: division-level tables → `tbl_divisions`; `tbl_district_supervisors` → `tbl_districts`; school-level tables → `tbl_schools`. Every branch filters `deleted_at IS NULL`. |
-| `join` | `public function join(Builder $query, string $alias = 'ua'): Builder` | `leftJoinSub(...)` + `addSelect("$alias.area as area")`. |
-| `options` | `public function options(): array` | Distinct, sorted area names as `{label, value}`. |
-
-### `app/Services/DataTable/UserManagementDataTable.php`
+### `app/Http/Controllers/ClassroomController.php`
 | Function | Change |
 |---|---|
-| `users(Request)` | Drop the `classification` column; join the area; make `area` orderable/searchable with `column => 'ua.area'`; wire `roles` + `area` filters. |
-| `scopeUsers()` | Drop the `classification` request key; `area` now matches `ua.area`. |
-| `roles()` | Add a `users` members column (badges, up to 5 + `+N more`) with `filterOptions` (all users) and `applyListFilter`/`applyCriteria` on `whereHas('users')`. |
-| `permissions()` | `roles` column switches from `roles_count` to rendered role names; `module` column gains filter options and a `name like '<module>.%'` filter. |
-| `roleBadges()` | Memoise per request instead of `User::find()` per row. |
-| `userActions()`, `roleActions()`, `permissionActions()` | Unchanged. |
+| `index()` | `$canManageClassrooms()` -> `$this->canManageClassrooms()`. |
 
----
+### `app/Http/Controllers/StudentController.php`
+| Function | Change |
+|---|---|
+| `index()`, `data()`, `create()`, `edit()` | School lookup -> `resolveSchoolIdForUser()`; the dead `SchoolSupervisor` import removed. |
+| `studentsClassAssessment()` | `abort_if($student === null, 403)` replaces the fatal null deref; also 404 when there is no active academic year. |
+| `studentsClassAssessmentShow()` | Same 403 guard, 404 for a missing assessment, and `$result = $get_result[$student->id] ?? null` plus a 404 instead of an undefined-index fatal. The per-item answer read is now `?? 0`. |
+
+### `app/Http/Controllers/TeacherController.php` / `DepartmentHeadController.php`
+Every occurrence of the legacy lookup replaced with `resolveSchoolIdForUser()`.
+
+### `app/Services/DataTable/DashboardDataTable.php`
+| Function | Change |
+|---|---|
+| `typesFor()`, `scope()`, `allows()` | **New.** |
+| `resolve(string $type, ?Authenticatable $user = null)` | **Modified.** Resolves the scope and passes it to the three builders. |
+| `teachers(array $scope)` | **Modified.** Filters `tbl_teachers.school_id` for a school-scoped role. |
+| `students(array $scope)` | **Modified.** A teacher gets a `whereExists` against `tbl_student_classrooms` so a student enrolled in two of their classrooms is still listed once; a school-scoped role gets `tbl_students.school_id`. |
+| `classrooms(array $scope)` | **Modified.** Teacher -> `whereIn` their assigned classroom ids; school-scoped role -> `tbl_classrooms.school_id`. |
+| `teacherClassroomIds(?int)` | **New private.** Null means "no teacher scope", which callers read as "do not narrow". |
+
+### `app/Http/Controllers/DashboardController.php`
+| Function | Change |
+|---|---|
+| `index(DashboardDataTable $dashboardDataTable)` | Passes `$statistics` and `$recordTypes` to the view instead of six global counts. |
+| `statistics(?AcademicYear): array` | **New.** Role-aware card list. |
+| `teacherClassCount(int $teacherId, bool $advisory): int` | **New.** |
+| `records()` | A type the role is not offered resolves to the empty payload, so a hand-crafted query string cannot widen the directory. |
 
 ## Classes
 
-### New
-- **`App\Enums\UserManagementFilter`** — backed string enum, no inheritance.
-- **`App\Services\DataTable\UserAreaQuery`** — final class, no inheritance, constructor-less.
-
 ### Modified
-- **`App\Services\DataTable\DataTablePaginator`** — filter plumbing; PHPDoc array shapes extended.
-- **`App\Services\DataTable\UserManagementDataTable`** — gains `public function __construct(private UserAreaQuery $areas) {}`.
-- **`App\Http\Controllers\RoleController`** — `data()` forwards the paginator payload verbatim; no signature change.
-- **`App\Http\Controllers\UserController`** — `datatable()` removed; `index()` no longer computes `$classifications`.
+- **`App\Services\DataTable\DashboardDataTable`** - gains three public methods and one private; all three query builders take a scope argument. No inheritance.
+- **`App\Http\Controllers\DashboardController`** - gains `statistics()` and `teacherClassCount()`; `index()` now takes a dependency. No inheritance.
+- **`App\Models\CustomFunction`** - gains `getClassroomsForSchool()`; `getClassrooms()` gains a branch. No inheritance.
+- **`App\Services\Rbac\RolePermissionMatrix`** - `final`; one array literal edited.
 
 ### Removed
-- `App\Http\Controllers\UserController::datatable()` — no remaining callers.
+- `App\Http\Controllers\AssessmentController` - the whole module was unreachable.
 
----
+## Dashboard statistics
+
+| Role | Cards |
+|---|---|
+| Teacher | **Advisory** (distinct classrooms where `advisory = 1`), **Subject Class** (`advisory = 0`), **Students** (distinct students enrolled in those classrooms), **Classrooms** (distinct) |
+| School Head / Department Head | **Classrooms**, **Teachers**, **Students**, **Sections** - all scoped to their school |
+| Division office | Classrooms, Teachers, Students, Sections (unchanged) |
+| Student | none - the section is hidden |
 
 ## Dependencies
-No new Composer or npm packages. `public/vendor/DataTables/*` is already vendored and must not be deleted or regenerated.
 
-Two runtime notes: DataTables 3.1.2 requires jQuery >= 1.7 and the bundle ships its own Bootstrap 4 integration (which is what AdminLTE3 uses), so the CSS swap is safe. The one real breakage is the removal of the legacy `fn*` DataTable API, which is why the five ECDC / item bank / trails / report files are in scope.
-
----
+None. No new Composer or npm packages, no schema changes, no migrations. `resolveSchoolIdForUser()`, `AcademicYear::active()`, `filterGradeLevel()` and the DataTables 3.1.2 bundle in `public/vendor/DataTables` were all already present and in use.
 
 ## Testing
 
-### New: `tests/Feature/UserManagementFilterTest.php`
-`RefreshDatabase` + `InteractsWithRbac`, helpers modelled on `ListingDataTableTest`.
+### New: `tests/Feature/SchoolScopedListingTest.php`
+`RefreshDatabase` + `InteractsWithRbac`, two schools with teachers, students, classrooms and department heads in each.
 
-1. Users tab no longer returns a `classification` column / header.
-2. Users tab resolves `area` from the user's profile.
-3. Users tab filters by role.
-4. Users tab filters by area.
-5. Users tab exposes area + role filter options.
-6. Roles tab filters by user.
-7. Roles tab exposes its members column.
-8. Permissions tab filters by role.
-9. Permissions tab filters by module.
-10. SearchBuilder criteria narrow the result set.
-11. An unknown filter column is ignored, not injected (injection guard).
-12. Filters still require the tab permission (403).
+1. `/classrooms` renders 200 for a School Head (regression for the L65 fatal).
+2. `/classrooms` renders 200 for a Teacher.
+3. A School Head sees their own school's rooms and not another's.
+4. A Teacher sees only rooms assigned via `tbl_teacher_classes`.
+5. A Teacher's `/students/data` returns rows (regression for fix 3).
+6. A School Head's student listing is school scoped.
+7. A School Head's teacher listing is school scoped.
+8. The department head listing is school scoped, not empty.
+9. A role with no school record sees no rows rather than everything.
+10. A department head resolves their school.
 
-### Modified: `tests/Feature/RoleManagementTest.php`
-- Existing assertions on `data.0.username` / `action` / `roles` keep passing (additive response keys).
-- Add an assertion that the roles shell carries the new `<th>Users</th>`.
+### Modified: `tests/Feature/DashboardRecordsServerSideTest.php`
+Existing cases retargeted from Teacher to School Head, with the row counts adjusted to the new fixture helper. Added:
+- `type=teachers`, `type=students`, `type=classrooms` for a School Head are each school scoped.
+- A Teacher requesting `type=teachers` gets the empty payload.
+- A Teacher's students are limited to their own classrooms.
+- A Teacher's classrooms are limited to their assignment.
+- The record-type select omits `Teachers` for a Teacher and includes it for a School Head.
+
+### Modified: `tests/Feature/RoleBasedAccessControlTest.php`
+- The dead `assessments` route expectations are replaced with the still-live `/student_answers/upload`.
+- Asserts a School Head holds no `assessments.*` and still holds `classrooms.manage`, `students.*`, `teachers.*`.
+- Asserts the Class Assessment link renders for a Student and is hidden for a Teacher and a School Head.
+
+### Modified: `tests/Feature/CustomFunctionClassroomsTest.php`
+Adds a School Head (non-teacher) case and a cross-school case, keeping the existing 12-query assertion for the teacher path intact.
 
 ### Validation
 ```
-vendor/bin/phpunit --filter UserManagementFilterTest
-vendor/bin/phpunit --filter RoleManagementTest
-vendor/bin/phpunit --filter ListingDataTableTest
-vendor/bin/phpunit --filter DashboardRecordsServerSideTest
-vendor/bin/phpunit --filter RoleBasedAccessControlTest
+vendor/bin/phpunit --filter=SchoolScopedListingTest
+vendor/bin/phpunit --filter=DashboardRecordsServerSideTest
+vendor/bin/phpunit --filter=RoleBasedAccessControlTest
+vendor/bin/phpunit --filter=CustomFunctionClassroomsTest
 vendor/bin/phpunit
 vendor/bin/pint --dirty --format agent
 ```
-Baseline: `RoleManagementTest` = 41 tests / 133 assertions, all green.
 
----
+Result: 155 tests, 1190 assertions, all passing.
 
 ## Implementation Order
 
-1. `app/Enums/UserManagementFilter.php`
-2. `UserAreaQuery`
-3. `DataTablePaginator` filter plumbing
-4. `UserManagementDataTable` (users → roles → permissions)
-5. `RoleController` DI verification
-6. Blade headers
-7. `public/js/user-management.js`
-8. `layouts/master.blade.php` asset swap
-9. Legacy `fn*` call sites
-10. Dead-code removal
-11. `tests/Feature/UserManagementFilterTest.php`
-12. `RoleManagementTest` touch-ups, full suite, Pint
+1. `ClassroomController` L65 - one character, unblocks the Classroom page for every role.
+2. `getClassroomsForSchool()` plus the `getClassrooms()` branch - the School Head must see classrooms before anything can be verified against them.
+3. Swap the school lookup in the listing controllers and drop the dead imports.
+4. `DashboardDataTable` - `typesFor()`, `scope()`, `allows()` and the three scoped queries.
+5. `DashboardController::statistics()` plus `dashboard.blade.php`.
+6. Class Assessment - controller guards, sidebar condition, route move out of `students.view`.
+7. `RolePermissionMatrix` - drop `assessments.view` from School Head.
+8. Delete the dead `/assessments` route, view and JS, and the unreachable controller.
+9. `SchoolScopedListingTest`, then update the three existing test files.
+10. Full suite, Pint, then re-provision RBAC on the live database.
 
-Steps 1–5 are pure backend and independently testable; 6–7 are the visible tab work; 8–9 are the cross-cutting library migration and carry the most regression risk, which is why they are isolated.
+Steps 1-3 are the crash and empty-table fixes and are independently verifiable. Steps 4-5 are the dashboard scoping and are the largest behavioural change. Step 8 is isolated and reversible.
 
-|---|---|
-| `app/Services/DataTable/DataTablePaginator.php` | Add `applyListFilters()`, `applySearchBuilder()`, and the two new response keys. |
-| `app/Services/DataTable/UserManagementDataTable.php` | Users: drop `classification`, make `area` real, add role + area filters. Roles: add a members column + user filter. Permissions: roles names column + module filter. |
-| `resources/views/users/index.blade.php` | Remove `<th>Classification</th>`. |
-| `resources/views/roles/index.blade.php` | Add `<th>Users</th>`. |
-| `public/js/user-management.js` | Enable `searchList` ColumnControl + SearchBuilder, update per-tab column lists. |
-| `resources/views/layouts/master.blade.php` | Replace AdminLTE3 DataTables assets with `/vendor/DataTables/datatables.min.css` + `datatables.min.js`. |
-| `public/js/ecdcs.js`, `public/js/item_banks.js`, `public/js/trails.js`, `public/js/reports/generate.js`, `resources/views/ecdc/show.blade.php` | DT3 removed the legacy `fn*` API: `fnDestroy()` → `.destroy()`, `fnClearTable()` → `.clear()`, `.dataTable()` → `.DataTable()`. |
-| `app/Http/Controllers/UserController.php` | Remove the dead `datatable()` method and its unused call in `index()`. |
+## Live verification
 
-### Deleted files
-- `resources/views/users/search.blade.php` (not included by any view; superseded by the tab filters).
+- The `assessments` route is gone; `students/class_assessments` is registered.
+- RBAC re-provisioned against the live database: 74 permissions across 12 roles, 231 users synced. A School Head now holds no `assessments.view`, `assessments.manage` or `assessments.upload`, and still holds `classrooms.manage`, `students.manage` and `teachers.*`. A Teacher still holds `assessments.manage`.
+- School Head (user 233, school 312): directory returns `teachers=10`, `students=22`, `classrooms=3`; record types = all three.
+- Teacher (user 413, school 312): record types = `students,classrooms`; `teachers` is not offered; students and classrooms are scoped to their own school and assignment.
 
-### Not modified
-`routes/web.php`, `app/Services/Rbac/*`, `config/permission.php`, `database/**`, `composer.json`.
+## Open items
+
+- `tbl_department_heads` has 0 rows and no account is classified Department Head, so that table remains empty. The scoping fix is verified through test fixtures rather than live data. Seeding department heads is a data task, not a code one.
+
+## Follow-up fix: "Add Classroom" route not found
+
+Reported after the main work: `GET /classrooms/create` returned 404.
+
+**Nothing was deleted or mis-edited.** `resources/views/classrooms/create.blade.php` and the
+`/classrooms/create` route both exist and are untouched. The cause is route ordering, and it was
+hidden behind the `$canManageClassrooms` fatal: while the Classroom listing threw a 500 nobody
+could reach the button, so the shadowed route below it was never observable.
+
+`/classrooms/{classroom}` was registered *before* `/classrooms/create`, and the former was
+unconstrained. Laravel matches in registration order, so `/classrooms/create` matched
+`/classrooms/{classroom}` with the string `create` as the route key, and implicit model binding
+tried to find a Classroom whose key is `create` -> 404.
+
+Fix, in `routes/web.php`:
+
+```php
+Route::get('/classrooms/{classroom}', [ClassroomController::class, 'show'])
+    ->whereNumber('classroom');
+```
+
+`Classroom` has no `getRouteKeyName()` override, so the key is the numeric primary key; the
+constraint is correct rather than merely a workaround.
+
+A scan of every non-API route in the file found no other literal path swallowed by an earlier
+unconstrained parameter.
+
+### Tests
+Two added to `tests/Feature/RoleBasedAccessControlTest.php`:
+1. `test_the_add_classroom_form_is_not_shadowed_by_the_show_route` - renders the form as a school head and asserts the store action is present.
+2. `test_no_literal_route_is_shadowed_by_an_unconstrained_parameter` - scans the whole route table for the same class of defect.
+
+Both were verified to fail with the fix reverted and pass with it restored.
+Suite after this fix: 157 tests, 1193 assertions.

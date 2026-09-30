@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\APIController;
-use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssistantDivisionSuperIntendentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChiefCIDController;
@@ -21,6 +20,7 @@ use App\Http\Controllers\DivisionAdministratorController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\DivisionSuperIntendentController;
 use App\Http\Controllers\DivisionSupervisorController;
+use App\Http\Controllers\ECDCCompetencyController;
 use App\Http\Controllers\ECDCController;
 use App\Http\Controllers\ECDCDomainController;
 use App\Http\Controllers\GradeLevelController;
@@ -177,6 +177,16 @@ Route::middleware(['auth'])->group(function () {
     // ECDC Domains
     Route::middleware('permission:ecdc_domains.view')->group(function () {
         Route::get('/ecdc_domains', [ECDCDomainController::class, 'index']);
+        Route::get('/ecdc_domains/{ecdc_domain}', [ECDCDomainController::class, 'show'])->whereNumber('ecdc_domain');
+    });
+    Route::middleware('permission:ecdc_domains.manage')->group(function () {
+        Route::post('/ecdc_domains/store', [ECDCDomainController::class, 'store']);
+        Route::post('/ecdc_domains/update', [ECDCDomainController::class, 'update']);
+        Route::post('/ecdc_domains/destroy', [ECDCDomainController::class, 'destroy']);
+
+        Route::post('/ecdc_domains/{ecdc_domain}/competencies/store', [ECDCCompetencyController::class, 'store'])->whereNumber('ecdc_domain');
+        Route::post('/ecdc_domains/{ecdc_domain}/competencies/update', [ECDCCompetencyController::class, 'update'])->whereNumber('ecdc_domain');
+        Route::post('/ecdc_domains/{ecdc_domain}/competencies/destroy', [ECDCCompetencyController::class, 'destroy'])->whereNumber('ecdc_domain');
     });
 
     // Academic Year
@@ -343,162 +353,65 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/getStrands', [APIController::class, 'getStrands']);
         Route::post('/getCourses', [APIController::class, 'getCourses']);
         Route::post('/getTeachers', [APIController::class, 'getTeachers']);
+    });
 
-        // Sections
-        Route::middleware('permission:sections.view')->group(function () {
-            Route::get('/sections', [SectionController::class, 'index']);
-        });
-        Route::middleware('permission:sections.manage')->group(function () {
-            Route::post('/sections/store', [SectionController::class, 'store']);
-            Route::post('/sections/update', [SectionController::class, 'update']);
-            Route::post('/sections/destroy', [SectionController::class, 'destroy']);
-        });
-        Route::middleware('permission:sections.upload')->group(function () {
-            Route::post('/sections/upload', [SectionController::class, 'upload']);
-        });
+    // Sections
+    Route::middleware('permission:sections.view')->group(function () {
+        Route::get('/sections', [SectionController::class, 'index']);
+    });
+    Route::middleware('permission:sections.manage')->group(function () {
+        Route::post('/sections/store', [SectionController::class, 'store']);
+        Route::post('/sections/update', [SectionController::class, 'update']);
+        Route::post('/sections/destroy', [SectionController::class, 'destroy']);
+    });
+    Route::middleware('permission:sections.upload')->group(function () {
+        Route::post('/sections/upload', [SectionController::class, 'upload']);
+    });
 
-        // Classroom
-        Route::middleware('permission:classrooms.view')->group(function () {
-            Route::get('/classrooms', [ClassroomController::class, 'index']);
-            Route::get('/classrooms/{classroom}', [ClassroomController::class, 'show']);
-        });
-        Route::middleware('permission:classrooms.manage')->group(function () {
-            Route::get('/classrooms/create', [ClassroomController::class, 'create']);
-            Route::post('/classrooms/store', [ClassroomController::class, 'store']);
-            Route::post('/classrooms/update', [ClassroomController::class, 'update']);
-            Route::post('/classrooms/destroy', [ClassroomController::class, 'destroy']);
-        });
-        Route::middleware('permission:classrooms.upload')->group(function () {
-            Route::post('/classrooms/upload', [ClassroomController::class, 'upload']);
-        });
+    // Classroom
+    Route::middleware('permission:classrooms.view')->group(function () {
+        Route::get('/classrooms', [ClassroomController::class, 'index']);
+        // Constrained to a numeric id on purpose. An unconstrained
+        // `/classrooms/{classroom}` also matches `/classrooms/create`, and
+        // because this group is registered first that literal route lost to
+        // the parameter and resolved the string "create" as a Classroom key,
+        // answering 404 instead of rendering the form.
+        Route::get('/classrooms/{classroom}', [ClassroomController::class, 'show'])
+            ->whereNumber('classroom');
+    });
+    Route::middleware('permission:classrooms.manage')->group(function () {
+        Route::get('/classrooms/create', [ClassroomController::class, 'create']);
+        Route::post('/classrooms/store', [ClassroomController::class, 'store']);
+        Route::post('/classrooms/update', [ClassroomController::class, 'update']);
+        Route::post('/classrooms/destroy', [ClassroomController::class, 'destroy']);
+    });
+    Route::middleware('permission:classrooms.upload')->group(function () {
+        Route::post('/classrooms/upload', [ClassroomController::class, 'upload']);
+    });
 
-        // Teacher Classes
-        Route::middleware('permission:teacher_classes.view')->group(function () {
-            Route::get('/teacher_classes/{teacher_class}', [TeacherClassController::class, 'show']);
-        });
-        Route::middleware('permission:teacher_classes.manage')->group(function () {
-            Route::post('/teacher_classes/store', [TeacherClassController::class, 'store']);
-            Route::post('/teacher_classes/add_student', [TeacherClassController::class, 'add_student']);
-            Route::post('/teacher_classes/destroy', [TeacherClassController::class, 'destroy']);
-            Route::post('/teacher_classes/update_student_status', [TeacherClassController::class, 'update_student_status']);
-            Route::post('/student_classes/sync', [StudentClassController::class, 'sync']);
-        });
-        Route::middleware('permission:teacher_classes.upload')->group(function () {
-            Route::post('/teacher_classes/upload', [TeacherClassController::class, 'upload']);
-        });
+    // Teacher Classes
+    Route::middleware('permission:teacher_classes.view')->group(function () {
+        Route::get('/teacher_classes/{teacher_class}', [TeacherClassController::class, 'show']);
+    });
+    Route::middleware('permission:teacher_classes.manage')->group(function () {
+        Route::post('/teacher_classes/store', [TeacherClassController::class, 'store']);
+        Route::post('/teacher_classes/add_student', [TeacherClassController::class, 'add_student']);
+        Route::post('/teacher_classes/destroy', [TeacherClassController::class, 'destroy']);
+        Route::post('/teacher_classes/update_student_status', [TeacherClassController::class, 'update_student_status']);
+        Route::post('/student_classes/sync', [StudentClassController::class, 'sync']);
+    });
+    Route::middleware('permission:teacher_classes.upload')->group(function () {
+        Route::post('/teacher_classes/upload', [TeacherClassController::class, 'upload']);
+    });
 
-        // Students
-        Route::middleware('permission:students.view')->group(function () {
-            Route::get('/students', [StudentController::class, 'index']);
-            Route::get('/students/data', [StudentController::class, 'data']);
-            Route::get('/students/class_assessments', [StudentController::class, 'studentsClassAssessment']);
-            Route::get('/students/class_assessments/{class_assessment}',
-                [StudentController::class, 'studentsClassAssessmentShow']);
-        });
-        Route::middleware('permission:students.manage')->group(function () {
-            Route::get('/students/create', [StudentController::class, 'create']);
-            Route::get('/students/{student}/edit', [StudentController::class, 'edit']);
-
-            // Assessments
-            Route::middleware('permission:assessments.view')->group(function () {
-                Route::get('/assessments/', [AssessmentController::class, 'index']);
-            });
-            Route::middleware('permission:assessments.manage')->group(function () {
-                Route::post('/assessments/store', [AssessmentController::class, 'store']);
-                Route::post('/assessments/update', [AssessmentController::class, 'update']);
-                Route::post('/assessments/destroy', [AssessmentController::class, 'destroy']);
-                Route::put('/questions/{id}/update-answer-key', [QuestionController::class, 'updateAnswerKey']);
-            });
-            Route::middleware('permission:assessments.upload')->group(function () {
-                Route::post('/assessments/upload', [AssessmentController::class, 'upload']);
-                Route::post('/student_answers/upload', [StudentAnswerController::class, 'upload']);
-                Route::post('/student_answers/batch_update', [StudentAnswerController::class, 'batch_update']);
-            });
-
-            // Term Exams
-            Route::middleware('permission:term_exams.view')->group(function () {
-                Route::get('/term-exams/', [TermExamController::class, 'index']);
-                Route::get('/term-exams/{assessment}', [TermExamController::class, 'show']);
-            });
-            Route::middleware('permission:term_exams.upload')->group(function () {
-                Route::post('/term-exams/upload', [TermExamController::class, 'upload']);
-            });
-
-            // Diagnostics
-            Route::middleware('permission:diagnostics.view')->group(function () {
-                Route::get('/diagnostics/', [DiagnosticController::class, 'index']);
-                Route::get('/diagnostics/{assessment}', [DiagnosticController::class, 'show']);
-            });
-            Route::middleware('permission:diagnostics.upload')->group(function () {
-                Route::post('/diagnostics/upload', [DiagnosticController::class, 'upload']);
-            });
-
-            // Class Assessments
-            Route::middleware('permission:class_assessments.view')->group(function () {
-                Route::get('/class_assessments/{class_assessment}', [ClassAssessmentController::class, 'show']);
-                Route::get('/class_assessments/{class_assessment}/results',
-                    [ClassAssessmentController::class, 'results']);
-                Route::get('/class_assessments/{class_assessment}/item_analysis',
-                    [ClassAssessmentController::class, 'item_analysis']);
-                Route::get('/class_assessments/{class_assessment}/score_analysis',
-                    [ClassAssessmentController::class, 'score_analysis']);
-                Route::get('/class_assessments/{class_assessment}/discrimination_index',
-                    [ClassAssessmentController::class, 'discrimination_index']);
-                Route::get('/class_assessments/{class_assessment}/results/download',
-                    [ClassAssessmentController::class, 'download_results']);
-                Route::get('/class_assessments/{class_assessment}/item_analysis/download',
-                    [ClassAssessmentController::class, 'download_item_analysis']);
-                Route::get('/class_assessments/{class_assessment}/score_analysis/download',
-                    [ClassAssessmentController::class, 'download_score_analysis']);
-                Route::get('/class_assessments/{class_assessment}/discrimination_index/download',
-                    [ClassAssessmentController::class, 'download_discrimination_index']);
-            });
-
-            // ECDC
-            Route::middleware('permission:ecdcs.view')->group(function () {
-                Route::get('/ecdcs', [ECDCController::class, 'index']);
-                Route::get('/ecdcs/print_result', [ECDCController::class, 'print']);
-                Route::get('/ecdcs/classroom/{classroom}', [ECDCController::class, 'show']);
-                Route::get('/ecdcs/classroom/{classroom}/card/{student}', [ECDCController::class, 'card']);
-                Route::get('/ecdcs/classroom/{classroom}/card/{student}/print', [ECDCController::class, 'print']);
-            });
-            Route::middleware('permission:ecdcs.manage')->group(function () {
-                Route::get('/ecdcs/classroom/{classroom}/create', [ECDCController::class, 'create']);
-                Route::post('/ecdcs/store', [ECDCController::class, 'store']);
-                Route::post('/ecdcs/update', [ECDCController::class, 'update']);
-            });
-            Route::middleware('permission:ecdcs.upload')->group(function () {
-                Route::post('/ecdcs/upload', [ECDCController::class, 'upload']);
-            });
-            Route::middleware('permission:ecdcs.download')->group(function () {
-                Route::get('/ecdcs/{ecdc}/students/{student_id}/download', [ECDCController::class, 'download_student_result']);
-                Route::get('/ecdcs/{classroom}/download_template', [ECDCController::class, 'download_template']);
-            });
-
-            // Reports
-            Route::middleware('permission:reports.view')->group(function () {
-                Route::get('/reports', [ReportController::class, 'index']);
-            });
-            Route::middleware('permission:reports.generate')->group(function () {
-                Route::post('/reports/generate', [ReportController::class, 'generate']);
-            });
-
-            // Item Bank
-            Route::middleware('permission:item_banks.view')->group(function () {
-                Route::get('/item_banks', [ItemBankController::class, 'index']);
-            });
-
-        });
-
-        // Summatives
-        Route::middleware('permission:summatives.view')->group(function () {
-            Route::get('/summatives/', [SummativeController::class, 'index']);
-            Route::get('/summatives/{assessment}', [SummativeController::class, 'show']);
-        });
-        Route::middleware('permission:summatives.upload')->group(function () {
-            Route::post('/summatives/upload', [SummativeController::class, 'upload']);
-        });
-
+    // Students
+    Route::middleware('permission:students.view')->group(function () {
+        Route::get('/students', [StudentController::class, 'index']);
+        Route::get('/students/data', [StudentController::class, 'data']);
+    });
+    Route::middleware('permission:students.manage')->group(function () {
+        Route::get('/students/create', [StudentController::class, 'create']);
+        Route::get('/students/{student}/edit', [StudentController::class, 'edit']);
         Route::post('/students/store', [StudentController::class, 'store']);
         Route::post('/students/update', [StudentController::class, 'update']);
     });
@@ -506,18 +419,126 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/students/upload', [StudentController::class, 'upload']);
     });
 
-    Route::post('/getStudentAnswers', [APIController::class, 'getStudentAnswers']);
-    Route::post('/getDistricts', [APIController::class, 'getDistricts']);
-    Route::post('/getDistrictsPerDivision', [APIController::class, 'getDistrictsPerDivision']);
-    Route::post('/getSchools', [APIController::class, 'getSchools']);
-    Route::post('/searchLRN', [APIController::class, 'searchLRN']);
-    Route::post('/getGradeLevelPerEducationLevel', [APIController::class, 'getGradeLevelPerEducationLevel']);
-    Route::post('/getAssessmentTypePerGradeLevel', [APIController::class, 'getAssessmentTypePerGradeLevel']);
-    Route::post('/getSubjectClassPerGradeLevel', [APIController::class, 'getSubjectClassPerGradeLevel']);
-    Route::post('/getGradeLevelPerAcademicYear', [APIController::class, 'getGradeLevelPerAcademicYear']);
-    Route::post('/getSubjectPerGradeLevel', [APIController::class, 'getSubjectPerGradeLevel']);
-    Route::post('/getItems', [APIController::class, 'getItems']);
-    Route::post('/getTeachersPerSchool', [APIController::class, 'getTeachersPerSchool']);
-    Route::post('/getSectionsPerSchool', [APIController::class, 'getSectionsPerSchool']);
-    Route::post('/getECDCResult', [APIController::class, 'getECDCResult']);
+    // Assessment answers. The Assessment module index screen was removed with
+    // its controller methods; these endpoints remain live and are still reached
+    // from the class assessment and term exam upload screens.
+    Route::middleware('permission:assessments.manage')->group(function () {
+        Route::put('/questions/{id}/update-answer-key', [QuestionController::class, 'updateAnswerKey']);
+    });
+    Route::middleware('permission:assessments.upload')->group(function () {
+        Route::post('/student_answers/upload', [StudentAnswerController::class, 'upload']);
+        Route::post('/student_answers/batch_update', [StudentAnswerController::class, 'batch_update']);
+    });
+
+    // Term Exams
+    Route::middleware('permission:term_exams.view')->group(function () {
+        Route::get('/term-exams/', [TermExamController::class, 'index']);
+        Route::get('/term-exams/{assessment}', [TermExamController::class, 'show']);
+    });
+    Route::middleware('permission:term_exams.upload')->group(function () {
+        Route::post('/term-exams/upload', [TermExamController::class, 'upload']);
+    });
+
+    // Diagnostics
+    Route::middleware('permission:diagnostics.view')->group(function () {
+        Route::get('/diagnostics/', [DiagnosticController::class, 'index']);
+        Route::get('/diagnostics/{assessment}', [DiagnosticController::class, 'show']);
+    });
+    Route::middleware('permission:diagnostics.upload')->group(function () {
+        Route::post('/diagnostics/upload', [DiagnosticController::class, 'upload']);
+    });
+
+    // Class Assessments
+    Route::middleware('permission:class_assessments.view')->group(function () {
+        // A student's own results screen. It is guarded by class_assessments
+        // rather than students.view because the Student role only holds the
+        // former, and it reads the signed in student's own record.
+        Route::get('/students/class_assessments', [StudentController::class, 'studentsClassAssessment']);
+        Route::get('/students/class_assessments/{class_assessment}',
+            [StudentController::class, 'studentsClassAssessmentShow']);
+        Route::get('/class_assessments/{class_assessment}', [ClassAssessmentController::class, 'show']);
+        Route::get('/class_assessments/{class_assessment}/results',
+            [ClassAssessmentController::class, 'results']);
+        Route::get('/class_assessments/{class_assessment}/item_analysis',
+            [ClassAssessmentController::class, 'item_analysis']);
+        Route::get('/class_assessments/{class_assessment}/score_analysis',
+            [ClassAssessmentController::class, 'score_analysis']);
+        Route::get('/class_assessments/{class_assessment}/discrimination_index',
+            [ClassAssessmentController::class, 'discrimination_index']);
+        Route::get('/class_assessments/{class_assessment}/results/download',
+            [ClassAssessmentController::class, 'download_results']);
+        Route::get('/class_assessments/{class_assessment}/item_analysis/download',
+            [ClassAssessmentController::class, 'download_item_analysis']);
+        Route::get('/class_assessments/{class_assessment}/score_analysis/download',
+            [ClassAssessmentController::class, 'download_score_analysis']);
+        Route::get('/class_assessments/{class_assessment}/discrimination_index/download',
+            [ClassAssessmentController::class, 'download_discrimination_index']);
+    });
+
+    // ECDC
+    Route::middleware('permission:ecdcs.view')->group(function () {
+        Route::get('/ecdcs', [ECDCController::class, 'index']);
+        Route::get('/ecdcs/print_result', [ECDCController::class, 'print']);
+        Route::get('/ecdcs/classroom/{classroom}', [ECDCController::class, 'show']);
+        Route::get('/ecdcs/classroom/{classroom}/card/{student}', [ECDCController::class, 'card']);
+        Route::get('/ecdcs/classroom/{classroom}/card/{student}/print', [ECDCController::class, 'print']);
+    });
+    Route::middleware('permission:ecdcs.manage')->group(function () {
+        Route::get('/ecdcs/classroom/{classroom}/create', [ECDCController::class, 'create']);
+        Route::post('/ecdcs/store', [ECDCController::class, 'store']);
+        Route::post('/ecdcs/update', [ECDCController::class, 'update']);
+    });
+    Route::middleware('permission:ecdcs.upload')->group(function () {
+        Route::post('/ecdcs/upload', [ECDCController::class, 'upload']);
+    });
+    Route::middleware('permission:ecdcs.download')->group(function () {
+        Route::get('/ecdcs/{ecdc}/students/{student_id}/download', [ECDCController::class, 'download_student_result']);
+        Route::get('/ecdcs/{classroom}/download_template', [ECDCController::class, 'download_template']);
+    });
+
+    // Reports
+    Route::middleware('permission:reports.view')->group(function () {
+        Route::get('/reports', [ReportController::class, 'index']);
+    });
+    Route::middleware('permission:reports.generate')->group(function () {
+        Route::post('/reports/generate', [ReportController::class, 'generate']);
+    });
+
+    // Item Bank
+    Route::middleware('permission:item_banks.view')->group(function () {
+        Route::get('/item_banks', [ItemBankController::class, 'index']);
+    });
+
+    // Summatives
+    Route::middleware('permission:summatives.view')->group(function () {
+        Route::get('/summatives/', [SummativeController::class, 'index']);
+        Route::get('/summatives/{assessment}', [SummativeController::class, 'show']);
+    });
+    Route::middleware('permission:summatives.upload')->group(function () {
+        Route::post('/summatives/upload', [SummativeController::class, 'upload']);
+    });
+
+    // API : Lookups (report, assessment and student filters)
+    //
+    // The dropdowns across those screens post to these endpoints, so they share
+    // the api.lookups gate with the lookup group above. Every seeded role that
+    // holds a module view permission also holds api.lookups, so no curated role
+    // loses access; a custom role granted a module view permission must also be
+    // granted api.lookups before its filters will load.
+    Route::middleware('permission:api.lookups')->group(function () {
+        Route::post('/getStudentAnswers', [APIController::class, 'getStudentAnswers']);
+        Route::post('/getDistricts', [APIController::class, 'getDistricts']);
+        Route::post('/getDistrictsPerDivision', [APIController::class, 'getDistrictsPerDivision']);
+        Route::post('/getSchools', [APIController::class, 'getSchools']);
+        Route::post('/searchLRN', [APIController::class, 'searchLRN']);
+        Route::post('/getGradeLevelPerEducationLevel', [APIController::class, 'getGradeLevelPerEducationLevel']);
+        Route::post('/getAssessmentTypePerGradeLevel', [APIController::class, 'getAssessmentTypePerGradeLevel']);
+        Route::post('/getSubjectClassPerGradeLevel', [APIController::class, 'getSubjectClassPerGradeLevel']);
+        Route::post('/getGradeLevelPerAcademicYear', [APIController::class, 'getGradeLevelPerAcademicYear']);
+        Route::post('/getSubjectPerGradeLevel', [APIController::class, 'getSubjectPerGradeLevel']);
+        Route::post('/getItems', [APIController::class, 'getItems']);
+        Route::post('/getTeachersPerSchool', [APIController::class, 'getTeachersPerSchool']);
+        Route::post('/getSectionsPerSchool', [APIController::class, 'getSectionsPerSchool']);
+        Route::post('/getECDCResult', [APIController::class, 'getECDCResult']);
+    });
 });

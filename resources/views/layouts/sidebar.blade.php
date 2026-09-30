@@ -109,6 +109,8 @@
 				</li>
 				@endcan
 				@can('class_assessments.view')
+				{{-- The screen shows the signed in student's own results, so the link is only offered to a student account. --}}
+				@if ($class == 'Student')
 				<li class="nav-item ">
 					<a href="/students/class_assessments" class="nav-link 
 						{{ ($page['name'] == "Class Assessment") ? 'active' : '' }}">
@@ -118,6 +120,7 @@
 					</p>
 					</a>
 				</li>	
+				@endif
 				@endcan
 					@can('users.view')
 					<li class="nav-item ">

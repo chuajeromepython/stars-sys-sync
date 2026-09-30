@@ -1,5 +1,9 @@
 @extends('layouts.master')
 
+@php
+    use App\Support\ReportScope;
+@endphp
+
 @section('page_name', $page['name'])
 
 @section('page_title', $page['title'])
@@ -23,25 +27,25 @@
 			<div class="card">
 				<div class="card-header">
 					<label class="text-primary"> Generate Reports</label>
-					@if(Auth::user()->classification != "Teacher")
+					@if($scope->canDrillDownTo(ReportScope::Teacher))
 					<a href="#" class="btn btn-xs bg-primary float-right" data-toggle="dropdown">
 						<i class="fa fa-cog"></i>
 					</a>
 					<div class="dropdown-menu dropdown-menu-lg dropdown-menu-left" style="left: inherit; right: 0px;">
 						<span class="dropdown-item dropdown-header">More Options</span>
 						<div class="dropdown-divider"></div>
-						@if($level >= 4)
+						@if($scope->canDrillDownTo(ReportScope::District))
 						<a href="#" class="dropdown-item" id="btn_show_district">
 							<i class="fa fa-map mr-2"></i> District
 						</a>
 						@endif
-						@if($level >= 3)
+						@if($scope->canDrillDownTo(ReportScope::School))
 						<div class="dropdown-divider"></div>
 						<a href="#" class="dropdown-item" id="btn_show_school">
 							<i class="fas fa-school mr-2"></i> School
 						</a>
 						@endif
-						@if($level >= 2)
+						@if($scope->canDrillDownTo(ReportScope::Teacher))
 						<div class="dropdown-divider"></div>
 						<a href="#" class="dropdown-item" id="btn_show_teacher">
 						<i class="fas fa-users mr-2"></i> Teacher

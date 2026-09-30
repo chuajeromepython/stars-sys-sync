@@ -362,6 +362,7 @@
 @endsection
 
 @section('page_script')
+    @if (count($recordTypes) > 0)
     <script>
         $(function() {
             var table = $('#dashboard-records-table');
@@ -432,6 +433,7 @@
             });
         });
     </script>
+    @endif
 @endsection
 
 @section('content')
@@ -490,15 +492,16 @@
             </div>
         </section>
         <section class="row mb-4">
-            @foreach ([['Classrooms', $classrooms, 'fas fa-chalkboard-teacher', '/classrooms'], ['Teachers', $teachers, 'fas fa-user-tie', '/teachers'], ['Students', $students, 'fas fa-graduation-cap', '/students'], ['Sections', $sections, 'fas fa-layer-group', '/sections']] as $stat)
+            @foreach ($statistics as $stat)
                 <div class="col-6 col-lg-3 mb-3"><a class="dashboard-stat-card d-block p-3 text-decoration-none"
-                        href="{{ $stat[3] }}">
-                        <div class="dashboard-stat-icon mb-3"><i class="{{ $stat[2] }}"></i></div>
-                        <div class="dashboard-stat-value">{{ number_format($stat[1]) }}</div>
-                        <div class="dashboard-muted small mt-2">{{ $stat[0] }}</div>
+                        href="{{ $stat['url'] }}">
+                        <div class="dashboard-stat-icon mb-3"><i class="{{ $stat['icon'] }}"></i></div>
+                        <div class="dashboard-stat-value">{{ number_format($stat['value']) }}</div>
+                        <div class="dashboard-muted small mt-2">{{ $stat['label'] }}</div>
                     </a></div>
             @endforeach
         </section>
+        @if (count($recordTypes) > 0)
         <section class="dashboard-search-card mb-4">
             <div class="card-header d-flex flex-wrap gap-3">
                 <div>
@@ -508,9 +511,11 @@
                 <div class="dashboard-filter-bar">
                     <label for="dashboard-record-type" class="sr-only">Record type</label>
                     <select id="dashboard-record-type" class="form-control">
-                        <option value="teachers">Teachers</option>
-                        <option value="students">Students</option>
-                        <option value="classrooms">Classrooms</option>
+                        @foreach (['teachers' => 'Teachers', 'students' => 'Students', 'classrooms' => 'Classrooms'] as $value => $label)
+                            @if (in_array($value, $recordTypes, true))
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endif
+                        @endforeach
                     </select>
                     <div class="dashboard-search-wrap">
                         <i class="fas fa-search dashboard-search-icon"></i>
@@ -535,6 +540,7 @@
                 </div>
             </div>
         </section>
+        @endif
         @if ($classification != 'Student')
             <div class="modal fade" id="dashboard-templates-modal" tabindex="-1"
                 aria-labelledby="dashboard-templates-title" aria-hidden="true">

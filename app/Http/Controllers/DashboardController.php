@@ -5,11 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\CustomFunction;
-use App\Models\School;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\Teacher;
-use App\Models\User;
 use App\Services\DataTable\DashboardDataTable;
 use App\Services\DataTable\DataTablePaginator;
 use Auth;
@@ -21,7 +19,7 @@ use Response;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(DashboardDataTable $dashboardDataTable)
     {
 
         $page = [
@@ -32,14 +30,6 @@ class DashboardController extends Controller
 
         $academic_year = AcademicYear::where('is_active', 1)->first();
         $details = CustomFunction::getUserDetails(Auth::user()->id);
-        $schools = School::count();
-        $users = User::where('classification', '<>', 'Student')->count();
-        $students = Student::count();
-        $teachers = Teacher::count();
-        $classrooms = Classroom::query()
-            ->where('academic_year_id', $academic_year?->id)
-            ->count();
-        $sections = Section::count();
         $quotes = [
             'Education is the most powerful weapon which you can use to change the world.',
             'The beautiful thing about learning is that no one can take it away from you.',
@@ -51,10 +41,80 @@ class DashboardController extends Controller
         $templates = $this->templates();
         $classification = Auth::user()->classification;
 
+        $statistics = $this->statistics($academic_year);
+        $recordTypes = $dashboardDataTable->typesFor(Auth::user());
+
         return view('layouts.dashboard', compact('page', 'academic_year', 'details',
-            'users', 'schools', 'students', 'teachers', 'classrooms', 'sections',
-            'daily_quote', 'templates', 'classification'
+            'statistics', 'recordTypes', 'daily_quote', 'templates', 'classification'
         ));
+    }
+
+    /**
+     * The stat cards shown on the dashboard, scoped to what the role is
+     * responsible for.
+     *
+     * A teacher sees the classrooms and students they are actually assigned to,
+     * split by advisory and subject class, because the whole school roster is
+     * not their responsibility and reporting it as such is misleading. A school
+     * head and a department head see their own school. Division office roles are
+     * not scoped to a school and keep the division wide counts.
+     *
+     * @return list<array{label: string, value: int, icon: string, url: string}>
+     */
+    private function statistics(?AcademicYear $academicYear): array
+    {
+        $scope = app(DashboardDataTable::class)->scope(Auth::user());
+        $yearId = $academicYear?->id;
+
+        if ($scope['teacher_id'] !== null) {
+            $assigned = DB::table('tbl_teacher_classes')
+                ->where('teacher_id', $scope['teacher_id'])
+                ->distinct()
+                ->pluck('classroom_id');
+
+            $studentsInAssigned = DB::table('tbl_student_classrooms')
+                ->whereIn('classroom_id', $assigned)
+                ->where('status', 1)
+                ->distinct()
+                ->count('student_id');
+
+            return [
+                ['label' => 'Advisory', 'value' => $this->teacherClassCount($scope['teacher_id'], true), 'icon' => 'fas fa-user-check', 'url' => '/classrooms'],
+                ['label' => 'Subject Class', 'value' => $this->teacherClassCount($scope['teacher_id'], false), 'icon' => 'fas fa-chalkboard', 'url' => '/classrooms'],
+                ['label' => 'Students', 'value' => (int) $studentsInAssigned, 'icon' => 'fas fa-graduation-cap', 'url' => '/students'],
+                ['label' => 'Classrooms', 'value' => $assigned->count(), 'icon' => 'fas fa-door-open', 'url' => '/classrooms'],
+            ];
+        }
+
+        if ($scope['school_id'] !== null) {
+            $schoolId = $scope['school_id'];
+
+            return [
+                ['label' => 'Classrooms', 'value' => Classroom::where('school_id', $schoolId)->where('academic_year_id', $yearId)->count(), 'icon' => 'fas fa-chalkboard-teacher', 'url' => '/classrooms'],
+                ['label' => 'Teachers', 'value' => Teacher::where('school_id', $schoolId)->count(), 'icon' => 'fas fa-user-tie', 'url' => '/teachers'],
+                ['label' => 'Students', 'value' => Student::where('school_id', $schoolId)->count(), 'icon' => 'fas fa-graduation-cap', 'url' => '/students'],
+                ['label' => 'Sections', 'value' => Section::where('school_id', $schoolId)->count(), 'icon' => 'fas fa-layer-group', 'url' => '/sections'],
+            ];
+        }
+
+        return [
+            ['label' => 'Classrooms', 'value' => Classroom::where('academic_year_id', $yearId)->count(), 'icon' => 'fas fa-chalkboard-teacher', 'url' => '/classrooms'],
+            ['label' => 'Teachers', 'value' => Teacher::count(), 'icon' => 'fas fa-user-tie', 'url' => '/teachers'],
+            ['label' => 'Students', 'value' => Student::count(), 'icon' => 'fas fa-graduation-cap', 'url' => '/students'],
+            ['label' => 'Sections', 'value' => Section::count(), 'icon' => 'fas fa-layer-group', 'url' => '/sections'],
+        ];
+    }
+
+    /**
+     * How many of a teacher's classes are advisory, or are subject classes.
+     */
+    private function teacherClassCount(int $teacherId, bool $advisory): int
+    {
+        return DB::table('tbl_teacher_classes')
+            ->where('teacher_id', $teacherId)
+            ->where('advisory', $advisory ? 1 : 0)
+            ->distinct()
+            ->count('classroom_id');
     }
 
     /**
@@ -62,7 +122,16 @@ class DashboardController extends Controller
      */
     public function records(Request $request, DashboardDataTable $dashboardDataTable, DataTablePaginator $paginator): JsonResponse
     {
-        $resolved = $dashboardDataTable->resolve((string) $request->query('type', ''));
+        $type = (string) $request->query('type', '');
+
+        // The endpoint enforces the same rule as the filter select on the page:
+        // a record type the role is not offered resolves to nothing, so a
+        // hand crafted query string cannot widen the directory.
+        if (! $dashboardDataTable->allows($type)) {
+            $type = '';
+        }
+
+        $resolved = $dashboardDataTable->resolve($type);
 
         if ($resolved === null) {
             return response()->json([

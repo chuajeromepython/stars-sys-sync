@@ -652,11 +652,83 @@ class CustomFunction extends Model
     }
 
     /**
+     * Every classroom of a school for the active academic year, grouped by grade
+     * level.
+     *
+     * A school head has no tbl_teachers row, so the teacher scoped listing can
+     * never return their rooms. This is the school scoped counterpart, returning
+     * the same array shape as getClassroomsByTeacherUserId() so every consumer of
+     * getClassrooms() keeps working unchanged.
+     *
+     * @return array<string, list<array<string, mixed>>>
+     */
+    public static function getClassroomsForSchool(int $schoolId): array
+    {
+        $classrooms = [];
+
+        $academic_year = AcademicYear::active();
+
+        if (! $academic_year) {
+            return $classrooms;
+        }
+
+        $grade_level_filter = CustomFunction::filterGradeLevel($schoolId);
+        $grade_levels = GradeLevel::whereIn('level', $grade_level_filter)->get()->keyBy('id');
+
+        $rooms_by_grade_level = Classroom::with([
+            'section:id,section',
+            'advisoryTeacherClass.teacher.user.person',
+            'advisoryTeacherClass.subject',
+        ])
+            ->withCount('teacherClasses')
+            ->where('school_id', $schoolId)
+            ->where('academic_year_id', $academic_year->id)
+            ->whereIn('grade_level_id', $grade_levels->keys())
+            ->get()->groupBy('grade_level_id');
+
+        foreach ($grade_levels as $key => $grade_level) {
+
+            foreach ($rooms_by_grade_level->get($grade_level->id, collect()) as $room) {
+
+                $advisory = $room->advisoryTeacherClass;
+                $section = $room->section;
+                $advisor_person = $advisory?->teacher?->user?->person;
+                $subject = $advisory?->subject;
+
+                // An advisory record without a resolved advisor or subject cannot
+                // be rendered, so it is skipped rather than shown as broken.
+                if ($advisory && (! $advisor_person || ! $subject)) {
+                    continue;
+                }
+
+                $classrooms[$grade_level->level][] = [
+                    'classroom_id' => $room->id,
+                    'section' => $section?->section,
+                    'section_id' => $section?->id,
+                    'advisor' => ($advisory && $advisor_person) ? $advisor_person->first_name.' '.$advisor_person->last_name : 'N/A',
+                    'subject' => ($advisory && $subject) ? $subject->title : 'N/A',
+                    'classes' => (int) ($room->teacherClasses_count ?? $room->teacher_classes_count ?? 0),
+                    'is_advisory' => $advisory ? 1 : 0,
+                    'grade_level' => $grade_level->level,
+                    'school_year' => $academic_year->from.'-'.$academic_year->to,
+                    'teacher_class_id' => $advisory?->id,
+                ];
+            }
+        }
+
+        return $classrooms;
+    }
+
+    /**
      * Classrooms visible to the authenticated user, grouped by grade level.
      *
-     * Delegates to getClassroomsByTeacherUserId(), which is the null safe,
-     * eager loading implementation. The previous body re-implemented the same
-     * query with per row lookups and leaked $person between loop iterations.
+     * A teacher sees only the classrooms they are assigned to, through the null
+     * safe, eager loading implementation. Every other school scoped role - a
+     * school head, a department head - has no tbl_teachers row, so the teacher
+     * scoped query silently returned an empty set for them; they get the whole
+     * school instead.
+     *
+     * @return array<string, list<array<string, mixed>>>
      */
     public static function getClassrooms()
     {
@@ -675,7 +747,11 @@ class CustomFunction extends Model
             return [];
         }
 
-        return self::getClassroomsByTeacherUserId($userId);
+        if (Teacher::where('user_id', $userId)->exists()) {
+            return self::getClassroomsByTeacherUserId($userId);
+        }
+
+        return self::getClassroomsForSchool($schoolId);
     }
 
     // NERRIE'S NOTE
