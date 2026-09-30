@@ -9,6 +9,7 @@
 @endsection
 
 @section('content')
+    @include('layouts.assessment-tabs')
 	@include('layouts.message')
     @include('diagnostics.upload')
 

@@ -10,7 +10,11 @@ use App\Models\Section;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\DataTable\DashboardDataTable;
+use App\Services\DataTable\DataTablePaginator;
 use Auth;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Response;
@@ -36,27 +40,6 @@ class DashboardController extends Controller
             ->where('academic_year_id', $academic_year?->id)
             ->count();
         $sections = Section::count();
-        $dashboard_teachers = User::query()
-            ->select('tbl_teachers.id', 'username', 'first_name', 'middle_name', 'last_name', 'suffix')
-            ->join('tbl_teachers', 'tbl_teachers.user_id', 'tbl_users.id')
-            ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
-            ->where('classification', 'Teacher')
-            ->orderBy('last_name')
-            ->get();
-        $dashboard_students = Student::query()
-            ->select('tbl_students.id', 'lrn', 'first_name', 'middle_name', 'last_name', 'suffix')
-            ->join('tbl_users', 'tbl_students.user_id', 'tbl_users.id')
-            ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
-            ->orderBy('last_name')
-            ->get();
-        $dashboard_classrooms = Classroom::query()
-            ->select('tbl_classrooms.id', 'tbl_sections.section', 'tbl_grade_levels.level')
-            ->join('tbl_sections', 'tbl_classrooms.section_id', 'tbl_sections.id')
-            ->join('tbl_grade_levels', 'tbl_classrooms.grade_level_id', 'tbl_grade_levels.id')
-            ->where('tbl_classrooms.academic_year_id', $academic_year?->id)
-            ->orderBy('level')
-            ->orderBy('section')
-            ->get();
         $quotes = [
             'Education is the most powerful weapon which you can use to change the world.',
             'The beautiful thing about learning is that no one can take it away from you.',
@@ -70,9 +53,27 @@ class DashboardController extends Controller
 
         return view('layouts.dashboard', compact('page', 'academic_year', 'details',
             'users', 'schools', 'students', 'teachers', 'classrooms', 'sections',
-            'dashboard_teachers', 'dashboard_students', 'dashboard_classrooms', 'daily_quote',
-            'templates', 'classification'
+            'daily_quote', 'templates', 'classification'
         ));
+    }
+
+    /**
+     * Server-side processed records for the dashboard school directory table.
+     */
+    public function records(Request $request, DashboardDataTable $dashboardDataTable, DataTablePaginator $paginator): JsonResponse
+    {
+        $resolved = $dashboardDataTable->resolve((string) $request->query('type', ''));
+
+        if ($resolved === null) {
+            return response()->json([
+                'draw' => (int) $request->query('draw', 0),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+            ]);
+        }
+
+        return response()->json($paginator->paginate($resolved['query'], $request, $resolved['columns']));
     }
 
     public function database()

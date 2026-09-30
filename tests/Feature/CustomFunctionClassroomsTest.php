@@ -172,4 +172,114 @@ class CustomFunctionClassroomsTest extends TestCase
         $this->assertSame('Jane Advisor', $result['Grade 1'][0]['advisor']);
         $this->assertSame('Mathematics', $result['Grade 1'][0]['subject']);
     }
+
+    public function test_resolve_school_id_prefers_the_school_supervisor_profile(): void
+    {
+        $person_id = DB::table('tbl_persons')->insertGetId([
+            'first_name' => 'Ana',
+            'middle_name' => null,
+            'last_name' => 'Head',
+            'suffix' => null,
+            'gender' => 'F',
+            'birth_date' => '1985-05-05',
+        ]);
+
+        $user_id = DB::table('tbl_users')->insertGetId([
+            'username' => 'head.resolve@example.test',
+            'password' => bcrypt('password'),
+            // Deliberately not "School Head": resolution must not depend on it.
+            'classification' => 'Department Head',
+            'status' => 1,
+            'person_id' => $person_id,
+        ]);
+
+        $school_type_id = DB::table('tbl_school_types')->insertGetId(['type' => 'Elementary']);
+
+        $school_id = DB::table('tbl_schools')->insertGetId([
+            'code' => 'SCH-RESOLVE',
+            'name' => 'Resolve School',
+            'address' => 'Somewhere',
+            'school_category_id' => 1,
+            'school_type_id' => $school_type_id,
+            'district_id' => 1,
+        ]);
+
+        DB::table('tbl_school_supervisors')->insert([
+            'user_id' => $user_id,
+            'school_id' => $school_id,
+            'status' => 1,
+            'email' => 'head.resolve@example.test',
+        ]);
+
+        $this->assertSame(
+            $school_id,
+            CustomFunction::resolveSchoolIdForUser(User::findOrFail($user_id))
+        );
+    }
+
+    public function test_resolve_school_id_falls_back_to_the_teacher_profile(): void
+    {
+        $person_id = DB::table('tbl_persons')->insertGetId([
+            'first_name' => 'Ben',
+            'middle_name' => null,
+            'last_name' => 'Teacher',
+            'suffix' => null,
+            'gender' => 'M',
+            'birth_date' => '1986-06-06',
+        ]);
+
+        $user_id = DB::table('tbl_users')->insertGetId([
+            'username' => 'teacher.resolve@example.test',
+            'password' => bcrypt('password'),
+            'classification' => 'Teacher',
+            'status' => 1,
+            'person_id' => $person_id,
+        ]);
+
+        $school_type_id = DB::table('tbl_school_types')->insertGetId(['type' => 'Elementary']);
+
+        $school_id = DB::table('tbl_schools')->insertGetId([
+            'code' => 'SCH-RESOLVE-2',
+            'name' => 'Teacher School',
+            'address' => 'Somewhere',
+            'school_category_id' => 1,
+            'school_type_id' => $school_type_id,
+            'district_id' => 1,
+        ]);
+
+        DB::table('tbl_teachers')->insert([
+            'email' => 'teacher.resolve@example.test',
+            'user_id' => $user_id,
+            'school_id' => $school_id,
+        ]);
+
+        $this->assertSame(
+            $school_id,
+            CustomFunction::resolveSchoolIdForUser(User::findOrFail($user_id))
+        );
+    }
+
+    public function test_resolve_school_id_returns_null_for_a_division_level_office(): void
+    {
+        $person_id = DB::table('tbl_persons')->insertGetId([
+            'first_name' => 'Cara',
+            'middle_name' => null,
+            'last_name' => 'Admin',
+            'suffix' => null,
+            'gender' => 'F',
+            'birth_date' => '1987-07-07',
+        ]);
+
+        $user_id = DB::table('tbl_users')->insertGetId([
+            'username' => 'admin.resolve@example.test',
+            'password' => bcrypt('password'),
+            'classification' => 'Division Administrator',
+            'status' => 1,
+            'person_id' => $person_id,
+        ]);
+
+        // The old implementation fell through to the supervisor query for any
+        // non teacher, producing a null school and a broken "var school_id = ;".
+        $this->assertNull(CustomFunction::resolveSchoolIdForUser(User::findOrFail($user_id)));
+    }
 }

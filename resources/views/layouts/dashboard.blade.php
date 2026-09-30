@@ -365,85 +365,59 @@
     <script>
         $(function() {
             var table = $('#dashboard-records-table');
-            var records = {
-                teachers: @json($dashboard_teachers),
-                students: @json($dashboard_students),
-                classrooms: @json($dashboard_classrooms)
-            };
+            // Only the header wording changes with the record type. DataTables 3
+            // dropped `column().searchable()`, so the search columns are decided
+            // by the endpoint instead: every column of the record type is
+            // searchable, except the markup-only action column.
             var columns = {
                 teachers: ['Teacher name', 'Email address'],
                 students: ['Student name', 'LRN'],
                 classrooms: ['Classroom name', 'Grade level']
             };
-            var dataTable;
+            var dataTable = table.DataTable({
+                serverSide: true,
+                processing: true,
+                deferRender: true,
+                ajax: {
+                    url: '/dashboard/records',
+                    data: function(data) {
+                        data.type = $('#dashboard-record-type').val();
+                    }
+                },
+                columns: [
+                    { data: 'record' },
+                    { data: 'detail' },
+                    { data: 'action', orderable: false, searchable: false }
+                ],
+                order: [[0, 'asc']]
+            });
 
-            function escapeHtml(value) {
-                return $('<div>').text(value == null ? '' : value).html();
-            }
+            function applyRecordType(type) {
+                var titles = columns[type];
 
-            function renderRows(type) {
-                if (dataTable) {
-                    dataTable.clear().destroy();
-                    dataTable = null;
+                if (!titles) {
+                    return;
                 }
 
-                table.find('tbody').html($.map(records[type], function(record) {
-                    if (type === 'teachers') {
-                        return '<tr><td>' + escapeHtml(record.first_name + ' ' + record.last_name) +
-                            '</td><td>' + escapeHtml(record.username) + '</td><td><a href="/teachers/' +
-                            record.id +
-                            '/edit" class="btn btn-sm btn-primary"><i class="fas fa-pen"></i></a></td></tr>';
-                    }
-                    if (type === 'students') {
-                        return '<tr><td>' + escapeHtml(record.last_name + ', ' + record.first_name +
-                                ' ' + record.middle_name) + '</td><td>' + escapeHtml(record.lrn) +
-                            '</td><td><a href="/students/' + record.id +
-                            '/edit" class="btn btn-sm btn-primary"><i class="fas fa-pen"></i></a></td></tr>';
-                    }
-                    return '<tr><td>' + escapeHtml(record.level + ' - ' + record.section) +
-                        '</td><td>' + escapeHtml(record.level) + '</td><td><a href="/classrooms/' +
-                        record.id +
-                        '" class="btn btn-sm btn-primary"><i class="fas fa-eye"></i></a></td></tr>';
-                }).join(''));
-                table.find('thead tr th:first-child').text(columns[type][0]);
-                table.find('thead tr th:nth-child(2)').text(columns[type][1]);
-                dataTable = table.DataTable({
-                    language: {
-                        zeroRecords: '<span class="badge text-white bg-danger">No Records Found</span>'
-                    },
-                    columnDefs: type === 'students' || type === 'classrooms' ?
-                        [{
-                            targets: 0,
-                            searchable: false
-                        }, {
-                            targets: 1,
-                            searchable: true
-                        }, {
-                            targets: 2,
-                            searchable: false
-                        }] :
-                        [{
-                            targets: 0,
-                            searchable: true
-                        }, {
-                            targets: 1,
-                            searchable: true
-                        }, {
-                            targets: 2,
-                            searchable: false
-                        }]
-                });
+                dataTable.column(0).title(titles[0]);
+                dataTable.column(1).title(titles[1]);
             }
+
+            // The select already carries the record type the first request is
+            // built from, so the initial pass only labels the header; every
+            // later change clears the stale search and reloads.
+            applyRecordType($('#dashboard-record-type').val());
 
             $('#dashboard-record-type').on('change', function() {
                 $('#dashboard-record-search').val('');
-                renderRows($(this).val());
-            }).trigger('change');
-            $('#dashboard-record-search').on('input', function() {
-                if (dataTable) {
-                    dataTable.search($(this).val()).draw();
-                }
+                applyRecordType($(this).val());
+                dataTable.search('').ajax.reload();
             });
+
+            $('#dashboard-record-search').on('input', function() {
+                dataTable.search($(this).val()).draw();
+            });
+
             $('#dashboard-actions-button').on('click', function() {
                 var menu = $('#dashboard-actions-menu');
                 var isOpen = menu.hasClass('show');

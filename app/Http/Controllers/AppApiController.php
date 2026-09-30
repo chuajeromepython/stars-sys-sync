@@ -61,12 +61,12 @@ class AppApiController extends Controller
 
         $user_id = (int) $request->input('userId');
 
-        $isAuthenticated = DB::table('sessions')
-            ->where('user_id', $user_id)
-            ->where('last_activity', '>=', now()->subMinutes(15)->timestamp) // your "active" threshold
-            ->exists();
+        // The API group is stateless, so authentication is determined by the
+        // guard on the request. Querying the sessions table directly ignored the
+        // guard and rejected every caller that was legitimately signed in.
+        $authenticated_user_id = (int) Auth::id();
 
-        if (! $isAuthenticated) {
+        if ($authenticated_user_id === 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated request. Please login first.',
@@ -74,22 +74,22 @@ class AppApiController extends Controller
             ], 401);
         }
 
-        // if ((int) Auth::id() !== $user_id) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Submitted userId does not match the active session.',
-        //         'data' => null,
-        //     ], 403);
-        // }
+        if ($authenticated_user_id !== $user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Submitted userId does not match the active session.',
+                'data' => null,
+            ], 403);
+        }
 
         $user = User::find($user_id);
 
-        if (! $user || $user->classification !== 'Teacher') {
+        if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only teacher accounts can sync classrooms.',
+                'message' => 'User not found.',
                 'data' => null,
-            ], 403);
+            ], 404);
         }
 
         $teacher = Teacher::where('user_id', $user_id)->first();
@@ -97,12 +97,10 @@ class AppApiController extends Controller
         if (! $teacher) {
             return response()->json([
                 'success' => false,
-                'message' => 'Teacher profile not found.',
+                'message' => 'Only teacher accounts can sync classrooms.',
                 'data' => null,
-            ], 404);
+            ], 403);
         }
-
-        Auth::loginUsingId($user_id);
 
         $classrooms = CustomFunction::getClassroomsByTeacherUserId($user_id);
 
@@ -156,7 +154,7 @@ class AppApiController extends Controller
                     'competencies' => $domain->competencies()
                         ->orderBy('id')
                         ->get()
-                        ->map(fn($competency) => [
+                        ->map(fn ($competency) => [
                             'id' => $competency->id,
                             'domain_id' => $competency->domain_id,
                             'competency' => $competency->competency,
@@ -251,7 +249,7 @@ class AppApiController extends Controller
                     'competencies' => $domain->competencies()
                         ->orderBy('id')
                         ->get()
-                        ->map(fn($competency) => [
+                        ->map(fn ($competency) => [
                             'id' => $competency->id,
                             'domain_id' => $competency->domain_id,
                             'competency' => $competency->competency,
@@ -372,7 +370,7 @@ class AppApiController extends Controller
                     ->get();
 
                 if ($student->count() == 0 || empty($fortmattedLRN)) {
-                    $error[] = $fortmattedLRN . ' does not exist on this class.';
+                    $error[] = $fortmattedLRN.' does not exist on this class.';
                 } else {
                     $data[$student[0]->student_id] = [
                         'score' => $score,

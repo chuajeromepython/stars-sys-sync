@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\StudentClass;
 use App\Models\StudentClassroom;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;

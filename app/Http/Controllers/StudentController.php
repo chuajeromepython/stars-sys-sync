@@ -19,8 +19,10 @@ use App\Models\Student;
 use App\Models\StudentClassroom;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\DataTable\DataTablePaginator;
 use Auth;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -42,7 +44,20 @@ class StudentController extends Controller
         ];
 
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
-        $students = Student::select(
+
+        return view('students.index', [
+            'page' => $page,
+        ]);
+    }
+
+    /**
+     * Server-side processed student records for the student listing table.
+     */
+    public function data(Request $request, DataTablePaginator $paginator): JsonResponse
+    {
+        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+
+        $query = Student::select(
             'tbl_students.id as id', 'lrn',
             'tbl_persons.first_name',
             'tbl_persons.middle_name',
@@ -52,13 +67,34 @@ class StudentController extends Controller
         )
             ->join('tbl_users', 'tbl_students.user_id', 'tbl_users.id')
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
-            ->where('school_id', $school_id)
-            ->get();
+            ->where('school_id', $school_id);
 
-        return view('students.index', compact(
-            'page',
-            'students',
-        ));
+        $columns = [
+            [
+                'data' => 'lrn',
+                'column' => 'lrn',
+                'render' => fn ($row, $value) => e($value),
+            ],
+            [
+                'data' => 'name',
+                'column' => 'tbl_persons.last_name',
+                'render' => fn ($row, $value) => e(trim($row->last_name.', '.$row->first_name.' '.$row->middle_name.' '.$row->suffix)),
+            ],
+            [
+                'data' => 'gender',
+                'column' => 'tbl_persons.gender',
+                'render' => fn ($row, $value) => e($value),
+            ],
+            [
+                'data' => 'action',
+                'orderable' => false,
+                'searchable' => false,
+                'render' => fn ($row) => '<a href="/students/'.(int) $row->id
+                    .'/edit" class="btn btn-primary btn-sm"><i class="fa fa-pen"></i></a>',
+            ],
+        ];
+
+        return response()->json($paginator->paginate($query, $request, $columns));
     }
 
     /**

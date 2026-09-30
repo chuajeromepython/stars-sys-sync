@@ -17,23 +17,14 @@
             });
             
             $('#dt_ecdcs').dataTable({
-                'language':{
-                    'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-                },
                 'scrollX': (screen_height > screen_width) ? true : false
             });
             
             $('#dt_students').dataTable({
-                'language':{
-                    'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-                },
                 'scrollX': (screen_height > screen_width) ? true : false
             });
             
             $('#dt_student_lists').dataTable({
-                'language':{
-                    'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-                },
                 'scrollX': (screen_height > screen_width) ? true : false
             });    
 
@@ -72,8 +63,8 @@
                 },
                 success: function(data){
 
-                    $('#dt_student_lists').dataTable().fnClearTable();
-                    $('#dt_student_lists').dataTable().fnDestroy();
+                    $('#dt_student_lists').DataTable().clear();
+                    $('#dt_student_lists').DataTable().destroy();
                     
                     var html = "";
                     $.each(data, function(student_id, student) {
@@ -95,9 +86,6 @@
                     $("#tbody_student_list").html(html);
 
                     $('#dt_student_lists').dataTable({
-                        'language':{
-                            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-                        },
                         'scrollX': (screen_height > screen_width) ? true : false
                     });    
                 },

@@ -399,6 +399,32 @@ class CustomFunction extends Model
         return $details;
     }
 
+    /**
+     * Resolve the school the given user belongs to.
+     *
+     * Resolution is driven by the user's own profile records rather than by
+     * branching on a role/classification string, so any office that legitimately
+     * reaches a school scoped screen (school head, teacher, department head)
+     * resolves correctly, and division level offices fall through to null
+     * instead of silently resolving to another school.
+     *
+     * @return int|null
+     */
+    public static function resolveSchoolIdForUser(?User $user = null)
+    {
+        $user ??= Auth::user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $schoolId = SchoolSupervisor::where('user_id', $user->id)->value('school_id')
+            ?? DepartmentHead::where('user_id', $user->id)->value('school_id')
+            ?? Teacher::where('user_id', $user->id)->value('school_id');
+
+        return $schoolId ? (int) $schoolId : null;
+    }
+
     // NERRIE'S NOTE:
     // This function is used in filter of Area.
     // Area will depend on Auth user classification
@@ -625,93 +651,31 @@ class CustomFunction extends Model
         return $classrooms;
     }
 
+    /**
+     * Classrooms visible to the authenticated user, grouped by grade level.
+     *
+     * Delegates to getClassroomsByTeacherUserId(), which is the null safe,
+     * eager loading implementation. The previous body re-implemented the same
+     * query with per row lookups and leaked $person between loop iterations.
+     */
     public static function getClassrooms()
     {
+        $user = Auth::user();
 
-        $classrooms = [];
-        if (Auth::user()->classification == 'School Head') {
-            $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
-        } else {
-            $school_id = Teacher::where('user_id', Auth::user()->id)->value('school_id');
+        if (! $user) {
+            return [];
         }
 
-        // $school = School::find($school_id);
-        $academic_year = AcademicYear::active();
-        $grade_level_filter = CustomFunction::filterGradeLevel($school_id);
-        $grade_levels = GradeLevel::whereIn('level', $grade_level_filter)->get();
+        $userId = (int) $user->id;
+        $schoolId = self::resolveSchoolIdForUser($user);
 
-        foreach ($grade_levels as $key => $grade_level) {
-
-            $get_rooms = Classroom::where('grade_level_id', $grade_level->id)
-                ->where('school_id', $school_id)
-                ->where('academic_year_id', $academic_year->id)
-                ->get();
-
-            foreach ($get_rooms as $key => $room) {
-
-                $is_advisory = 0;
-                $classes = 0;
-                $is_included = 1;
-
-                if (Auth::user()->classification == 'Teacher') {
-
-                    $current_teacher = Teacher::where('user_id', Auth::user()->id)->first();
-                    $classes = TeacherClass::where([
-                        'classroom_id' => $room->id,
-                        'teacher_id' => $current_teacher->id,
-                    ])->get();
-                    $classes = $classes->count();
-
-                    $check_advisory = TeacherClass::where([
-                        'classroom_id' => $room->id,
-                        'advisory' => 1,
-                        'teacher_id' => $current_teacher->id,
-                    ])->first();
-
-                    $is_advisory = ($check_advisory) ? 1 : $is_advisory;
-
-                    if ($is_advisory == 0 && $classes == 0) {
-                        $is_included = 0;
-                    }
-                }
-
-                $room = Classroom::find($room->id);
-                $advisory = TeacherClass::where([
-                    'classroom_id' => $room->id,
-                    'advisory' => 1,
-                ])->first();
-
-                if ($advisory) {
-                    $teacher = Teacher::find($advisory->teacher_id);
-                    $subject = Subject::find($advisory->subject_id);
-                    $user = User::find($teacher->user_id);
-                    if ($user) {
-                        $person = Person::find($user->person_id);
-                    } else {
-                        // if teacher is deleted
-                        $is_included = 0;
-                    }
-                }
-
-                if ($is_included == 1) {
-                    $section = Section::find($room->section_id);
-                    $room_details = [
-                        'classroom_id' => $room->id,
-                        'section' => $section->section,
-                        'section_id' => $section->id,
-                        'advisor' => ($advisory) ? $person->first_name.' '.$person->last_name : 'N/A',
-                        'subject' => ($advisory) ? $subject->title : 'N/A',
-                        'classes' => $classes,
-                        'is_advisory' => $is_advisory,
-                        'grade_level' => $grade_level->level,
-                        'teacher_class_id' => $advisory->id,
-                    ];
-                    $classrooms[$grade_level->level][] = $room_details;
-                }
-            }
+        // Division level offices are not scoped to a single school; the teacher
+        // scoped listing is meaningless for them and returned an empty set.
+        if ($schoolId === null) {
+            return [];
         }
 
-        return $classrooms;
+        return self::getClassroomsByTeacherUserId($userId);
     }
 
     // NERRIE'S NOTE

@@ -4,25 +4,16 @@ $(function() {
 	var screen_height = $(window).height();
 
 	$('#dt_answer_keys').dataTable({
-	    'language':{
-	        'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-	    },
 	    "pageLength": 5,
 	    'scrollX': (screen_height > screen_width) ? true : false
 	});
 
 	$('#dt_csv').dataTable({
-	    'language':{
-	        'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-	    },
 	    "pageLength": 5,
 	    'scrollX': (screen_height > screen_width) ? true : false
 	});
 
 	$('#dt_term_exams').dataTable({
-	    'language':{
-	        'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-	    },
 	    "pageLength": 5,
 	    'scrollX': (screen_height > screen_width) ? true : false
 	});

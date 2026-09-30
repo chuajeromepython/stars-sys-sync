@@ -122,7 +122,7 @@
                         </label>
                     @endif
 
-                    @if (Auth::user()->classification == 'School Head')
+                    @can('teacher_classes.manage')
                         <a href="#" class="mb-2 btn btn-primary mr-2" id="btn_add" data-toggle="modal"
                             data-target="#create_modal">
                             <i class="fa fa-plus mr-2"></i> Add Subject Classs
@@ -132,7 +132,7 @@
                             data-target="#upload_modal_subject_class">
                             <i class="fa fa-upload mr-2"> </i> Upload Subject Class
                         </a>
-                    @endif
+                    @endcan
                 </div>
                 <div class="card-body">
                     <table class="table table-bordered" id="dt_classes">

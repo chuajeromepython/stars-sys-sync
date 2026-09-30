@@ -17,13 +17,18 @@ use App\Models\Person;
 use App\Models\SchoolSupervisor;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\DataTable\UserManagementDataTable;
+use App\Support\UserManagementTab;
 use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(Request $request)
+    public function __construct(private UserManagementDataTable $dataTable) {}
+
+    public function index(Request $request): View
     {
         $page = [
             'name' => 'User',
@@ -31,16 +36,9 @@ class UserController extends Controller
             'crumb' => ['Users' => '/users'],
         ];
 
-        $filter = CustomFunction::filterViewClassification();
-        $classifications = Classification::whereIn('classification', $filter)->get();
+        $filters = $this->dataTable->filterDefinitionsFor(UserManagementTab::Users->key());
 
-        $users = $this->datatable($request);
-
-        return view('users.index', compact(
-            'page',
-            'users',
-            'classifications', 'request'
-        ));
+        return view('users.index', compact('page', 'filters'));
     }
 
     public function create()
@@ -240,165 +238,6 @@ class UserController extends Controller
         } else {
             return redirect()->to(url()->previous())->withErrors(['error' => 'Username is already taken.'])->withInput($request->all);
         }
-
-    }
-
-    public function datatable($request)
-    {
-
-        $users = User::join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id');
-        $encoder = Auth::user()->classification;
-
-        $select_array = [
-            'tbl_users.id as id',
-            'classification', 'username',
-            'first_name',
-            'middle_name',
-            'last_name',
-            'username',
-        ];
-
-        if ($request->classification != null) {
-            if ($request->keyword != null) {
-                $users = $users->where(
-                    DB::raw(
-                        'CONCAT(
-                            `tbl_persons`.`first_name`,
-                            `tbl_persons`.`middle_name`,
-                            `tbl_persons`.`last_name`
-                        )'
-                    ), 'LIKE', '%'.$request->keyword.'%'
-                );
-            }
-
-            switch ($request->classification) {
-                case 'Division Supervisor':
-                    $users = $users->join('tbl_division_supervisors', 'tbl_division_supervisors.user_id', 'tbl_users.id')
-                        ->join('tbl_divisions', 'tbl_division_supervisors.division_id', 'tbl_divisions.id');
-                    array_push($select_array, 'tbl_divisions.name as area');
-                    $area = 'tbl_divisions.name';
-                    break;
-                case 'Division Administrator':
-                    $users = $users->join('tbl_division_administrators', 'tbl_division_administrators.user_id', 'tbl_users.id')
-                        ->join('tbl_divisions', 'tbl_division_administrators.division_id', 'tbl_divisions.id');
-                    array_push($select_array, 'tbl_divisions.name as area');
-                    $area = 'tbl_divisions.name';
-                    break;
-                case 'Division Superintendent':
-                    $users = $users->join('tbl_division_superintendents', 'tbl_division_superintendents.user_id', 'tbl_users.id')
-                        ->join('tbl_divisions', 'tbl_division_superintendents.division_id', 'tbl_divisions.id');
-                    array_push($select_array, 'tbl_divisions.name as area');
-                    $area = 'tbl_divisions.name';
-                    break;
-                case 'Assistant Division Superintendent':
-                    $users = $users->join('tbl_asst_division_superintendents', 'tbl_asst_division_superintendents.user_id', 'tbl_users.id')
-                        ->join('tbl_divisions', 'tbl_asst_division_superintendents.division_id', 'tbl_divisions.id');
-                    array_push($select_array, 'tbl_divisions.name as area');
-                    $area = 'tbl_divisions.name';
-                    break;
-                case 'Chief of CID':
-                    $users = $users->join('tbl_chief_cids', 'tbl_chief_cids.user_id', 'tbl_users.id')
-                        ->join('tbl_divisions', 'tbl_chief_cids.division_id', 'tbl_divisions.id');
-                    array_push($select_array, 'tbl_divisions.name as area');
-                    $area = 'tbl_divisions.name';
-                    break;
-                case 'Chief of SGOD':
-                    $users = $users->join('tbl_chief_sgods', 'tbl_chief_sgods.user_id', 'tbl_users.id')
-                        ->join('tbl_divisions', 'tbl_chief_sgods.division_id', 'tbl_divisions.id');
-                    array_push($select_array, 'tbl_divisions.name as area');
-                    $area = 'tbl_divisions.name';
-                    break;
-                case 'District Supervisor':
-                    $users = $users->join('tbl_district_supervisors', 'tbl_district_supervisors.user_id', 'tbl_users.id')
-                        ->join('tbl_districts', 'tbl_district_supervisors.district_id', 'tbl_districts.id');
-                    array_push($select_array, 'tbl_districts.name as area');
-                    $area = 'tbl_districts.name';
-                    break;
-                case 'Teacher':
-                    if ($encoder == 'School Head') {
-                        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
-                        $users = $users->join('tbl_teachers', 'tbl_teachers.user_id', 'tbl_users.id')
-                            ->join('tbl_schools', 'tbl_teachers.school_id', 'tbl_schools.id')
-                            ->where('school_id', $school_id);
-                    } else {
-                        $users = $users->join('tbl_teachers', 'tbl_teachers.user_id', 'tbl_users.id')
-                            ->join('tbl_schools', 'tbl_teachers.school_id', 'tbl_schools.id')
-                            ->join('tbl_districts', 'tbl_schools.district_id', 'tbl_districts.id');
-                    }
-
-                    array_push($select_array, 'tbl_schools.name as area');
-                    $area = 'tbl_schools.name';
-
-                    break;
-                case 'School Head':
-                    $users = $users->join('tbl_school_supervisors', 'tbl_school_supervisors.user_id', 'tbl_users.id')
-                        ->join('tbl_schools', 'tbl_school_supervisors.school_id', 'tbl_schools.id')
-                        ->join('tbl_districts', 'tbl_schools.district_id', 'tbl_districts.id');
-                    array_push($select_array, 'tbl_schools.name as area');
-                    $area = 'tbl_schools.name';
-
-                    break;
-                case 'Department Head':
-                    $users = $users->join('tbl_department_heads', 'tbl_department_heads.user_id', 'tbl_users.id')
-                        ->join('tbl_schools', 'tbl_department_heads.school_id', 'tbl_schools.id')
-                        ->join('tbl_districts', 'tbl_schools.district_id', 'tbl_districts.id');
-                    array_push($select_array, 'tbl_schools.name as area');
-                    $area = 'tbl_schools.name';
-
-                    break;
-                case 'Student':
-                    $users = $users->join('tbl_students', 'tbl_students.user_id', 'tbl_users.id')
-                        ->join('tbl_schools', 'tbl_students.school_id', 'tbl_schools.id')
-                        ->join('tbl_districts', 'tbl_schools.district_id', 'tbl_districts.id');
-                    array_push($select_array, 'tbl_schools.name as area');
-                    $area = 'tbl_schools.name';
-                    break;
-                default:
-                    // code...
-                    break;
-            }
-
-            $users = $users->where('classification', $request->classification);
-            if ($request->area != null) {
-                $users = $users->where($area, $request->area);
-            }
-
-        } else {
-            if ($encoder == 'System Administrator' || $encoder == 'Division Administrator') {
-                $users = $users = $users->join('tbl_division_supervisors', 'tbl_division_supervisors.user_id', 'tbl_users.id')->join('tbl_divisions', 'tbl_division_supervisors.division_id', 'tbl_divisions.id');
-            }
-            if ($encoder == 'School Head') {
-                $school = SchoolSupervisor::where('user_id', Auth::user()->id)->first();
-                $users = $users->join('tbl_teachers', 'tbl_teachers.user_id', 'tbl_users.id')
-                    ->join('tbl_schools', 'tbl_teachers.school_id', 'tbl_schools.id')
-                    ->where('school_id', $school->school_id);
-            }
-
-        }
-
-        if ($encoder == 'Division Administrator') {
-            $division_id = DivisionAdministrator::where('user_id', Auth::user()->id)->value('division_id');
-            $users = $users->where('division_id', $division_id);
-        }
-
-        // Discovered on November 11, 2023 - Rein and Glenn
-        // if ($encoder == "System Administrator") {
-        //     $users = $users->select($select_array)
-        //     ->where('tbl_users.status', 1)
-        //     ->paginate(10);
-        // }else{
-        // $users = $users->select($select_array)
-        // ->where('tbl_users.status', 1)
-        // ->paginate(10);
-        // }
-
-        $users = $users->select($select_array)
-            ->where('tbl_users.status', 1)
-            ->paginate(10);
-
-        $results = [];
-
-        return $users;
 
     }
 

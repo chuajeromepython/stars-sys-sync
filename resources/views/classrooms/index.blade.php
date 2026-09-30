@@ -43,13 +43,13 @@
     @include('classrooms.destroy')
     <div class="container">
         
-        @if(Auth::user()->classification == "School Head")
+        @can('classrooms.manage')
         <a href="/classrooms/create" class="btn btn-primary mr-2"><i class="fa fa-plus mr-2"></i> Add Classroom</a>
         <a href="#" class="btn btn-info" 
             data-toggle="modal" 
              data-target="#upload_modal_advisory"><i class="fa fa-upload mr-2"></i> Upload Advisory Class</a>
         <br><br>
-        @endif
+        @endcan
 
         @if(sizeof($classrooms) == 0)
             <div class="callout callout-info">

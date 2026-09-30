@@ -26,6 +26,7 @@
 		<nav class="mt-2">
 			<ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
 				<li class="nav-header">MENU</li>
+				@can('dashboard.view')
 				<li class="nav-item ">
 					<a href="/dashboard" class="nav-link 
 						{{ ($page['name'] == "Dashboard") ? 'active' : '' }}">
@@ -35,7 +36,8 @@
 					</p>
 					</a>
 				</li>
-				@if($class != "Student" && $class != "System Administrator")
+				@endcan
+				@can('reports.view')
 				<li class="nav-item ">
 					<a href="/reports" class="nav-link 
 						{{ ($page['name'] == "Report") ? 'active' : '' }}">
@@ -45,58 +47,23 @@
 						</p>
 					</a>
 				</li>
-				@endif
-				@if($class == "Teacher")
-				<li class="nav-item {{ ($page['name'] == "Assessment") ? 'menu-is-opening menu-open' : '' }} ">
-					<a href="#" class="nav-link {{ ($page['name'] == "Assessment") ? 'bg-primary' : '' }}">
+				@endcan
+				@php
+					$assessmentTabs = App\Support\AssessmentTab::availableFor(Auth::user());
+				@endphp
+				@if (count($assessmentTabs))
+				<li class="nav-item ">
+					<a href="{{ $assessmentTabs[0]->url() }}" class="nav-link 
+						{{ ($page['name'] == "Assessment") ? 'active' : '' }}">
 						<i class="nav-icon fas fa-pen"></i>
 						<p>
 							Assessment
-							<i class="fas fa-angle-left right"></i>
 						</p>
 					</a>
-					<ul class="nav nav-treeview">
-						<li class="nav-item">
-							<a href="/term-exams" class="nav-link
-								@if(array_key_exists("sub_name", $page))
-									{{ ($page['sub_name'] == "Term Exam") ? 'bg-info' : '' }}
-								@endif">
-								<i class="far fa-circle nav-icon"></i>
-								<p>Term Exam</p>
-							</a>
-						</li>
-						<li class="nav-item">
-							<a href="/diagnostics" class="nav-link
-								@if(array_key_exists("sub_name", $page))
-									{{ ($page['sub_name'] == "Diagnostic") ? 'bg-info' : '' }}
-								@endif">
-								<i class="far fa-circle nav-icon"></i>
-								<p>Diagnostic Test</p>
-							</a>
-						</li>
-						<li class="nav-item">
-							<a href="/summatives" class="nav-link
-								@if(array_key_exists("sub_name", $page))
-									{{ ($page['sub_name'] == "Summative") ? 'active' : '' }}
-								@endif">
-								<i class="far fa-circle nav-icon"></i>
-								<p>Summative Test</p>
-							</a>
-						</li>
-						<li class="nav-item">
-							<a href="/ecdcs" class="nav-link
-								@if(array_key_exists("sub_name", $page))
-									{{ ($page['sub_name'] == "ECDC") ? 'active' : '' }}
-								@endif">
-								<i class="far fa-circle nav-icon"></i>
-								<p>ECDC</p>
-							</a>
-						</li>
-					</ul>
 				</li>
 				@endif
 			
-				@if($class == "School Head" || $class == "Teacher")
+				@can('classrooms.view')
 				<li class="nav-item ">
 					<a href="/classrooms" class="nav-link 
 						{{ ($page['name'] == "Classroom") ? 'active' : '' }}">
@@ -106,29 +73,31 @@
 					</p>
 					</a>
 				</li>	
-				@endif
+				@endcan
 				<li class="nav-header">REFERENCE LIBRARY</li>
-				@if($class == "Teacher")
+				@can('item_banks.view')
 				<li class="nav-item ">
 					<a href="/item_banks" class="nav-link 
-						{{ ($page['name'] == "Item Bank") ? 'active' : '' }}">
+						{{ ($page['name'] == "Item Bank") ? 'active' : '' }}>
 						<i class="nav-icon fa fa-building"></i>
 						<p>
 							Item Bank
 						</p>
 					</a>
 				</li>
+				@endcan
+				@can('competencies.view')
 				<li class="nav-item ">
-						<a href="/competencies" class="nav-link 
-							{{ ($page['name'] == "Competency") ? 'active' : '' }}">
+					<a href="/competencies" class="nav-link 
+						{{ ($page['name'] == "Competency") ? 'active' : '' }}>
 						<i class="nav-icon fa fa-check"></i>
 						<p>
 							Competencies
 						</p>
-						</a>
-					</li>
-				@endif
-				@if($class == "System Administrator")
+					</a>
+				</li>
+				@endcan
+				@can('divisions.view')
 				<li class="nav-item ">
 					<a href="/divisions" class="nav-link 
 						{{ ($page['name'] == "Division") ? 'active' : '' }}">
@@ -138,8 +107,8 @@
 					</p>
 					</a>
 				</li>
-				@endif
-				@if($class == "Student")
+				@endcan
+				@can('class_assessments.view')
 				<li class="nav-item ">
 					<a href="/students/class_assessments" class="nav-link 
 						{{ ($page['name'] == "Class Assessment") ? 'active' : '' }}">
@@ -149,8 +118,8 @@
 					</p>
 					</a>
 				</li>	
-				@endif
-				@if($class == "Division Administrator" || $class == "System Administrator")
+				@endcan
+					@can('users.view')
 					<li class="nav-item ">
 						<a href="/users" class="nav-link 
 							{{ ($page['name'] == "User") ? 'active' : '' }}">
@@ -160,9 +129,8 @@
 						</p>
 						</a>
 					</li>
-				@endif
-				
-				@if($class == "System Administrator")
+					@endcan
+				@can('trails.view')
 				<li class="nav-item ">
 					<a href="/trails" class="nav-link 
 						{{ ($page['name'] == "Trails") ? 'active' : '' }}">
@@ -172,8 +140,8 @@
 					</p>
 					</a>
 				</li>
-				@endif
-				@if($class == "Division Administrator")
+				@endcan
+					@can('academic_years.view')
 					<li class="nav-item ">
 						<a href="/academic_years" class="nav-link 
 							{{ ($page['name'] == "Academic Year") ? 'active' : '' }}">
@@ -183,6 +151,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('districts.view')
 					<li class="nav-item ">
 						<a href="/districts" class="nav-link 
 							{{ ($page['name'] == "District") ? 'active' : '' }}">
@@ -192,6 +162,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('schools.view')
 					<li class="nav-item ">
 						<a href="/schools" class="nav-link 
 							{{ ($page['name'] == "School") ? 'active' : '' }}">
@@ -201,6 +173,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('grade_levels.view')
 					<li class="nav-item ">
 						<a href="/grade_levels" class="nav-link 
 							{{ ($page['name'] == "Grade Level") ? 'active' : '' }}">
@@ -210,6 +184,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('subjects.view')
 					<li class="nav-item ">
 						<a href="/subjects" class="nav-link 
 							{{ ($page['name'] == "Subject") ? 'active' : '' }}">
@@ -219,6 +195,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('semesters.view')
 					<li class="nav-item ">
 						<a href="/semesters" class="nav-link 
 							{{ ($page['name'] == "Semester") ? 'active' : '' }}">
@@ -228,6 +206,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('tracks.view')
 					<li class="nav-item ">
 						<a href="/tracks" class="nav-link 
 							{{ ($page['name'] == "Track") ? 'active' : '' }}">
@@ -237,6 +217,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('strands.view')
 					<li class="nav-item ">
 						<a href="/strands" class="nav-link 
 							{{ ($page['name'] == "Strand") ? 'active' : '' }}">
@@ -246,6 +228,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('courses.view')
 					<li class="nav-item ">
 						<a href="/courses" class="nav-link 
 							{{ ($page['name'] == "Course") ? 'active' : '' }}">
@@ -255,15 +239,8 @@
 						</p>
 						</a>
 					</li>
-					<li class="nav-item ">
-						<a href="/competencies" class="nav-link 
-							{{ ($page['name'] == "Competency") ? 'active' : '' }}">
-						<i class="nav-icon fa fa-check"></i>
-						<p>
-							Competencies
-						</p>
-						</a>
-					</li>
+					@endcan
+					@can('ecdc_domains.view')
 					<li class="nav-item ">
 						<a href="/ecdc_domains" class="nav-link 
 							{{ ($page['name'] == "ECDC Domains") ? 'active' : '' }}">
@@ -273,8 +250,8 @@
 						</p>
 						</a>
 					</li>
-				@endif
-				@if($class == "School Head")
+					@endcan
+					@can('department_heads.view')
 					<li class="nav-item ">
 						<a href="/department_heads" class="nav-link 
 							{{ ($page['name'] == "Department Head") ? 'active' : '' }}">
@@ -284,6 +261,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('teachers.view')
 					<li class="nav-item ">
 						<a href="/teachers" class="nav-link 
 							{{ ($page['name'] == "Teacher") ? 'active' : '' }}">
@@ -293,6 +272,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('students.view')
 					<li class="nav-item ">
 						<a href="/students" class="nav-link 
 							{{ ($page['name'] == "Student") ? 'active' : '' }}">
@@ -302,6 +283,8 @@
 						</p>
 						</a>
 					</li>
+					@endcan
+					@can('sections.view')
 					<li class="nav-item ">
 						<a href="/sections" class="nav-link 
 							{{ ($page['name'] == "Section") ? 'active' : '' }}">
@@ -311,7 +294,7 @@
 							</p>
 						</a>
 					</li>
-				@endif
+					@endcan
 
 			</ul>
 		</nav>

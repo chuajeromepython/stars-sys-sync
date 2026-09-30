@@ -33,29 +33,7 @@
                                 <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach($teachers as $teacher)
-                                <tr>
-                                    <td>{{$teacher->username}}</td>
-                                    <td>
-                                        {{$teacher->first_name}}
-                                        {{$teacher->middle_name}}
-                                        {{$teacher->last_name}}
-                                        {{$teacher->suffix}}
-                                    </td>
-                                    <th>
-                                        <center>
-                                        <a href="/teachers/{{$teacher->id}}/edit" class="btn-primary btn-sm btn"><i class="fa fa-pen"></i></a>
-                                        {{-- <a href="#" class="btn-danger btn-sm btn btn-destroy"
-                                        data-toggle="modal" data-target="#destroy_modal"
-                                        data-destroy_id="{{$teacher->user_id}}" 
-                                        data-destroy_username="{{$teacher->username}}">
-                                        <i class="fa fa-trash"></i></a> --}}
-                                       </center>
-                                    </th>
-                                </tr>
-                            @endforeach
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>

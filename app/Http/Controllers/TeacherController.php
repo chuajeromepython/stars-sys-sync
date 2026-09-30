@@ -11,7 +11,9 @@ use App\Models\SchoolSupervisor;
 use App\Models\Teacher;
 use App\Models\TeacherClass;
 use App\Models\User;
+use App\Services\DataTable\DataTablePaginator;
 use Auth;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -33,19 +35,48 @@ class TeacherController extends Controller
         ];
 
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
-        $teachers = User::select(
-            'tbl_teachers.id', 'username', 'user_id',
-            'first_name', 'middle_name', 'last_name', 'suffix'
+
+        return view('teachers.index', [
+            'page' => $page,
+        ]);
+    }
+
+    /**
+     * Server-side processed teacher records for the teacher listing table.
+     */
+    public function data(Request $request, DataTablePaginator $paginator): JsonResponse
+    {
+        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+
+        $query = User::select(
+            'tbl_teachers.id as id', 'username', 'user_id',
+            'tbl_persons.first_name', 'tbl_persons.middle_name', 'tbl_persons.last_name', 'tbl_persons.suffix'
         )->join('tbl_teachers', 'tbl_teachers.user_id', 'tbl_users.id')
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
             ->where('classification', 'Teacher')
-            ->where('school_id', $school_id)
-            ->get();
+            ->where('school_id', $school_id);
 
-        return view('teachers.index', compact(
-            'page',
-            'teachers',
-        ));
+        $columns = [
+            [
+                'data' => 'username',
+                'column' => 'username',
+                'render' => fn ($row, $value) => e($value),
+            ],
+            [
+                'data' => 'name',
+                'column' => 'tbl_persons.last_name',
+                'render' => fn ($row, $value) => e(trim($row->first_name.' '.$row->middle_name.' '.$row->last_name.' '.$row->suffix)),
+            ],
+            [
+                'data' => 'action',
+                'orderable' => false,
+                'searchable' => false,
+                'render' => fn ($row) => '<a href="/teachers/'.(int) $row->id
+                    .'/edit" class="btn btn-primary btn-sm"><i class="fa fa-pen"></i></a>',
+            ],
+        ];
+
+        return response()->json($paginator->paginate($query, $request, $columns));
     }
 
     /**
@@ -261,7 +292,7 @@ class TeacherController extends Controller
 
         $spreadsheet = IOFactory::load($request->file('file'));
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
-        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
+        $sheet = $spreadsheet->getSheetByName('ENCODE here')->toArray();
         $data = [];
         $errors = [];
         $error_messages = [];
