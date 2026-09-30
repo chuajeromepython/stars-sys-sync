@@ -15,9 +15,9 @@
                             <label>Select Section</label>
                             <select class="select2bs4 form-control" name="class_id">
                                 <option selected disabled>-Select Class-</option>
-                                @foreach($classes as $class)
-                                    <option value="{{$class->id}}">
-                                        {{$class->level}} - {{$class->section}}
+                                @foreach($rooms as $room)
+                                    <option value="{{$room['teacher_class_id']}}">
+                                        {{$room['grade_level']}} - {{$room['section']}}
                                     </option>
                                 @endforeach
                             </select>

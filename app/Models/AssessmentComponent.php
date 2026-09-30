@@ -5,13 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use OwenIt\Auditing\Contracts\Auditable;
 
-class AssessmentComponent extends Model implements Auditable
+class AssessmentComponent extends Model
 {
-    use HasFactory; 
+    use HasFactory;
     use SoftDeletes;
-    use \OwenIt\Auditing\Auditable;
-    protected $table = 'tbl_assessment_components';
 
+    // use \OwenIt\Auditing\Auditable;
+    protected $table = 'tbl_assessment_components';
 }

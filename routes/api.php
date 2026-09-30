@@ -1,8 +1,9 @@
 <?php
+
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AppApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,3 +20,6 @@ use App\Http\Controllers\AppApiController;
 //     return $request->user();
 // });
 Route::get('/authenticate/{username}/{password}/', [AppApiController::class, 'authenticate']);
+Route::post('/classrooms/sync', [AppApiController::class, 'syncClassroomsByTeacherUserId']);
+Route::post('/students/sync', [AppApiController::class, 'studentsPerClassroom']);
+Route::post('/upload/assessment', [AppApiController::class, 'studentsPerClassroom']);

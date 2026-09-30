@@ -14,12 +14,12 @@ class TrackSeeder extends Seeder
      */
     public function run()
     {
-        $tracks = array(
-            array('name' => 'Academic Track'),
-            array('name' => 'Technical-Vocational-Livelihood Track'),
-            array('name' => 'Sports Track'),
-            array('name' => 'Arts and Design Track')
-        );
+        $tracks = [
+            ['name' => 'Academic Track'],
+            ['name' => 'Technical-Vocational-Livelihood Track'],
+            ['name' => 'Sports Track'],
+            ['name' => 'Arts and Design Track'],
+        ];
 
         DB::table('tbl_tracks')->insert($tracks);
     }

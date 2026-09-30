@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Question;
 use App\Models\Option;
+use App\Models\Question;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class QuestionController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -22,7 +24,7 @@ class QuestionController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -32,8 +34,7 @@ class QuestionController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -43,8 +44,7 @@ class QuestionController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Question  $question
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(Question $question)
     {
@@ -54,8 +54,7 @@ class QuestionController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\Question  $question
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(Question $question)
     {
@@ -65,9 +64,7 @@ class QuestionController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Question  $question
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, Question $question)
     {
@@ -77,8 +74,7 @@ class QuestionController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Question  $question
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(Question $question)
     {
@@ -88,9 +84,8 @@ class QuestionController extends Controller
     /**
      * Update answer key (question, options, and correct answer)
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function updateAnswerKey(Request $request, $id)
     {
@@ -100,7 +95,7 @@ class QuestionController extends Controller
                 'question' => 'required|string',
                 'options' => 'required|array|min:4',
                 'option_ids' => 'required|array|min:4',
-                'correct_answer' => 'required|in:A,B,C,D'
+                'correct_answer' => 'required|in:A,B,C,D',
             ]);
 
             DB::beginTransaction();
@@ -122,11 +117,11 @@ class QuestionController extends Controller
                     $option->option = $options[$index];
                     $option->is_correct = ($assignment === $correctAnswer) ? 1 : 0;
                     $option->save();
-                    
+
                     \Log::info('Option updated', [
                         'option_id' => $option->id,
                         'assignment' => $assignment,
-                        'is_correct' => $option->is_correct
+                        'is_correct' => $option->is_correct,
                     ]);
                 }
             }
@@ -135,20 +130,22 @@ class QuestionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Answer key updated successfully!'
+                'message' => 'Answer key updated successfully!',
             ]);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Validation error: ' . json_encode($e->errors())
+                'message' => 'Validation error: '.json_encode($e->errors()),
             ], 422);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating answer key: ' . $e->getMessage()
+                'message' => 'Error updating answer key: '.$e->getMessage(),
             ], 500);
         }
     }

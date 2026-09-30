@@ -11,7 +11,7 @@ class CreateDivisionSupervisorsTable extends Migration
      *
      * @return void
      */
-     public function up()
+    public function up()
     {
         Schema::create('tbl_division_supervisors', function (Blueprint $table) {
             $table->bigIncrements('id');
