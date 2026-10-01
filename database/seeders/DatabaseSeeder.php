@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
             TrackSeeder::class,
             UserSeeder::class,
             WeekSeeder::class,
+            RolePermissionSeeder::class,
             // SchoolSupervisorSeeder::class,
         ]);
     }

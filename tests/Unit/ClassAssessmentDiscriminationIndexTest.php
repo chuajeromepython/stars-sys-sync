@@ -80,4 +80,73 @@ class ClassAssessmentDiscriminationIndexTest extends TestCase
 
         File::delete($resultsPath);
     }
+
+    public function test_every_item_is_classified_even_inside_the_index_gap(): void
+    {
+        $assessmentId = 2;
+        $classAssessmentId = 2;
+
+        DB::table('tbl_assessments')->insert([
+            'id' => $assessmentId,
+            'number_of_items' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('tbl_class_assessments')->insert([
+            'id' => $classAssessmentId,
+            'assessment_id' => $assessmentId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $resultsPath = storage_path('app/public/res-'.$classAssessmentId.'.json');
+        File::ensureDirectoryExists(dirname($resultsPath));
+
+        // Sweep several group sizes so a range of index percentages is produced,
+        // including the 19 <= $percentage < 20 band that the old if/elseif chain
+        // fell through without setting $classification/$recommendation.
+        $payload = [];
+
+        for ($high = 1; $high <= 40; $high++) {
+            for ($low = 0; $low <= $high; $low++) {
+                $payload[] = ['proficiency' => 'HP', 'answers' => [1 => ['is_correct' => 1]]];
+            }
+
+            for ($low = 0; $low <= $high; $low++) {
+                $payload[] = [
+                    'proficiency' => 'LP',
+                    'answers' => [1 => ['is_correct' => $low < $high ? 1 : 0]],
+                ];
+            }
+        }
+
+        File::put($resultsPath, json_encode($payload, JSON_THROW_ON_ERROR));
+
+        $results = ClassAssessment::getDisriminationIndex($classAssessmentId);
+
+        $this->assertCount(1, $results);
+
+        foreach ($results as $result) {
+            $this->assertArrayHasKey('classification', $result);
+            $this->assertArrayHasKey('recommendation', $result);
+            $this->assertNotSame('', $result['classification']);
+            $this->assertNotSame('', $result['recommendation']);
+        }
+
+        File::delete($resultsPath);
+    }
+
+    public function test_get_results_returns_an_empty_array_when_the_file_is_missing(): void
+    {
+        $path = storage_path('app/public/res-9999.json');
+
+        if (File::exists($path)) {
+            File::delete($path);
+        }
+
+        // Previously Storage::get() threw a FileNotFoundException here, which
+        // surfaced as a 500 on every report for an unassessed class.
+        $this->assertSame([], ClassAssessment::getResults(9999));
+    }
 }

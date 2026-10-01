@@ -85,16 +85,10 @@ $(function() {
 	// Show
 	$('#dt_classes').dataTable({
         'order': [[3, 'desc']],
-        'language':{
-            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-        },
         'scrollX': (screen_height > screen_width) ? true : false
     });
      $('#dt_students').dataTable({
         'order': [[1, 'asc']],
-        'language':{
-            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-        },
         'scrollX': (screen_height > screen_width) ? true : false
     });
 

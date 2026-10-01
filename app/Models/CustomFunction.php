@@ -287,6 +287,7 @@ class CustomFunction extends Model
             'school' => ($school == null) ? $school : $school->name,
             'level' => $level,
             'subjects' => $subjects,
+            'school_code' => ($school == null) ? $school : $school->code,
         ];
 
         return $details;
@@ -396,6 +397,32 @@ class CustomFunction extends Model
         }
 
         return $details;
+    }
+
+    /**
+     * Resolve the school the given user belongs to.
+     *
+     * Resolution is driven by the user's own profile records rather than by
+     * branching on a role/classification string, so any office that legitimately
+     * reaches a school scoped screen (school head, teacher, department head)
+     * resolves correctly, and division level offices fall through to null
+     * instead of silently resolving to another school.
+     *
+     * @return int|null
+     */
+    public static function resolveSchoolIdForUser(?User $user = null)
+    {
+        $user ??= Auth::user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $schoolId = SchoolSupervisor::where('user_id', $user->id)->value('school_id')
+            ?? DepartmentHead::where('user_id', $user->id)->value('school_id')
+            ?? Teacher::where('user_id', $user->id)->value('school_id');
+
+        return $schoolId ? (int) $schoolId : null;
     }
 
     // NERRIE'S NOTE:
@@ -624,93 +651,107 @@ class CustomFunction extends Model
         return $classrooms;
     }
 
-    public static function getClassrooms()
+    /**
+     * Every classroom of a school for the active academic year, grouped by grade
+     * level.
+     *
+     * A school head has no tbl_teachers row, so the teacher scoped listing can
+     * never return their rooms. This is the school scoped counterpart, returning
+     * the same array shape as getClassroomsByTeacherUserId() so every consumer of
+     * getClassrooms() keeps working unchanged.
+     *
+     * @return array<string, list<array<string, mixed>>>
+     */
+    public static function getClassroomsForSchool(int $schoolId): array
     {
-
         $classrooms = [];
-        if (Auth::user()->classification == 'School Head') {
-            $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
-        } else {
-            $school_id = Teacher::where('user_id', Auth::user()->id)->value('school_id');
+
+        $academic_year = AcademicYear::active();
+
+        if (! $academic_year) {
+            return $classrooms;
         }
 
-        // $school = School::find($school_id);
-        $academic_year = AcademicYear::active();
-        $grade_level_filter = CustomFunction::filterGradeLevel($school_id);
-        $grade_levels = GradeLevel::whereIn('level', $grade_level_filter)->get();
+        $grade_level_filter = CustomFunction::filterGradeLevel($schoolId);
+        $grade_levels = GradeLevel::whereIn('level', $grade_level_filter)->get()->keyBy('id');
+
+        $rooms_by_grade_level = Classroom::with([
+            'section:id,section',
+            'advisoryTeacherClass.teacher.user.person',
+            'advisoryTeacherClass.subject',
+        ])
+            ->withCount('teacherClasses')
+            ->where('school_id', $schoolId)
+            ->where('academic_year_id', $academic_year->id)
+            ->whereIn('grade_level_id', $grade_levels->keys())
+            ->get()->groupBy('grade_level_id');
 
         foreach ($grade_levels as $key => $grade_level) {
 
-            $get_rooms = Classroom::where('grade_level_id', $grade_level->id)
-                ->where('school_id', $school_id)
-                ->where('academic_year_id', $academic_year->id)
-                ->get();
+            foreach ($rooms_by_grade_level->get($grade_level->id, collect()) as $room) {
 
-            foreach ($get_rooms as $key => $room) {
+                $advisory = $room->advisoryTeacherClass;
+                $section = $room->section;
+                $advisor_person = $advisory?->teacher?->user?->person;
+                $subject = $advisory?->subject;
 
-                $is_advisory = 0;
-                $classes = 0;
-                $is_included = 1;
-
-                if (Auth::user()->classification == 'Teacher') {
-
-                    $current_teacher = Teacher::where('user_id', Auth::user()->id)->first();
-                    $classes = TeacherClass::where([
-                        'classroom_id' => $room->id,
-                        'teacher_id' => $current_teacher->id,
-                    ])->get();
-                    $classes = $classes->count();
-
-                    $check_advisory = TeacherClass::where([
-                        'classroom_id' => $room->id,
-                        'advisory' => 1,
-                        'teacher_id' => $current_teacher->id,
-                    ])->first();
-
-                    $is_advisory = ($check_advisory) ? 1 : $is_advisory;
-
-                    if ($is_advisory == 0 && $classes == 0) {
-                        $is_included = 0;
-                    }
+                // An advisory record without a resolved advisor or subject cannot
+                // be rendered, so it is skipped rather than shown as broken.
+                if ($advisory && (! $advisor_person || ! $subject)) {
+                    continue;
                 }
 
-                $room = Classroom::find($room->id);
-                $advisory = TeacherClass::where([
+                $classrooms[$grade_level->level][] = [
                     'classroom_id' => $room->id,
-                    'advisory' => 1,
-                ])->first();
-
-                if ($advisory) {
-                    $teacher = Teacher::find($advisory->teacher_id);
-                    $subject = Subject::find($advisory->subject_id);
-                    $user = User::find($teacher->user_id);
-                    if ($user) {
-                        $person = Person::find($user->person_id);
-                    } else {
-                        // if teacher is deleted
-                        $is_included = 0;
-                    }
-                }
-
-                if ($is_included == 1) {
-                    $section = Section::find($room->section_id);
-                    $room_details = [
-                        'classroom_id' => $room->id,
-                        'section' => $section->section,
-                        'section_id' => $section->id,
-                        'advisor' => ($advisory) ? $person->first_name.' '.$person->last_name : 'N/A',
-                        'subject' => ($advisory) ? $subject->title : 'N/A',
-                        'classes' => $classes,
-                        'is_advisory' => $is_advisory,
-                        'grade_level' => $grade_level->level,
-                        'teacher_class_id' => $advisory->id,
-                    ];
-                    $classrooms[$grade_level->level][] = $room_details;
-                }
+                    'section' => $section?->section,
+                    'section_id' => $section?->id,
+                    'advisor' => ($advisory && $advisor_person) ? $advisor_person->first_name.' '.$advisor_person->last_name : 'N/A',
+                    'subject' => ($advisory && $subject) ? $subject->title : 'N/A',
+                    'classes' => (int) ($room->teacherClasses_count ?? $room->teacher_classes_count ?? 0),
+                    'is_advisory' => $advisory ? 1 : 0,
+                    'grade_level' => $grade_level->level,
+                    'school_year' => $academic_year->from.'-'.$academic_year->to,
+                    'teacher_class_id' => $advisory?->id,
+                ];
             }
         }
 
         return $classrooms;
+    }
+
+    /**
+     * Classrooms visible to the authenticated user, grouped by grade level.
+     *
+     * A teacher sees only the classrooms they are assigned to, through the null
+     * safe, eager loading implementation. Every other school scoped role - a
+     * school head, a department head - has no tbl_teachers row, so the teacher
+     * scoped query silently returned an empty set for them; they get the whole
+     * school instead.
+     *
+     * @return array<string, list<array<string, mixed>>>
+     */
+    public static function getClassrooms()
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return [];
+        }
+
+        $userId = (int) $user->id;
+        $schoolId = self::resolveSchoolIdForUser($user);
+
+        // Division level offices are not scoped to a single school; the teacher
+        // scoped listing is meaningless for them and returned an empty set.
+        if ($schoolId === null) {
+            return [];
+        }
+
+        if (Teacher::where('user_id', $userId)->exists()) {
+            return self::getClassroomsByTeacherUserId($userId);
+        }
+
+        return self::getClassroomsForSchool($schoolId);
     }
 
     // NERRIE'S NOTE
@@ -934,10 +975,10 @@ class CustomFunction extends Model
             ->join('tbl_sections', 'tbl_classrooms.section_id', 'tbl_sections.id')
             ->join('tbl_grade_levels', 'tbl_classrooms.grade_level_id', 'tbl_grade_levels.id')
             ->join('tbl_subjects', 'tbl_teacher_classes.subject_id', 'tbl_subjects.id')
-            ->when($class_id, function($q) use ($class_id) {
+            ->when($class_id, function ($q) use ($class_id) {
                 $q->where('tbl_teacher_classes.id', $class_id);
             })
-            ->when($teacherUserId, function($q) use ($teacherUserId) {
+            ->when($teacherUserId, function ($q) use ($teacherUserId) {
                 $q->where('tbl_teachers.user_id', $teacherUserId);
             })
             ->first();
@@ -1092,7 +1133,7 @@ class CustomFunction extends Model
                 'achievement' => $achievement,
                 'answers' => $answers,
             ];
-        }           
+        }
         Storage::disk('public')->put('res-'.$class_assessment_id.'.json', json_encode($result));
 
         return $result;
@@ -1103,7 +1144,6 @@ class CustomFunction extends Model
 
         $cell = [
 
-            'title' => 'C1',
             'subject' => 'C2',
             'date' => 'C3',
             'type' => 'C4',
@@ -1126,10 +1166,9 @@ class CustomFunction extends Model
             'start' => 9,
 
         ];
-            
-        //TODO: change getActiveSheet to getSheetByName('Answer Keys')
+
+        // TODO: change getActiveSheet to getSheetByName('Answer Keys')
         $assessment = [
-            'title' => $spreadsheet->getActiveSheet()->getCell($cell['title'])->getValue(),
             'subject' => $spreadsheet->getActiveSheet()->getCell($cell['subject'])->getValue(),
             'date' => $spreadsheet->getActiveSheet()->getCell($cell['date'])->getValue(),
             'type' => $spreadsheet->getActiveSheet()->getCell($cell['type'])->getValue(),
@@ -1143,6 +1182,13 @@ class CustomFunction extends Model
             'strand' => $spreadsheet->getActiveSheet()->getCell($cell['strand'])->getValue(),
             'keys' => [],
         ];
+
+        $assessment['title'] = self::composeAssessmentTitle(
+            $assessment['period'],
+            $assessment['type'],
+            $assessment['subject'],
+            $assessment['grade'],
+        );
 
         $error = [];
         $teacher_id = Teacher::where('user_id', Auth::user()->id)->value('id');
@@ -1261,5 +1307,31 @@ class CustomFunction extends Model
         } else {
             return $error;
         }
+    }
+
+    /**
+     * Compose the assessment title from the answer key upload details.
+     *
+     * The title is no longer read from the uploaded title cell, it is built from
+     * the period, type, subject and grade level so every uploaded assessment gets
+     * a consistent title. The "Grade " prefix of the grade level is dropped.
+     *
+     * Example: First + Term Exam + Science + Grade 9
+     * becomes "First Term Exam in Science 9".
+     */
+    public static function composeAssessmentTitle(?string $period, ?string $type, ?string $subject, ?string $grade): string
+    {
+        $heading = trim(trim((string) $period).' '.trim((string) $type));
+        $details = trim(trim((string) $subject).' '.trim(str_replace('Grade ', '', (string) $grade)));
+
+        if ($heading === '') {
+            return $details;
+        }
+
+        if ($details === '') {
+            return $heading;
+        }
+
+        return $heading.' in '.$details;
     }
 }

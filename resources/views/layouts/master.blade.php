@@ -17,15 +17,16 @@
   	<link rel="stylesheet" href="/vendor/AdminLTE3/plugins/select2/css/select2.min.css">
   	<link rel="stylesheet" href="/vendor/AdminLTE3/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
   	<!-- DataTables -->
-	<link rel="stylesheet" href="/vendor/AdminLTE3/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
-	<link rel="stylesheet" href="/vendor/AdminLTE3/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
-	<link rel="stylesheet" href="/vendor/AdminLTE3/plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
+	<link rel="stylesheet" href="/vendor/DataTables/datatables.min.css">
 
 	{{-- pace --}}
 	<link rel="stylesheet" href="/vendor/AdminLTE3/plugins/pace-progress/themes/blue/pace-theme-flash.css">
 	{{-- Toastr --}}
 	<link rel="stylesheet" href="/vendor/AdminLTE3/plugins/toastr/toastr.min.css">
 	<link rel="stylesheet" href="/css/app.css">
+	{{-- Modern table skin: must load last so it overrides the vendor
+	     DataTables stylesheet and app.css. --}}
+	<link rel="stylesheet" href="/css/datatables-modern.css">
     @yield('page_css')
 </head>
 <body class="hold-transition sidebar-mini">
@@ -74,19 +75,17 @@
 <script src="/vendor/AdminLTE3/dist/js/adminlte.min.js"></script>
 {{-- select 2 --}}
 <script src="/vendor/AdminLTE3/plugins/select2/js/select2.full.min.js"></script>
-{{-- DataTables  & Plugins --}}
-<script src="/vendor/AdminLTE3/plugins/datatables/jquery.dataTables.min.js"></script>
-<script src="/vendor/AdminLTE3/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
-<script src="/vendor/AdminLTE3/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
-<script src="/vendor/AdminLTE3/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
-<script src="/vendor/AdminLTE3/plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
-<script src="/vendor/AdminLTE3/plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
+{{-- DataTables 3.1.2 combined build (core + Bootstrap 4 + Buttons, Responsive,
+     Select, ColumnControl, SearchBuilder, StateRestore). Replaces the old
+     AdminLTE3 1.11.4 plugins; loading only one build avoids double registration. --}}
+<script src="/vendor/DataTables/datatables.min.js"></script>
+{{-- Shared defaults (empty state, control wording, loading indicator) for the
+     modern table skin. Loaded before the page scripts so every table inherits
+     them. --}}
+<script src="/js/datatables-modern.js"></script>
 <script src="/vendor/AdminLTE3/plugins/jszip/jszip.min.js"></script>
 <script src="/vendor/AdminLTE3/plugins/pdfmake/pdfmake.min.js"></script>
 <script src="/vendor/AdminLTE3/plugins/pdfmake/vfs_fonts.js"></script>
-<script src="/vendor/AdminLTE3/plugins/datatables-buttons/js/buttons.html5.min.js"></script>
-<script src="/vendor/AdminLTE3/plugins/datatables-buttons/js/buttons.print.min.js"></script>
-<script src="/vendor/AdminLTE3/plugins/datatables-buttons/js/buttons.colVis.min.js"></script>
 <script src="/vendor/AdminLTE3/plugins/pace-progress/pace.min.js"></script>
 <script src="/vendor/AdminLTE3/plugins/toastr/toastr.min.js"></script>
 <script src="/vendor/AdminLTE3/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>

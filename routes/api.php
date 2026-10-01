@@ -26,3 +26,5 @@ Route::post('/classrooms/sync', [AppApiController::class, 'syncClassroomsByTeach
 Route::post('/students/sync', [AppApiController::class, 'studentsPerClassroom']);
 Route::post('/assessment/sync', [AppApiController::class, 'syncAssessment']);
 Route::post('/upload/assessment', [AppApiController::class, 'uploadAssessment']);
+Route::post('/ecdc/upload', [AppApiController::class, 'uploadEcdcResults']);
+Route::post('/ecdc/results/sync', [AppApiController::class, 'syncEcdcResults']);
