@@ -16,6 +16,7 @@ use App\Models\StudentAnswer;
 use App\Models\Teacher;
 use App\Models\Track;
 use App\Models\User;
+use App\Support\ReportScope;
 use Auth;
 use Illuminate\Http\Request;
 
@@ -33,35 +34,11 @@ class ReportController extends Controller
         $semesters = Semester::all();
         $periods = Period::all();
 
-        $divisions = [
-            'Division Supervisor',
-            'Division Administrator',
-            'Division Superintendent',
-            'Assistant Division Superintendent',
-            'Chief of CID',
-            'Chief of SGOD',
-        ];
-        if (Auth::user()->classification == 'System Administrator') {
-            $level = '5';
-        }
+        $scope = ReportScope::forUser(Auth::user());
 
-        if (in_array(Auth::user()->classification, $divisions)) {
-            $level = '4';
-        }
-        if (Auth::user()->classification == 'District Supervisor') {
-            $level = '3';
-        }
-        if (Auth::user()->classification == 'School Head' || Auth::user()->classification == 'Department Head') {
-            $level = '2';
-        }
-        if (Auth::user()->classification == 'Teacher') {
-            $level = '1';
-        }
-
-        return view('reports.index', compact('page',
-            'tracks', 'semesters', 'periods', 'level'
+        return view('reports.index', compact(
+            'page', 'tracks', 'semesters', 'periods', 'scope'
         ));
-
     }
 
     public function generate(Request $request)

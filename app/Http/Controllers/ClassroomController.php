@@ -9,7 +9,6 @@ use App\Models\Course;
 use App\Models\CustomFunction;
 use App\Models\GradeLevel;
 use App\Models\School;
-use App\Models\SchoolSupervisor;
 use App\Models\Section;
 use App\Models\Semester;
 use App\Models\Strand;
@@ -19,6 +18,7 @@ use App\Models\TeacherClass;
 use App\Models\Track;
 use App\Models\User;
 use Auth;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +26,18 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ClassroomController extends Controller
 {
+    /**
+     * Whether the authenticated user may create or upload classrooms.
+     *
+     * Driven by the permission the route itself is already guarded by, so the
+     * call to action shown on the listing always matches what the user can
+     * actually do.
+     */
+    private function canManageClassrooms(): bool
+    {
+        return Auth::user()?->can('classrooms.manage') ?? false;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -44,15 +56,15 @@ class ClassroomController extends Controller
             return redirect()->to(url()->previous())->withErrors(['error' => 'No Active Academic Year. Please Contact the Division Administrator.']);
         }
 
-        $school_id = (Auth::user()->classification == 'Teacher')
-            ? Teacher::where('user_id', Auth::user()->id)->value('school_id')
-            : SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
 
-        if (Auth::user()->classification == 'School Head') {
-            $message = 'You can create new classroom by clicking "Add Classroom" or "Upload Classroom"';
-        } else {
-            $message = 'You can contact your School Head for Classroom Management.';
+        if ($school_id === null) {
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Your account is not linked to a school. Please contact the Division Administrator.']);
         }
+
+        $message = $this->canManageClassrooms()
+            ? 'You can create new classroom by clicking "Add Classroom" or "Upload Classroom"'
+            : 'You can contact your School Head for Classroom Management.';
 
         $classrooms = CustomFunction::getClassrooms();
 
@@ -74,7 +86,12 @@ class ClassroomController extends Controller
             'crumb' => ['Classrooms' => '/classrooms', 'Add Classroom' => '/classrooms/create'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
+
+        if ($school_id === null) {
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Your account is not linked to a school. Please contact the Division Administrator.']);
+        }
+
         $school = School::find($school_id);
         $grade_level_filter = CustomFunction::filterGradeLevel($school_id);
         $grade_levels = GradeLevel::whereIn('level', $grade_level_filter)->get();
@@ -113,7 +130,7 @@ class ClassroomController extends Controller
     {
 
         $academic_year = AcademicYear::active();
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
 
         $existing = Classroom::where('academic_year_id', $academic_year->id)
             ->where('grade_level_id', $request->grade_level_id)
@@ -223,7 +240,7 @@ class ClassroomController extends Controller
             ->join('tbl_subjects', 'tbl_teacher_classes.subject_id', 'tbl_subjects.id')
             ->where('classroom_id', $classroom->id);
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
         $teachers = User::select(
             'tbl_teachers.id', 'username', 'user_id',
             'first_name', 'middle_name', 'last_name', 'suffix'
@@ -341,8 +358,8 @@ class ClassroomController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $sheet = $spreadsheet->getSheetByName('ENCODE here')->toArray();
+        $school_id = CustomFunction::resolveSchoolIdForUser();
         $grade_level_filter = CustomFunction::filterGradeLevel($school_id);
         $grade_levels = GradeLevel::whereIn('level', $grade_level_filter)->get();
         $academic_year = AcademicYear::active();
@@ -351,7 +368,7 @@ class ClassroomController extends Controller
 
         DB::beginTransaction();
         try {
-            $title = $spreadsheet->getSheetByName("ENCODE here")->getCell('A1');
+            $title = $spreadsheet->getSheetByName('ENCODE here')->getCell('A1');
             $is_shs = ($title == 'SHS - ADVISORY CLASS UPLOADER') ? 1 : 0;
 
             foreach ($sheet as $key => $row) {

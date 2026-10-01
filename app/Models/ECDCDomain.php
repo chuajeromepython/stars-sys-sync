@@ -18,4 +18,12 @@ class ECDCDomain extends Model
     {
         return $this->hasMany(ECDCCompetency::class, 'domain_id');
     }
+
+    /**
+     * Whether the domain can be removed safely, i.e. it holds no competency.
+     */
+    public function isDeletable(): bool
+    {
+        return ! $this->competencies()->exists();
+    }
 }

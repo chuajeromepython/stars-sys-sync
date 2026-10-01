@@ -5,12 +5,12 @@
 @section('page_title', $page['title'])
 
 @section('page_script')
-    <script type="text/javascript" src="/js/periodicals.js"></script>
+    <script type="text/javascript" src="/js/term-exams.js"></script>
 @endsection
 
 @section('content')
 	@include('layouts.message')
-    @include('periodicals.upload_csv')
+    @include('term_exams.upload_csv')
     
 
     <a href="/summatives" class="btn btn-danger mr-3 mb-3">

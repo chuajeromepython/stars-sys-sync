@@ -6,9 +6,6 @@ $(function() {
 
     
     $('#dt_items').dataTable({
-        'language':{
-            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-        },
         'scrollX': (screen_height > screen_width) ? true : false
     });
 
@@ -52,7 +49,7 @@ $(function() {
             ( $('#grade_level_id').val() == 0 ) ? toastr.error("Please Select Grade Level") : "";  
             ( $('#subject_id').val() == 0 ) ? toastr.error("Please Select Subject") : ""; 
 
-            $('#dt_items').dataTable().fnClearTable();   
+            $('#dt_items').DataTable().clear();   
         }
         
 
@@ -100,7 +97,7 @@ function getSubjectPerGradeLevel(parameters){
 
 function getItems(parameters){
 
-    $('#dt_items').dataTable().fnDestroy();
+    $('#dt_items').DataTable().destroy();
     $.ajax({
         url: '/getItems',
         type: "POST",
@@ -130,9 +127,6 @@ function getItems(parameters){
             }); 
             $('#item_body').html(html);
             $('#dt_items').dataTable({
-                'language':{
-                    'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-                },
                 'pageLength': 5,
                 'scrollX': (screen_height > screen_width) ? true : false
             });

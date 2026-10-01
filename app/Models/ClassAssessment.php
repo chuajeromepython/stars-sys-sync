@@ -15,11 +15,17 @@ class ClassAssessment extends Model
     protected $table = 'tbl_class_assessments';
 
     public static function getResults($class_assessment_id)
-    {   
+    {
+        $results = [];
+
         $filename = "res-{$class_assessment_id}.json";
-    
+
+        if (! Storage::disk('public')->exists($filename)) {
+            return $results;
+        }
+
         $content = Storage::disk('public')->get($filename);
-        $results = json_decode($content, true);
+        $results = json_decode($content, true) ?? $results;
 
         return $results;
     }
@@ -164,6 +170,10 @@ class ClassAssessment extends Model
                 $difficulty = 'Difficult';
             } elseif ($percentage >= 0 && $percentage <= 21) {
                 $difficulty = 'Very Difficult';
+            } else {
+                // Guards against $difficulty being left undefined for any
+                // percentage that falls outside the bands above.
+                $difficulty = 'Unclassified';
             }
 
             $options = [
@@ -241,6 +251,11 @@ class ClassAssessment extends Model
 
             $percentage = $index * 100;
             if ($percentage < 19) {
+                $classification = 'Poor Item';
+                $recommendation = 'Modify the question and choices.';
+            } elseif ($percentage < 20) {
+                // Closes the 19 <= $percentage < 20 gap that previously left
+                // $classification/$recommendation undefined for the item.
                 $classification = 'Poor Item';
                 $recommendation = 'Modify the question and choices.';
             } elseif ($percentage >= 20 && $percentage <= 29) {

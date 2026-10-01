@@ -28,10 +28,10 @@ class DiagnosticRoutesTest extends TestCase
         $this->assertTrue($this->hasRoute('diagnostics/{assessment}', 'GET', 'DiagnosticController@show'));
     }
 
-    public function test_periodical_routes_still_exist(): void
+    public function test_term_exam_routes_are_registered(): void
     {
-        $this->assertTrue($this->hasRoute('periodicals', 'GET', 'PeriodicalController@index'));
-        $this->assertTrue($this->hasRoute('periodicals/upload', 'POST', 'PeriodicalController@upload'));
-        $this->assertTrue($this->hasRoute('periodicals/{assessment}', 'GET', 'PeriodicalController@show'));
+        $this->assertTrue($this->hasRoute('term-exams', 'GET', 'TermExamController@index'));
+        $this->assertTrue($this->hasRoute('term-exams/upload', 'POST', 'TermExamController@upload'));
+        $this->assertTrue($this->hasRoute('term-exams/{assessment}', 'GET', 'TermExamController@show'));
     }
 }

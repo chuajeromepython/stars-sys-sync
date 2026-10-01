@@ -12,17 +12,11 @@
 		    var screen_height = $(window).height();
 
 		 	$('#dt_ecdc').dataTable({
-		        'language':{
-		            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-		        },
 		        'scrollX': (screen_height > screen_width) ? true : false
 		    });
 
 		    for (var i = 1; i <=7; i++) {
 		    	$('#dt_'+i).dataTable({
-			        'language':{
-			            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-			        },
 			        'pageLength' : 5,
 			        'scrollX': (screen_height > screen_width) ? true : false
 			    });
