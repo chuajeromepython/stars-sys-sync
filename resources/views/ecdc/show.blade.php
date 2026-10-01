@@ -118,7 +118,7 @@
             <div class="card">
                 <div class="card-header">
                     <div class="row">
-                        <div class="col-md-8 col-12 mb-2">
+                        <div class="col-md-6 col-12 mb-2">
                             <small class=""><b>LEGEND</b></small><br>
                             <span class="badge bg-teal">Beginning Of S.Y.</span>
                             <span class="badge bg-info">Mid Of S.Y.</span>
@@ -135,6 +135,14 @@
                                 <i class="fa fa-download"></i>
                                 Download Template
                             </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            @can('ecdcs.download')
+                                <a class="btn-block btn btn-primary" href="{{ route('ecdcs.classroom.report.download', $classroom->id) }}">
+                                    <i class="fa fa-file-excel"></i>
+                                    Download SF5-K
+                                </a>
+                            @endcan
                         </div>
                     </div>
                 </div>

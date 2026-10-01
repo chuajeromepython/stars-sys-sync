@@ -492,6 +492,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/ecdcs/upload', [ECDCController::class, 'upload']);
     });
     Route::middleware('permission:ecdcs.download')->group(function () {
+        Route::get('/ecdcs/classroom/{classroom}/report/download', [ECDCController::class, 'download_classroom_report'])
+            ->name('ecdcs.classroom.report.download');
         Route::get('/ecdcs/{ecdc}/students/{student_id}/download', [ECDCController::class, 'download_student_result']);
         Route::get('/ecdcs/{classroom}/download_template', [ECDCController::class, 'download_template']);
     });
