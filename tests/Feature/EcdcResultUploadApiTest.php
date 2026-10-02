@@ -14,6 +14,42 @@ class EcdcResultUploadApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_it_issues_a_bearer_token_that_authenticates_an_ecdc_upload(): void
+    {
+        Storage::fake('public');
+
+        $context = $this->seedEcdcContext();
+        $username = DB::table('tbl_users')->where('id', $context['teacher_user_id'])->value('username');
+
+        $loginResponse = $this->postJson('/api/authenticate', [
+            'username' => $username,
+            'password' => 'password',
+        ])->assertOk()->assertJson([
+            'success' => true,
+            'data' => ['id' => $context['teacher_user_id']],
+            'token_type' => 'Bearer',
+        ]);
+
+        $this->withToken($loginResponse->json('token'))
+            ->postJson('/api/ecdc/upload', $this->payload($context, [[
+                'lrn' => '100000000001',
+                'responses' => $this->responses($context['competency_ids'], ['1', '-', '*', '1']),
+            ]]))
+            ->assertOk()
+            ->assertJson(['success' => true]);
+    }
+
+    public function test_it_rejects_invalid_mobile_credentials(): void
+    {
+        $this->postJson('/api/authenticate', [
+            'username' => 'missing@example.test',
+            'password' => 'incorrect',
+        ])->assertUnauthorized()->assertJson([
+            'success' => false,
+            'message' => 'Invalid credentials.',
+        ]);
+    }
+
     public function test_it_uploads_an_individual_ecdc_result(): void
     {
         Storage::fake('public');
@@ -290,7 +326,7 @@ class EcdcResultUploadApiTest extends TestCase
         $this->assertDatabaseCount('tbl_ecdcs', 0);
     }
 
-    public function test_it_requires_an_authenticated_session(): void
+    public function test_it_requires_an_authenticated_api_token(): void
     {
         Storage::fake('public');
 
@@ -299,30 +335,26 @@ class EcdcResultUploadApiTest extends TestCase
         $this->postJson('/api/ecdc/upload', $this->payload($context, [[
             'lrn' => '100000000001',
             'responses' => $this->responses($context['competency_ids'], ['1', '-', '*', '1']),
-        ]]))->assertStatus(401)
-            ->assertJson([
-                'success' => false,
-                'message' => 'Unauthenticated request. Please login first.',
-            ]);
+        ]]))->assertStatus(401);
 
         $this->assertDatabaseCount('tbl_ecdcs', 0);
     }
 
-    public function test_it_rejects_a_user_id_that_does_not_match_the_active_session(): void
+    public function test_it_rejects_a_user_id_that_does_not_match_the_authenticated_token(): void
     {
         Storage::fake('public');
 
         $context = $this->seedEcdcContext();
         $other_teacher_user_id = $this->createUser('Teacher', 'M', 'Other');
-        $this->actingAs(User::findOrFail($other_teacher_user_id));
+        $token = User::findOrFail($other_teacher_user_id)->createToken('mobile-app')->plainTextToken;
 
-        $this->postJson('/api/ecdc/upload', $this->payload($context, [[
+        $this->withToken($token)->postJson('/api/ecdc/upload', $this->payload($context, [[
             'lrn' => '100000000001',
             'responses' => $this->responses($context['competency_ids'], ['1', '-', '*', '1']),
         ]]))->assertStatus(403)
             ->assertJson([
                 'success' => false,
-                'message' => 'Submitted user_id does not match the active session.',
+            'message' => 'Submitted user_id does not match the authenticated user.',
             ]);
 
         $this->assertDatabaseCount('tbl_ecdcs', 0);
@@ -644,15 +676,12 @@ class EcdcResultUploadApiTest extends TestCase
         $context = $this->seedEcdcContext();
 
         $this->postJson('/api/ecdc/results/sync', [])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['classroom_id', 'user_id']);
+            ->assertStatus(401);
 
         $this->postJson('/api/ecdc/results/sync', [
             'classroom_id' => $context['classroom_id'],
             'user_id' => $context['teacher_user_id'],
-        ])->assertStatus(401)->assertJson([
-            'message' => 'Unauthenticated request. Please login first.',
-        ]);
+        ])->assertStatus(401);
 
         $this->actingAs(User::findOrFail($this->createUser('Teacher', 'M', 'Stranger')));
 
@@ -660,7 +689,7 @@ class EcdcResultUploadApiTest extends TestCase
             'classroom_id' => $context['classroom_id'],
             'user_id' => $context['teacher_user_id'],
         ])->assertStatus(403)->assertJson([
-            'message' => 'Submitted user_id does not match the active session.',
+            'message' => 'Submitted user_id does not match the authenticated user.',
         ]);
 
         $this->actingAs(User::findOrFail($context['teacher_user_id']));

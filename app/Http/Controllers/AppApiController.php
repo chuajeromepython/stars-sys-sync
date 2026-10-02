@@ -30,25 +30,32 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class AppApiController extends Controller
 {
-    public function authenticate($username, $password)
+    public function authenticate(Request $request)
     {
+        $credentials = $request->validate([
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ]);
 
-        $credentials = [
-            'username' => $username,
-            'password' => $password,
-        ];
-        $result = [
-            'status' => 0,
-            'data' => null,
-            'message' => 'Not Found',
-        ];
-        if (Auth::attempt($credentials)) {
-            $result['data'] = Auth::user();
-            $result['status'] = '200';
-            $result['message'] = 'Successfully login';
+        if (! Auth::validate($credentials)) {
+            return response()->json([
+                'success' => false,
+                'status' => 401,
+                'data' => null,
+                'message' => 'Invalid credentials.',
+            ], 401);
         }
 
-        return response()->json($result);
+        $user = User::where('username', $credentials['username'])->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'status' => '200',
+            'data' => $user,
+            'token' => $user->createToken('mobile-app')->plainTextToken,
+            'token_type' => 'Bearer',
+            'message' => 'Successfully login',
+        ]);
     }
 
     public function syncClassroomsByTeacherUserId(Request $request)
@@ -67,27 +74,6 @@ class AppApiController extends Controller
         }
 
         $user_id = (int) $request->input('userId');
-
-        // The API group is stateless, so authentication is determined by the
-        // guard on the request. Querying the sessions table directly ignored the
-        // guard and rejected every caller that was legitimately signed in.
-        $authenticated_user_id = (int) Auth::id();
-
-        if ($authenticated_user_id === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated request. Please login first.',
-                'data' => null,
-            ], 401);
-        }
-
-        if ($authenticated_user_id !== $user_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Submitted userId does not match the active session.',
-                'data' => null,
-            ], 403);
-        }
 
         $user = User::find($user_id);
 
@@ -663,20 +649,12 @@ class AppApiController extends Controller
         }
 
         $user_id = (int) $request->input('user_id');
-        $authenticated_user_id = (int) Auth::id();
-
-        if ($authenticated_user_id === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated request. Please login first.',
-                'data' => null,
-            ], 401);
-        }
+        $authenticated_user_id = (int) $request->user()->getAuthIdentifier();
 
         if ($authenticated_user_id !== $user_id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Submitted user_id does not match the active session.',
+                'message' => 'Submitted user_id does not match the authenticated user.',
                 'data' => null,
             ], 403);
         }
@@ -972,20 +950,12 @@ class AppApiController extends Controller
         }
 
         $user_id = (int) $request->input('user_id');
-        $authenticated_user_id = (int) Auth::id();
-
-        if ($authenticated_user_id === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated request. Please login first.',
-                'data' => null,
-            ], 401);
-        }
+        $authenticated_user_id = (int) $request->user()->getAuthIdentifier();
 
         if ($authenticated_user_id !== $user_id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Submitted user_id does not match the active session.',
+                'message' => 'Submitted user_id does not match the authenticated user.',
                 'data' => null,
             ], 403);
         }

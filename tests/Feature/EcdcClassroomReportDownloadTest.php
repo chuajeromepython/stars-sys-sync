@@ -80,6 +80,28 @@ class EcdcClassroomReportDownloadTest extends TestCase
                 'score' => 1,
             ],
         ]);
+        $newestEcdcId = DB::table('tbl_ecdcs')->insertGetId([
+            'classroom_id' => $classroomId,
+            'academic_year_id' => $academicYearId,
+            'period' => '3',
+            'teacher_id' => $teacherId,
+            'source' => '2',
+            'date' => '2026-06-15',
+        ]);
+        DB::table('tbl_student_ecdcs')->insert([
+            [
+                'student_id' => $maleStudentId,
+                'ecdc_id' => $newestEcdcId,
+                'ecdc_competency_id' => 1,
+                'score' => 1,
+            ],
+            [
+                'student_id' => $femaleStudentId,
+                'ecdc_id' => $newestEcdcId,
+                'ecdc_competency_id' => 1,
+                'score' => 1,
+            ],
+        ]);
         Storage::disk('public')->put('ecdc-'.$ecdcId.'.json', json_encode([
             $maleStudentId => [
                 'name' => 'Able, Alex',
@@ -89,6 +111,18 @@ class EcdcClassroomReportDownloadTest extends TestCase
             $femaleStudentId => [
                 'name' => 'Baker, Bailey',
                 'standard_score' => 78,
+                'interpretation' => 'Suggest slight delay in overall development',
+            ],
+        ]));
+        Storage::disk('public')->put('ecdc-' . $newestEcdcId . '.json', json_encode([
+            $maleStudentId => [
+                'name' => 'Able, Alex',
+                'standard_score' => 135,
+                'interpretation' => 'Suggest highly advanced development',
+            ],
+            $femaleStudentId => [
+                'name' => 'Baker, Bailey',
+                'standard_score' => 75,
                 'interpretation' => 'Suggest slight delay in overall development',
             ],
         ]));
@@ -112,10 +146,10 @@ class EcdcClassroomReportDownloadTest extends TestCase
             $this->assertSame('Maple', $sheet->getCell('G6')->getValue());
             $this->assertSame('2025-2026', $sheet->getCell('L6')->getValue());
             $this->assertSame('100000000001', $sheet->getCell('B15')->getValue());
-            $this->assertSame(130, $sheet->getCell('G15')->getValue());
+            $this->assertSame(135, $sheet->getCell('G15')->getValue());
             $this->assertSame('GRADE ONE READY', $sheet->getCell('I15')->getValue());
             $this->assertSame('100000000002', $sheet->getCell('B59')->getValue());
-            $this->assertSame(78, $sheet->getCell('G59')->getValue());
+            $this->assertSame(75, $sheet->getCell('G59')->getValue());
             $this->assertSame('NEEDS FURTHER INTERVENTION', $sheet->getCell('I59')->getValue());
             $this->assertSame('100000000003', $sheet->getCell('B62')->getValue());
             $this->assertNull($sheet->getCell('G62')->getValue());
