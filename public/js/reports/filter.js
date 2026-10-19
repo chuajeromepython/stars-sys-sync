@@ -9,6 +9,10 @@ $(function() {
         }
     });
 
+    getDistricts();
+    getSchools(null, null);
+    getTeachers(null);
+
 	$(document).on('change', '#education_level',function(){
         
 	   	education_level_id = parseInt($(this).val());
@@ -31,18 +35,21 @@ $(function() {
 
 	});
 
-	$('#btn_show_district').click(function(){
+	$('#btn_show_district').click(function(event){
+		event.preventDefault();
 		$('.div_district').fadeIn();
         getDistricts();
 
 	});
-    $('#btn_show_school').click(function(){
+    $('#btn_show_school').click(function(event){
+        event.preventDefault();
         district_id = $('#district').val();
         grade_level_id = $('#grade_level').val();
         getSchools(district_id, grade_level_id);
         $('.div_school').fadeIn();
     });
-    $('#btn_show_teacher').click(function(){
+    $('#btn_show_teacher').click(function(event){
+        event.preventDefault();
         school_id = $('#school').val();
         getTeachers(school_id);
         $('.div_teacher').fadeIn();

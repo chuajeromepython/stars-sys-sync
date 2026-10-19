@@ -362,6 +362,13 @@
 @endsection
 
 @section('page_script')
+    <script>
+        $(function() {
+            $('#dashboard-academic-year').on('change', function() {
+                this.form.requestSubmit();
+            });
+        });
+    </script>
     @if (count($recordTypes) > 0)
     <script>
         $(function() {
@@ -459,11 +466,21 @@
                 <div class="dashboard-context-card academic p-3">
                     <div class="d-flex align-items-center">
                         <div class="dashboard-context-icon mr-3"><i class="fas fa-calendar-alt"></i></div>
-                        <div>
-                            <div class="dashboard-label dashboard-muted">Active academic year</div>
-                            <div class="dashboard-context-value">
-                                {{ $academic_year ? $academic_year->from . ' - ' . $academic_year->to : 'Not set' }}</div>
-                        </div>
+                        <form action="/dashboard" method="GET" class="flex-grow-1">
+                            <label class="dashboard-label dashboard-muted" for="dashboard-academic-year">Academic year</label>
+                            <select class="form-control" id="dashboard-academic-year" name="academic_year_id">
+                                @forelse ($academicYears as $year)
+                                    <option value="{{ $year->id }}" @selected($academic_year?->id === $year->id)>
+                                        {{ $year->from }} - {{ $year->to }}{{ $year->is_active ? ' (Active)' : '' }}
+                                    </option>
+                                @empty
+                                    <option value="">Not set</option>
+                                @endforelse
+                            </select>
+                            <noscript>
+                                <button class="btn btn-primary btn-sm mt-2" type="submit">Apply academic year</button>
+                            </noscript>
+                        </form>
                     </div>
                 </div>
             </div>

@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
-use App\Models\Classroom;
 use App\Models\CustomFunction;
-use App\Models\Section;
-use App\Models\Student;
 use App\Models\Teacher;
 use App\Services\DataTable\DashboardDataTable;
 use App\Services\DataTable\DataTablePaginator;
+use App\Support\UserHierarchy;
 use Auth;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +18,7 @@ use Response;
 
 class DashboardController extends Controller
 {
-    public function index(DashboardDataTable $dashboardDataTable)
+    public function index(Request $request, DashboardDataTable $dashboardDataTable, UserHierarchy $userHierarchy)
     {
 
         $page = [
@@ -28,7 +27,14 @@ class DashboardController extends Controller
             'crumb' => ['Dashboard' => '/dashboard'],
         ];
 
-        $academic_year = AcademicYear::where('is_active', 1)->first();
+        $request->validate([
+            'academic_year_id' => ['nullable', 'integer', 'exists:tbl_academic_years,id'],
+        ]);
+
+        $academicYears = AcademicYear::query()->orderByDesc('from')->orderByDesc('id')->get();
+        $academic_year = $request->filled('academic_year_id')
+            ? AcademicYear::query()->find($request->integer('academic_year_id'))
+            : AcademicYear::active();
         $details = CustomFunction::getUserDetails(Auth::user()->id);
         $quotes = [
             'Education is the most powerful weapon which you can use to change the world.',
@@ -41,10 +47,10 @@ class DashboardController extends Controller
         $templates = $this->templates();
         $classification = Auth::user()->classification;
 
-        $statistics = $this->statistics($academic_year);
+        $statistics = $this->statistics($academic_year, $userHierarchy);
         $recordTypes = $dashboardDataTable->typesFor(Auth::user());
 
-        return view('layouts.dashboard', compact('page', 'academic_year', 'details',
+        return view('layouts.dashboard', compact('page', 'academic_year', 'academicYears', 'details',
             'statistics', 'recordTypes', 'daily_quote', 'templates', 'classification'
         ));
     }
@@ -61,60 +67,116 @@ class DashboardController extends Controller
      *
      * @return list<array{label: string, value: int, icon: string, url: string}>
      */
-    private function statistics(?AcademicYear $academicYear): array
+    private function statistics(?AcademicYear $academicYear, UserHierarchy $userHierarchy): array
     {
-        $scope = app(DashboardDataTable::class)->scope(Auth::user());
-        $yearId = $academicYear?->id;
-
-        if ($scope['teacher_id'] !== null) {
-            $assigned = DB::table('tbl_teacher_classes')
-                ->where('teacher_id', $scope['teacher_id'])
-                ->distinct()
-                ->pluck('classroom_id');
-
-            $studentsInAssigned = DB::table('tbl_student_classrooms')
-                ->whereIn('classroom_id', $assigned)
-                ->where('status', 1)
-                ->distinct()
-                ->count('student_id');
-
-            return [
-                ['label' => 'Advisory', 'value' => $this->teacherClassCount($scope['teacher_id'], true), 'icon' => 'fas fa-user-check', 'url' => '/classrooms'],
-                ['label' => 'Subject Class', 'value' => $this->teacherClassCount($scope['teacher_id'], false), 'icon' => 'fas fa-chalkboard', 'url' => '/classrooms'],
-                ['label' => 'Students', 'value' => (int) $studentsInAssigned, 'icon' => 'fas fa-graduation-cap', 'url' => '/students'],
-                ['label' => 'Classrooms', 'value' => $assigned->count(), 'icon' => 'fas fa-door-open', 'url' => '/classrooms'],
-            ];
+        if ($academicYear === null) {
+            return $this->emptyStatistics();
         }
 
-        if ($scope['school_id'] !== null) {
-            $schoolId = $scope['school_id'];
+        $hierarchy = $userHierarchy->forUser(Auth::user());
+        $classrooms = $this->classroomsFor($academicYear->id, $hierarchy);
+
+        if ($hierarchy['scope'] === 'teacher') {
+            $teacherId = $hierarchy['teacher_id'];
 
             return [
-                ['label' => 'Classrooms', 'value' => Classroom::where('school_id', $schoolId)->where('academic_year_id', $yearId)->count(), 'icon' => 'fas fa-chalkboard-teacher', 'url' => '/classrooms'],
-                ['label' => 'Teachers', 'value' => Teacher::where('school_id', $schoolId)->count(), 'icon' => 'fas fa-user-tie', 'url' => '/teachers'],
-                ['label' => 'Students', 'value' => Student::where('school_id', $schoolId)->count(), 'icon' => 'fas fa-graduation-cap', 'url' => '/students'],
-                ['label' => 'Sections', 'value' => Section::where('school_id', $schoolId)->count(), 'icon' => 'fas fa-layer-group', 'url' => '/sections'],
+                ['label' => 'Advisory Students', 'value' => $this->teacherStudentCount($teacherId, $academicYear->id, true), 'icon' => 'fas fa-user-check', 'url' => '/students'],
+                ['label' => 'Subject Class Students', 'value' => $this->teacherStudentCount($teacherId, $academicYear->id, false), 'icon' => 'fas fa-chalkboard', 'url' => '/students'],
+                ['label' => 'Students', 'value' => $this->studentCount($classrooms), 'icon' => 'fas fa-graduation-cap', 'url' => '/students'],
+                ['label' => 'Classrooms', 'value' => $this->classroomCount($classrooms), 'icon' => 'fas fa-door-open', 'url' => '/classrooms'],
             ];
         }
 
         return [
-            ['label' => 'Classrooms', 'value' => Classroom::where('academic_year_id', $yearId)->count(), 'icon' => 'fas fa-chalkboard-teacher', 'url' => '/classrooms'],
-            ['label' => 'Teachers', 'value' => Teacher::count(), 'icon' => 'fas fa-user-tie', 'url' => '/teachers'],
-            ['label' => 'Students', 'value' => Student::count(), 'icon' => 'fas fa-graduation-cap', 'url' => '/students'],
-            ['label' => 'Sections', 'value' => Section::count(), 'icon' => 'fas fa-layer-group', 'url' => '/sections'],
+            ['label' => 'Classrooms', 'value' => $this->classroomCount($classrooms), 'icon' => 'fas fa-chalkboard-teacher', 'url' => '/classrooms'],
+            ['label' => 'Teachers', 'value' => $this->teacherCount($classrooms), 'icon' => 'fas fa-user-tie', 'url' => '/teachers'],
+            ['label' => 'Students', 'value' => $this->studentCount($classrooms), 'icon' => 'fas fa-graduation-cap', 'url' => '/students'],
+            ['label' => 'Sections', 'value' => $this->sectionCount($classrooms), 'icon' => 'fas fa-layer-group', 'url' => '/sections'],
         ];
     }
 
     /**
-     * How many of a teacher's classes are advisory, or are subject classes.
+     * @param  array{scope: string, teacher_id: int|null, school_id: int|null, district_id: int|null, division_id: int|null}  $hierarchy
      */
-    private function teacherClassCount(int $teacherId, bool $advisory): int
+    private function classroomsFor(int $academicYearId, array $hierarchy): Builder
+    {
+        $query = DB::table('tbl_classrooms')
+            ->join('tbl_schools', 'tbl_classrooms.school_id', 'tbl_schools.id')
+            ->join('tbl_districts', 'tbl_schools.district_id', 'tbl_districts.id')
+            ->whereNull('tbl_classrooms.deleted_at')
+            ->where('tbl_classrooms.academic_year_id', $academicYearId)
+            ->select('tbl_classrooms.id');
+
+        match ($hierarchy['scope']) {
+            'teacher' => $query->join('tbl_teacher_classes', 'tbl_classrooms.id', 'tbl_teacher_classes.classroom_id')
+                ->where('tbl_teacher_classes.teacher_id', $hierarchy['teacher_id']),
+            'school' => $query->where('tbl_classrooms.school_id', $hierarchy['school_id']),
+            'district' => $query->where('tbl_schools.district_id', $hierarchy['district_id']),
+            'division' => $query->where('tbl_districts.division_id', $hierarchy['division_id']),
+            'none' => $query->whereRaw('1 = 0'),
+            default => null,
+        };
+
+        return $query->distinct();
+    }
+
+    private function teacherStudentCount(int $teacherId, int $academicYearId, bool $advisory): int
+    {
+        return DB::table('tbl_student_classrooms')
+            ->join('tbl_classrooms', 'tbl_student_classrooms.classroom_id', 'tbl_classrooms.id')
+            ->join('tbl_teacher_classes', 'tbl_classrooms.id', 'tbl_teacher_classes.classroom_id')
+            ->whereNull('tbl_student_classrooms.deleted_at')
+            ->whereNull('tbl_classrooms.deleted_at')
+            ->where('tbl_student_classrooms.status', 1)
+            ->where('tbl_classrooms.academic_year_id', $academicYearId)
+            ->where('tbl_teacher_classes.teacher_id', $teacherId)
+            ->where('tbl_teacher_classes.advisory', $advisory ? 1 : 0)
+            ->distinct()
+            ->count('tbl_student_classrooms.student_id');
+    }
+
+    private function classroomCount(Builder $classrooms): int
+    {
+        return DB::query()->fromSub(clone $classrooms, 'scoped_classrooms')->count();
+    }
+
+    private function studentCount(Builder $classrooms): int
+    {
+        return DB::table('tbl_student_classrooms')
+            ->whereNull('deleted_at')
+            ->where('status', 1)
+            ->whereIn('classroom_id', clone $classrooms)
+            ->distinct()
+            ->count('student_id');
+    }
+
+    private function teacherCount(Builder $classrooms): int
     {
         return DB::table('tbl_teacher_classes')
-            ->where('teacher_id', $teacherId)
-            ->where('advisory', $advisory ? 1 : 0)
+            ->whereIn('classroom_id', clone $classrooms)
             ->distinct()
-            ->count('classroom_id');
+            ->count('teacher_id');
+    }
+
+    private function sectionCount(Builder $classrooms): int
+    {
+        return DB::table('tbl_classrooms')
+            ->whereIn('id', clone $classrooms)
+            ->distinct()
+            ->count('section_id');
+    }
+
+    /**
+     * @return list<array{label: string, value: int, icon: string, url: string}>
+     */
+    private function emptyStatistics(): array
+    {
+        return [
+            ['label' => 'Classrooms', 'value' => 0, 'icon' => 'fas fa-chalkboard-teacher', 'url' => '/classrooms'],
+            ['label' => 'Teachers', 'value' => 0, 'icon' => 'fas fa-user-tie', 'url' => '/teachers'],
+            ['label' => 'Students', 'value' => 0, 'icon' => 'fas fa-graduation-cap', 'url' => '/students'],
+            ['label' => 'Sections', 'value' => 0, 'icon' => 'fas fa-layer-group', 'url' => '/sections'],
+        ];
     }
 
     /**
