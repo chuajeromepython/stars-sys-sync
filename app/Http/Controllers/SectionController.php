@@ -67,7 +67,7 @@ class SectionController extends Controller
 
             return redirect('/sections')->with('success', 'New section has been added successfully.');
         } else {
-            return back()->withErrors('Section already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Section already exists!']);
         }
     }
 
@@ -103,7 +103,7 @@ class SectionController extends Controller
 
             return back()->with('success', 'Section has been updated successfully.');
         } else {
-            return back()->withErrors('Section already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Section already exists!']);
         }
     }
 
@@ -120,7 +120,7 @@ class SectionController extends Controller
         $has_record = Classroom::where('section_id', $request->id)->get();
 
         if ($has_record) {
-            return back()->withErrors('Section "'.$section->section.'" has Classroom Record');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Section "'.$section->section.'" has Classroom Record']);
         } else {
 
             $section->delete();
@@ -141,7 +141,7 @@ class SectionController extends Controller
 
         $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $sheet = $spreadsheet->getSheetByName("ENCODE here")->toArray();
         $errors = [];
         $sheet = array_unique($sheet, SORT_REGULAR);
 
@@ -171,7 +171,7 @@ class SectionController extends Controller
             }
 
             if (count($errors) > 0) {
-                return back()->withErrors($errors);
+                return redirect()->to(url()->previous())->withErrors(['error' => $errors]);
             }
 
             DB::commit();
@@ -185,7 +185,7 @@ class SectionController extends Controller
         if ($result === true) {
             return redirect('/sections')->with('success', 'Section Uploader has been uploaded successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
 
     }

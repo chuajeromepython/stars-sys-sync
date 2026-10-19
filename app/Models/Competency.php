@@ -19,4 +19,9 @@ class Competency extends Model
     protected $table = 'tbl_competencies';
 
     protected $guarded = [];
+
+    public function question()
+    {
+        return $this->hasOne(Question::class, 'competency_id', 'id');
+    }
 }

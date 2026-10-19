@@ -8,9 +8,6 @@
 <script type="text/javascript">
    	$(function() {
         $('#dt_surveys').dataTable({
-            'language':{
-                'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-            }
         });
     });
 </script>

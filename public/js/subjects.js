@@ -4,9 +4,6 @@ $(function() {
     var screen_height = $(window).height();
     
  	$('#dt_subjects').dataTable({
-        'language':{
-            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-        },
         'scrollX': (screen_height > screen_width) ? true : false
     });
  	$('#dt_subjects tbody').on( 'click', '.btn-edit', function () {

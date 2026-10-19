@@ -3,7 +3,7 @@ $(function() {
 	$('.btn-domain').click(function(){
 		
 		$('.card-result').fadeOut();
-   		$('#dt_raw').dataTable().fnDestroy();
+   		$('#dt_raw').DataTable().destroy();
         var domain_id = $(this).data('domain');
         $('#domain_header').removeClass();
         $('#domain_header').addClass('text-center card-header text-bold bg-'+colors[domain_id-1]);
@@ -42,9 +42,6 @@ $(function() {
         $('#tbody_raw').html(html);
 
         $('#dt_raw').dataTable({
-		    'language':{
-		        'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-		    },
 		    'pageLength': 5,
 		    "lengthChange": false,
 		});

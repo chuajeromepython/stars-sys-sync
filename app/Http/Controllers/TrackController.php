@@ -60,7 +60,7 @@ class TrackController extends Controller
 
             return redirect('/tracks')->with('success', 'New track has been added successfully.');
         } else {
-            return back()->withErrors('Track already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Track already exists!']);
         }
     }
 
@@ -102,7 +102,7 @@ class TrackController extends Controller
 
             return back()->with('success', 'Track has been updated successfully.');
         } else {
-            return back()->withErrors('Semester already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Semester already exists!']);
         }
     }
 
@@ -126,7 +126,7 @@ class TrackController extends Controller
                 ? $strands->count().' active Strand found.'
                 : $strands->count().' active Strands found.';
 
-            return back()->withErrors($errors);
+            return redirect()->to(url()->previous())->withErrors(['error' => $errors]);
         }
     }
 }

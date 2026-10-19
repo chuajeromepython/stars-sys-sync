@@ -59,7 +59,7 @@ class SemesterController extends Controller
 
             return redirect('/semesters')->with('success', 'New semester has been added successfully.');
         } else {
-            return back()->withErrors('Semester already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Semester already exists!']);
         }
     }
 
@@ -101,7 +101,7 @@ class SemesterController extends Controller
 
             return back()->with('success', 'Semester has been updated successfully.');
         } else {
-            return back()->withErrors('Semester already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Semester already exists!']);
         }
     }
 

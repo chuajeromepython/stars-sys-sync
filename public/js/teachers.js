@@ -2,11 +2,17 @@ $(function() {
 
      var screen_width = $(window).width();
     var screen_height = $(window).height();
-    
-    $('#dt_teachers').dataTable({
-        'language':{
-            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-        },
+
+    $('#dt_teachers').DataTable({
+        serverSide: true,
+        processing: true,
+        deferRender: true,
+        ajax: '/teachers/data',
+        columns: [
+            { data: 'username' },
+            { data: 'name' },
+            { data: 'action', orderable: false, searchable: false }
+        ],
         'scrollX': (screen_height > screen_width) ? true : false
     });
 

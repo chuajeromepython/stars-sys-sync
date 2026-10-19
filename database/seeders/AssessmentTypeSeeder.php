@@ -15,9 +15,9 @@ class AssessmentTypeSeeder extends Seeder
     public function run()
     {
         $types = [
-
-            ['type' => 'Periodical'],
             ['type' => 'Summative'],
+            ['type' => 'Term Exam'],
+            ['type' => 'Diagnostic'],
             ['type' => 'ECD'],
 
         ];

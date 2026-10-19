@@ -17,23 +17,14 @@
             });
             
             $('#dt_ecdcs').dataTable({
-                'language':{
-                    'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-                },
                 'scrollX': (screen_height > screen_width) ? true : false
             });
             
             $('#dt_students').dataTable({
-                'language':{
-                    'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-                },
                 'scrollX': (screen_height > screen_width) ? true : false
             });
             
             $('#dt_student_lists').dataTable({
-                'language':{
-                    'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-                },
                 'scrollX': (screen_height > screen_width) ? true : false
             });    
 
@@ -72,8 +63,8 @@
                 },
                 success: function(data){
 
-                    $('#dt_student_lists').dataTable().fnClearTable();
-                    $('#dt_student_lists').dataTable().fnDestroy();
+                    $('#dt_student_lists').DataTable().clear();
+                    $('#dt_student_lists').DataTable().destroy();
                     
                     var html = "";
                     $.each(data, function(student_id, student) {
@@ -95,9 +86,6 @@
                     $("#tbody_student_list").html(html);
 
                     $('#dt_student_lists').dataTable({
-                        'language':{
-                            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-                        },
                         'scrollX': (screen_height > screen_width) ? true : false
                     });    
                 },
@@ -130,7 +118,7 @@
             <div class="card">
                 <div class="card-header">
                     <div class="row">
-                        <div class="col-md-8 col-12 mb-2">
+                        <div class="col-md-6 col-12 mb-2">
                             <small class=""><b>LEGEND</b></small><br>
                             <span class="badge bg-teal">Beginning Of S.Y.</span>
                             <span class="badge bg-info">Mid Of S.Y.</span>
@@ -147,6 +135,14 @@
                                 <i class="fa fa-download"></i>
                                 Download Template
                             </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            @can('ecdcs.download')
+                                <a class="btn-block btn btn-primary" href="{{ route('ecdcs.classroom.report.download', $classroom->id) }}">
+                                    <i class="fa fa-file-excel"></i>
+                                    Download SF5-K
+                                </a>
+                            @endcan
                         </div>
                     </div>
                 </div>
