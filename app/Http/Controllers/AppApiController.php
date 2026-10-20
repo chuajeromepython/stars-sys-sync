@@ -863,6 +863,9 @@ class AppApiController extends Controller
                         'student_id' => $student_id,
                         'ecdc_id' => $ecdc->id,
                         'ecdc_competency_id' => (int) $response['competency_id'],
+                        'date_of_assessment' => filled($student_payload['last_ticked_at'] ?? null)
+                            ? Carbon::parse($student_payload['last_ticked_at'])->toDateString()
+                            : $ecdc->date,
                         'score' => $status === '1' ? 1 : 0,
                         'created_at' => $now,
                         'updated_at' => $now,

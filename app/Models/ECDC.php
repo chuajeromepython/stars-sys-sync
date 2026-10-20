@@ -82,6 +82,7 @@ class ECDC extends Model
             $students_ecdcs = StudentECDC::select(
                 'tbl_student_ecdcs.id as student_ecdc_id',
                 'tbl_student_ecdcs.ecdc_competency_id',
+                'tbl_student_ecdcs.date_of_assessment',
                 'tbl_student_ecdcs.score',
                 'tbl_ecdc_competencies.competency',
                 'tbl_ecdc_competencies.domain_id'
@@ -97,6 +98,7 @@ class ECDC extends Model
                         'ecdc_competency_id' => $students_ecdc->ecdc_competency_id,
                         'domain_id' => $students_ecdc->domain_id,
                         'competency' => $students_ecdc->competency,
+                        'date_of_assessment' => $students_ecdc->date_of_assessment,
                         'score' => $students_ecdc->score,
                     ];
                 }
@@ -123,7 +125,11 @@ class ECDC extends Model
                 ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
                 ->where('tbl_students.id', $student_id)
                 ->first();
-            $date = new DateTime($ecdc->date);
+            $date_tested = collect($competencies)
+                ->pluck('date_of_assessment')
+                ->filter()
+                ->first() ?? $ecdc->date;
+            $date = new DateTime($date_tested);
             $birthdate = new DateTime($student->birth_date);
             $age = $date->diff($birthdate);
             $age = $age->y.'.'.$age->m;
@@ -169,7 +175,7 @@ class ECDC extends Model
                 'lrn' => $student->lrn,
                 'name' => $student->last_name.', '.$student->first_name.' '.$student->middle_name,
                 'age' => $age,
-                'date_tested' => $ecdc->date,
+                'date_tested' => $date_tested,
                 'domains' => $domains,
                 'total_scaled_score' => $total_scaled_score,
                 'standard_score' => ECDC::getStandardScore($total_scaled_score),

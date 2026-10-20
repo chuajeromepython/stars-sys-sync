@@ -67,6 +67,10 @@ class EcdcResultUploadApiTest extends TestCase
         $this->assertSame(1, (int) $scores[$context['competency_ids'][0]]);
         $this->assertSame(0, (int) $scores[$context['competency_ids'][1]]);
         $this->assertArrayNotHasKey($context['competency_ids'][2], $scores);
+        $this->assertSame(
+            '2026-09-29',
+            DB::table('tbl_student_ecdcs')->where('ecdc_id', $ecdc->id)->value('date_of_assessment')
+        );
 
         Storage::disk('public')->assertExists('ecdc-'.$ecdc->id.'.json');
     }
@@ -86,7 +90,7 @@ class EcdcResultUploadApiTest extends TestCase
             ],
             [
                 'lrn' => '100000000002',
-                'last_ticked_at' => '2026-09-29',
+                'last_ticked_at' => '2026-10-02',
                 'responses' => $this->responses($context['competency_ids'], ['-', '-', '*', '*']),
             ],
         ]))->assertOk()->assertJson([
@@ -103,6 +107,19 @@ class EcdcResultUploadApiTest extends TestCase
         $ecdc_id = DB::table('tbl_ecdcs')->value('id');
 
         $this->assertSame(2, DB::table('tbl_student_ecdcs')->where('ecdc_id', $ecdc_id)->distinct()->count('student_id'));
+        $student_ids = DB::table('tbl_students')->whereIn('lrn', ['100000000001', '100000000002'])->pluck('id', 'lrn');
+        $assessment_dates = DB::table('tbl_student_ecdcs')
+            ->where('ecdc_id', $ecdc_id)
+            ->select('student_id', 'date_of_assessment')
+            ->distinct()
+            ->pluck('date_of_assessment', 'student_id');
+
+        $this->assertSame('2026-09-29', $assessment_dates[(int) $student_ids['100000000001']]);
+        $this->assertSame('2026-10-02', $assessment_dates[(int) $student_ids['100000000002']]);
+
+        $results = ECDC::getJsonResult($ecdc_id);
+        $this->assertSame('2026-09-29', $results[(int) $student_ids['100000000001']]['date_tested']);
+        $this->assertSame('2026-10-02', $results[(int) $student_ids['100000000002']]['date_tested']);
     }
 
     public function test_it_replaces_previous_answers_when_the_same_student_is_uploaded_again(): void

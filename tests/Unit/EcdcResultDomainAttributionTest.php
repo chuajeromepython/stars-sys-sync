@@ -55,6 +55,7 @@ class EcdcResultDomainAttributionTest extends TestCase
             $table->bigInteger('student_id');
             $table->bigInteger('ecdc_id');
             $table->bigInteger('ecdc_competency_id');
+            $table->date('date_of_assessment')->nullable();
             $table->integer('score')->default(0);
             $table->timestamps();
         });
