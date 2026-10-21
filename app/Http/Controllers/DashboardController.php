@@ -184,7 +184,14 @@ class DashboardController extends Controller
      */
     public function records(Request $request, DashboardDataTable $dashboardDataTable, DataTablePaginator $paginator): JsonResponse
     {
+        $request->validate([
+            'academic_year_id' => ['nullable', 'integer', 'exists:tbl_academic_years,id'],
+        ]);
+
         $type = (string) $request->query('type', '');
+        $academicYearId = $request->filled('academic_year_id')
+            ? $request->integer('academic_year_id')
+            : AcademicYear::active()?->id;
 
         // The endpoint enforces the same rule as the filter select on the page:
         // a record type the role is not offered resolves to nothing, so a
@@ -193,7 +200,7 @@ class DashboardController extends Controller
             $type = '';
         }
 
-        $resolved = $dashboardDataTable->resolve($type);
+        $resolved = $dashboardDataTable->resolve($type, null, $academicYearId);
 
         if ($resolved === null) {
             return response()->json([

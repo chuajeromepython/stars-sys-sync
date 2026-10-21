@@ -103,6 +103,18 @@
             border-left-color: var(--dashboard-teal)
         }
 
+        .dashboard-academic-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px
+        }
+
+        .dashboard-academic-select {
+            width: min(190px, 48%);
+            flex: 0 0 min(190px, 48%)
+        }
+
         .dashboard-context-icon {
             width: 42px;
             height: 42px;
@@ -390,6 +402,7 @@
                     url: '/dashboard/records',
                     data: function(data) {
                         data.type = $('#dashboard-record-type').val();
+                        data.academic_year_id = $('#dashboard-academic-year').val();
                     }
                 },
                 columns: [
@@ -467,16 +480,23 @@
                     <div class="d-flex align-items-center">
                         <div class="dashboard-context-icon mr-3"><i class="fas fa-calendar-alt"></i></div>
                         <form action="/dashboard" method="GET" class="flex-grow-1">
-                            <label class="dashboard-label dashboard-muted" for="dashboard-academic-year">Academic year</label>
-                            <select class="form-control" id="dashboard-academic-year" name="academic_year_id">
-                                @forelse ($academicYears as $year)
-                                    <option value="{{ $year->id }}" @selected($academic_year?->id === $year->id)>
-                                        {{ $year->from }} - {{ $year->to }}{{ $year->is_active ? ' (Active)' : '' }}
-                                    </option>
-                                @empty
-                                    <option value="">Not set</option>
-                                @endforelse
-                            </select>
+                            <div class="dashboard-academic-heading">
+                                <div>
+                                    <label class="dashboard-label dashboard-muted mb-1" for="dashboard-academic-year">Academic year</label>
+                                    <div class="dashboard-context-value">
+                                        {{ $academic_year ? $academic_year->from.' - '.$academic_year->to : 'None' }}
+                                    </div>
+                                </div>
+                                <select class="form-control" id="dashboard-academic-year" name="academic_year_id" aria-label="Filter by academic year">
+                                    @forelse ($academicYears as $year)
+                                        <option value="{{ $year->id }}" @selected($academic_year?->id === $year->id)>
+                                            {{ $year->from }} - {{ $year->to }}{{ $year->is_active ? ' (Active)' : '' }}
+                                        </option>
+                                    @empty
+                                        <option value="">Not set</option>
+                                    @endforelse
+                                </select>
+                            </div>
                             <noscript>
                                 <button class="btn btn-primary btn-sm mt-2" type="submit">Apply academic year</button>
                             </noscript>
