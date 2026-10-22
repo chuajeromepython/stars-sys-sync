@@ -84,6 +84,7 @@ class ECDC extends Model
                 'tbl_student_ecdcs.ecdc_competency_id',
                 'tbl_student_ecdcs.date_of_assessment',
                 'tbl_student_ecdcs.score',
+                'tbl_student_ecdcs.present_type',
                 'tbl_ecdc_competencies.competency',
                 'tbl_ecdc_competencies.domain_id'
             )->join('tbl_ecdc_competencies', 'tbl_student_ecdcs.ecdc_competency_id', 'tbl_ecdc_competencies.id')
@@ -93,13 +94,21 @@ class ECDC extends Model
 
             if ($students_ecdcs->count() > 0) {
                 foreach ($students_ecdcs as $key => $students_ecdc) {
+                    $status = (string) $students_ecdc->score;
+
+                    if ($status === '0') {
+                        $status = '-';
+                    }
+
                     $data[$student->student_id][$students_ecdc->ecdc_competency_id] = [
                         'student_ecdc_id' => $students_ecdc->student_ecdc_id,
                         'ecdc_competency_id' => $students_ecdc->ecdc_competency_id,
                         'domain_id' => $students_ecdc->domain_id,
                         'competency' => $students_ecdc->competency,
                         'date_of_assessment' => $students_ecdc->date_of_assessment,
-                        'score' => $students_ecdc->score,
+                        'score' => $status,
+                        'status' => $status,
+                        'present_type' => $students_ecdc->present_type,
                     ];
                 }
             }
@@ -150,9 +159,9 @@ class ECDC extends Model
                 if (array_key_exists($domain_id, $domains_score)) {
                     // $domains_score[$domain_id] = $domains_score[$domain_id]+$points['score'];
 
-                    $domains_score[$domain_id] = $domains_score[$domain_id] + $points['score'];
+                    $domains_score[$domain_id] += $points['status'] === '1' ? 1 : 0;
                 } else {
-                    $domains_score[$domain_id] = $points['score'];
+                    $domains_score[$domain_id] = $points['status'] === '1' ? 1 : 0;
                 }
                 // push competency on perspective domain
 

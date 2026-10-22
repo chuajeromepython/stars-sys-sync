@@ -557,6 +557,7 @@ class CustomFunction extends Model
     {
         $classrooms = [];
         $teacher = Teacher::where('user_id', $id)->first();
+        $user = User::find($id);
 
         if (! $teacher) {
             return $classrooms;
@@ -582,10 +583,8 @@ class CustomFunction extends Model
             ->where('academic_year_id', $academic_year->id)
             ->whereIn('grade_level_id', $grade_levels->keys());
 
-        if (Auth::user()->classification == 'Teacher') {
-            $current_teacher = Auth::user()->id == $id
-                ? $teacher
-                : Teacher::where('user_id', Auth::user()->id)->first();
+        if ($user?->classification == 'Teacher') {
+            $current_teacher = $teacher;
 
             if (! $current_teacher) {
                 return $classrooms;
@@ -612,7 +611,7 @@ class CustomFunction extends Model
                 $classes = 0;
                 $is_included = 1;
 
-                if (Auth::user()->classification == 'Teacher') {
+                if ($user?->classification == 'Teacher') {
                     $classes = (int) ($room->current_teacher_classes_count ?? 0);
                     $is_advisory = ((int) ($room->current_teacher_advisory_count ?? 0) > 0) ? 1 : 0;
 

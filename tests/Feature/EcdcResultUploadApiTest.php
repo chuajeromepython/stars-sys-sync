@@ -26,8 +26,9 @@ class EcdcResultUploadApiTest extends TestCase
                 'lrn' => '100000000001',
                 'last_ticked_at' => '2026-09-29T09:15:00+08:00',
                 'responses' => $this->responses(
-                    [$context['competency_ids'][0], $context['competency_ids'][1], $context['competency_ids'][2]],
-                    ['1', '-', '*']
+                    $context['competency_ids'],
+                    ['1', '1', '-', '*'],
+                    ['P', 'O', 'R', null]
                 ),
             ],
         ]));
@@ -42,8 +43,8 @@ class EcdcResultUploadApiTest extends TestCase
                     'period' => '1',
                     'date' => '2026-09-29',
                     'students_uploaded' => 1,
-                    'responses_saved' => 2,
-                    'responses_skipped' => 1,
+                    'responses_saved' => 4,
+                    'responses_skipped' => 0,
                 ],
             ]);
 
@@ -58,21 +59,33 @@ class EcdcResultUploadApiTest extends TestCase
         $this->assertSame($context['teacher_id'], (int) $ecdc->teacher_id);
         $this->assertSame($context['academic_year_id'], (int) $ecdc->academic_year_id);
 
-        $scores = DB::table('tbl_student_ecdcs')
+        $responses = DB::table('tbl_student_ecdcs')
             ->where('ecdc_id', $ecdc->id)
-            ->pluck('score', 'ecdc_competency_id')
-            ->all();
+            ->get()
+            ->keyBy('ecdc_competency_id');
 
-        $this->assertCount(2, $scores);
-        $this->assertSame(1, (int) $scores[$context['competency_ids'][0]]);
-        $this->assertSame(0, (int) $scores[$context['competency_ids'][1]]);
-        $this->assertArrayNotHasKey($context['competency_ids'][2], $scores);
+        $this->assertCount(4, $responses);
+        $this->assertSame('1', $responses[$context['competency_ids'][0]]->score);
+        $this->assertSame('P', $responses[$context['competency_ids'][0]]->present_type);
+        $this->assertSame('1', $responses[$context['competency_ids'][1]]->score);
+        $this->assertSame('O', $responses[$context['competency_ids'][1]]->present_type);
+        $this->assertSame('-', $responses[$context['competency_ids'][2]]->score);
+        $this->assertSame('R', $responses[$context['competency_ids'][2]]->present_type);
+        $this->assertSame('*', $responses[$context['competency_ids'][3]]->score);
+        $this->assertNull($responses[$context['competency_ids'][3]]->present_type);
         $this->assertSame(
             '2026-09-29',
             DB::table('tbl_student_ecdcs')->where('ecdc_id', $ecdc->id)->value('date_of_assessment')
         );
 
         Storage::disk('public')->assertExists('ecdc-'.$ecdc->id.'.json');
+
+        $generated = ECDC::getJsonResult($ecdc->id);
+        $student_id = (int) DB::table('tbl_students')->where('lrn', '100000000001')->value('id');
+        $first_response = $generated[$student_id]['domains'][1]['competencies'][$responses[$context['competency_ids'][0]]->id];
+
+        $this->assertSame('1', $first_response['status']);
+        $this->assertSame('P', $first_response['present_type']);
     }
 
     public function test_it_uploads_results_for_several_students_in_one_request(): void
@@ -96,13 +109,13 @@ class EcdcResultUploadApiTest extends TestCase
         ]))->assertOk()->assertJson([
             'data' => [
                 'students_uploaded' => 2,
-                'responses_saved' => 5,
-                'responses_skipped' => 3,
+                'responses_saved' => 8,
+                'responses_skipped' => 0,
             ],
         ]);
 
         $this->assertDatabaseCount('tbl_ecdcs', 1);
-        $this->assertDatabaseCount('tbl_student_ecdcs', 5);
+        $this->assertDatabaseCount('tbl_student_ecdcs', 8);
 
         $ecdc_id = DB::table('tbl_ecdcs')->value('id');
 
@@ -144,19 +157,19 @@ class EcdcResultUploadApiTest extends TestCase
         ]]))->assertOk()->assertJson([
             'data' => [
                 'date' => '2026-10-02',
-                'responses_saved' => 2,
-                'responses_skipped' => 1,
+                'responses_saved' => 3,
+                'responses_skipped' => 0,
             ],
         ]);
 
         $this->assertDatabaseCount('tbl_ecdcs', 1);
-        $this->assertDatabaseCount('tbl_student_ecdcs', 2);
+        $this->assertDatabaseCount('tbl_student_ecdcs', 3);
 
         $scores = DB::table('tbl_student_ecdcs')->pluck('score', 'ecdc_competency_id')->all();
 
-        $this->assertSame(0, (int) $scores[$competency_ids[0]]);
-        $this->assertSame(1, (int) $scores[$competency_ids[1]]);
-        $this->assertArrayNotHasKey($competency_ids[2], $scores);
+        $this->assertSame('-', $scores[$competency_ids[0]]);
+        $this->assertSame('1', $scores[$competency_ids[1]]);
+        $this->assertSame('*', $scores[$competency_ids[2]]);
         $this->assertSame('2026-10-02', DB::table('tbl_ecdcs')->value('date'));
     }
 
@@ -181,7 +194,7 @@ class EcdcResultUploadApiTest extends TestCase
 
         $this->assertDatabaseCount('tbl_ecdcs', 2);
         $this->assertSame(['2', '3'], DB::table('tbl_ecdcs')->orderBy('id')->pluck('period')->all());
-        $this->assertDatabaseCount('tbl_student_ecdcs', 7);
+        $this->assertDatabaseCount('tbl_student_ecdcs', 8);
     }
 
     public function test_it_rejects_a_status_that_is_not_present_not_present_or_not_tested(): void
@@ -197,6 +210,23 @@ class EcdcResultUploadApiTest extends TestCase
         ]]))->assertStatus(422)
             ->assertJson(['success' => false, 'message' => 'Validation failed'])
             ->assertJsonValidationErrors(['students.0.responses.0.status']);
+
+        $this->assertDatabaseCount('tbl_ecdcs', 0);
+        $this->assertDatabaseCount('tbl_student_ecdcs', 0);
+    }
+
+    public function test_it_rejects_an_unknown_present_type(): void
+    {
+        Storage::fake('public');
+
+        $context = $this->seedEcdcContext();
+
+        $this->postJson('/api/ecdc/upload', $this->payload($context, [[
+            'lrn' => '100000000001',
+            'responses' => $this->responses([$context['competency_ids'][0]], ['1'], ['X']),
+        ]]))->assertStatus(422)
+            ->assertJson(['success' => false, 'message' => 'Validation failed'])
+            ->assertJsonValidationErrors(['students.0.responses.0.present_type']);
 
         $this->assertDatabaseCount('tbl_ecdcs', 0);
         $this->assertDatabaseCount('tbl_student_ecdcs', 0);
@@ -307,7 +337,7 @@ class EcdcResultUploadApiTest extends TestCase
         $this->assertDatabaseCount('tbl_ecdcs', 0);
     }
 
-    public function test_it_requires_an_authenticated_session(): void
+    public function test_it_does_not_require_an_authenticated_session(): void
     {
         Storage::fake('public');
 
@@ -316,16 +346,13 @@ class EcdcResultUploadApiTest extends TestCase
         $this->postJson('/api/ecdc/upload', $this->payload($context, [[
             'lrn' => '100000000001',
             'responses' => $this->responses($context['competency_ids'], ['1', '-', '*', '1']),
-        ]]))->assertStatus(401)
-            ->assertJson([
-                'success' => false,
-                'message' => 'Unauthenticated request. Please login first.',
-            ]);
+        ]]))->assertOk()
+            ->assertJson(['success' => true]);
 
-        $this->assertDatabaseCount('tbl_ecdcs', 0);
+        $this->assertDatabaseCount('tbl_ecdcs', 1);
     }
 
-    public function test_it_rejects_a_user_id_that_does_not_match_the_active_session(): void
+    public function test_it_uses_the_submitted_user_id_without_checking_the_active_session(): void
     {
         Storage::fake('public');
 
@@ -336,13 +363,10 @@ class EcdcResultUploadApiTest extends TestCase
         $this->postJson('/api/ecdc/upload', $this->payload($context, [[
             'lrn' => '100000000001',
             'responses' => $this->responses($context['competency_ids'], ['1', '-', '*', '1']),
-        ]]))->assertStatus(403)
-            ->assertJson([
-                'success' => false,
-                'message' => 'Submitted user_id does not match the active session.',
-            ]);
+        ]]))->assertOk()
+            ->assertJson(['success' => true]);
 
-        $this->assertDatabaseCount('tbl_ecdcs', 0);
+        $this->assertDatabaseCount('tbl_ecdcs', 1);
     }
 
     public function test_it_rejects_an_account_without_a_teacher_record(): void
@@ -548,20 +572,19 @@ class EcdcResultUploadApiTest extends TestCase
         ])->assertOk()->assertJson([
             'data' => [
                 'periods' => [
-                    ['period' => '1', 'label' => 'BOSY', 'date' => '2026-09-29', 'source' => 1, 'students_recorded' => 1, 'responses_saved' => 2],
+                    ['period' => '1', 'label' => 'BOSY', 'date' => '2026-09-29', 'source' => 1, 'students_recorded' => 1, 'responses_saved' => 4],
                     ['period' => '3', 'label' => 'EOSY', 'date' => '2027-02-11', 'source' => 1, 'students_recorded' => 1, 'responses_saved' => 4],
                 ],
             ],
         ]);
 
-        // Only recorded answers are counted, so the two not tested answers of
-        // the first sheet stay out and the app can flag the sheet as partial.
+        // Every submitted status is retained, including not-tested answers.
         $bosy = collect($response->json('data.students.0.periods'));
 
         $this->assertCount(1, $bosy);
         $this->assertSame('1', $bosy[0]['period']);
         $this->assertSame('BOSY', $bosy[0]['label']);
-        $this->assertSame(2, $bosy[0]['responses_saved']);
+        $this->assertSame(4, $bosy[0]['responses_saved']);
         $this->assertNotNull($bosy[0]['last_answered_at']);
 
         $eosy = collect($response->json('data.students.1.periods'));
@@ -667,18 +690,14 @@ class EcdcResultUploadApiTest extends TestCase
         $this->postJson('/api/ecdc/results/sync', [
             'classroom_id' => $context['classroom_id'],
             'user_id' => $context['teacher_user_id'],
-        ])->assertStatus(401)->assertJson([
-            'message' => 'Unauthenticated request. Please login first.',
-        ]);
+        ])->assertOk()->assertJson(['success' => true]);
 
         $this->actingAs(User::findOrFail($this->createUser('Teacher', 'M', 'Stranger')));
 
         $this->postJson('/api/ecdc/results/sync', [
             'classroom_id' => $context['classroom_id'],
             'user_id' => $context['teacher_user_id'],
-        ])->assertStatus(403)->assertJson([
-            'message' => 'Submitted user_id does not match the active session.',
-        ]);
+        ])->assertOk()->assertJson(['success' => true]);
 
         $this->actingAs(User::findOrFail($context['teacher_user_id']));
 
@@ -714,7 +733,7 @@ class EcdcResultUploadApiTest extends TestCase
     /**
      * Builds the request body the mobile app sends for a classroom.
      *
-     * @param  array<int, array{lrn: string, last_ticked_at?: string, responses: array<int, array{competency_id: int, status: string}>}>  $students
+     * @param  array<int, array{lrn: string, last_ticked_at?: string, responses: array<int, array{competency_id: int, status: string, present_type?: string|null}>}>  $students
      * @return array<string, mixed>
      */
     private function payload(array $context, array $students, string $period = 'BOSY'): array
@@ -732,9 +751,10 @@ class EcdcResultUploadApiTest extends TestCase
      *
      * @param  array<int, int>  $competency_ids
      * @param  array<int, string>  $statuses
-     * @return array<int, array{competency_id: int, status: string}>
+     * @param  array<int, string|null>  $present_types
+     * @return array<int, array{competency_id: int, status: string, present_type?: string|null}>
      */
-    private function responses(array $competency_ids, array $statuses): array
+    private function responses(array $competency_ids, array $statuses, array $present_types = []): array
     {
         $responses = [];
 
@@ -743,6 +763,10 @@ class EcdcResultUploadApiTest extends TestCase
                 'competency_id' => $competency_id,
                 'status' => $statuses[$index],
             ];
+
+            if (array_key_exists($index, $present_types)) {
+                $responses[$index]['present_type'] = $present_types[$index];
+            }
         }
 
         return $responses;

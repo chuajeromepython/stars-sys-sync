@@ -68,27 +68,6 @@ class AppApiController extends Controller
 
         $user_id = (int) $request->input('userId');
 
-        // The API group is stateless, so authentication is determined by the
-        // guard on the request. Querying the sessions table directly ignored the
-        // guard and rejected every caller that was legitimately signed in.
-        $authenticated_user_id = (int) Auth::id();
-
-        if ($authenticated_user_id === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated request. Please login first.',
-                'data' => null,
-            ], 401);
-        }
-
-        if ($authenticated_user_id !== $user_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Submitted userId does not match the active session.',
-                'data' => null,
-            ], 403);
-        }
-
         $user = User::find($user_id);
 
         if (! $user) {
@@ -573,10 +552,21 @@ class AppApiController extends Controller
             'user_id.exists' => 'User ID does not exist.',
         ]);
 
-        $user_id = $request->input('user_id');
+        $user_id = (int) $request->input('user_id');
         $teacher_id = Teacher::where('user_id', $user_id)->value('id');
-        $assessments = CustomFunction::getAssessmentsDetailsByTeacherId($teacher_id)
-            ->load(['assessmentKeys.questions.options']);
+        $assessments = CustomFunction::getAssessmentsDetailsByTeacherId($teacher_id);
+
+        if ($assessments->isEmpty() && $teacher_id !== $user_id) {
+            $assessments = CustomFunction::getAssessmentsDetailsByTeacherId($user_id);
+        }
+
+        $assessments->load(['assessmentKeys.questions.options']);
+        $academic_year = AcademicYear::active();
+        $ecdcs = ECDC::query()
+            ->where('teacher_id', $teacher_id)
+            ->when($academic_year, fn ($query) => $query->where('academic_year_id', $academic_year->id))
+            ->orderBy('id')
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -606,6 +596,15 @@ class AppApiController extends Controller
                         }),
                     ];
                 }),
+                'ecdcs' => $ecdcs->map(fn ($ecdc) => [
+                    'id' => $ecdc->id,
+                    'classroom_id' => $ecdc->classroom_id,
+                    'academic_year_id' => $ecdc->academic_year_id,
+                    'period' => (string) $ecdc->period,
+                    'period_label' => ECDC::periodLabel($ecdc->period),
+                    'source' => (int) $ecdc->source,
+                    'date' => $ecdc->date,
+                ])->values(),
             ],
         ]);
     }
@@ -627,6 +626,9 @@ class AppApiController extends Controller
      */
     public function uploadEcdcResults(Request $request)
     {
+        Log::alert('Incoming ECDC result upload request', [
+            'request' => $request->all(),
+        ]);
         $validator = Validator::make($request->all(), [
             'classroom_id' => ['required', 'integer', 'exists:tbl_classrooms,id'],
             'user_id' => ['required', 'integer', 'exists:tbl_users,id'],
@@ -641,6 +643,7 @@ class AppApiController extends Controller
             'students.*.responses' => ['required', 'array', 'min:1'],
             'students.*.responses.*.competency_id' => ['required', 'integer', 'exists:tbl_ecdc_competencies,id'],
             'students.*.responses.*.status' => ['required', Rule::in(['1', '-', '*'])],
+            'students.*.responses.*.present_type' => ['nullable', Rule::in(['P', 'O', 'R'])],
         ], [
             'classroom_id.exists' => 'The classroom does not exist.',
             'user_id.exists' => 'The user does not exist.',
@@ -651,6 +654,7 @@ class AppApiController extends Controller
             'students.*.responses.min' => 'Each student must submit at least one competency response.',
             'students.*.responses.*.competency_id.exists' => 'Each response must reference an existing ECDC competency.',
             'students.*.responses.*.status.in' => 'The status must be 1 (present), - (not present), or * (not tested).',
+            'students.*.responses.*.present_type.in' => 'The present type must be P, O, or R.',
         ]);
 
         if ($validator->fails()) {
@@ -663,23 +667,6 @@ class AppApiController extends Controller
         }
 
         $user_id = (int) $request->input('user_id');
-        $authenticated_user_id = (int) Auth::id();
-
-        if ($authenticated_user_id === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated request. Please login first.',
-                'data' => null,
-            ], 401);
-        }
-
-        if ($authenticated_user_id !== $user_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Submitted user_id does not match the active session.',
-                'data' => null,
-            ], 403);
-        }
 
         $teacher = Teacher::where('user_id', $user_id)->first();
 
@@ -853,12 +840,6 @@ class AppApiController extends Controller
                 foreach ($student_payload['responses'] as $response) {
                     $status = (string) $response['status'];
 
-                    if ($status === '*') {
-                        $skipped++;
-
-                        continue;
-                    }
-
                     $rows[] = [
                         'student_id' => $student_id,
                         'ecdc_id' => $ecdc->id,
@@ -866,7 +847,8 @@ class AppApiController extends Controller
                         'date_of_assessment' => filled($student_payload['last_ticked_at'] ?? null)
                             ? Carbon::parse($student_payload['last_ticked_at'])->toDateString()
                             : $ecdc->date,
-                        'score' => $status === '1' ? 1 : 0,
+                        'score' => $status,
+                        'present_type' => $response['present_type'] ?? null,
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];
@@ -975,23 +957,6 @@ class AppApiController extends Controller
         }
 
         $user_id = (int) $request->input('user_id');
-        $authenticated_user_id = (int) Auth::id();
-
-        if ($authenticated_user_id === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated request. Please login first.',
-                'data' => null,
-            ], 401);
-        }
-
-        if ($authenticated_user_id !== $user_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Submitted user_id does not match the active session.',
-                'data' => null,
-            ], 403);
-        }
 
         $teacher = Teacher::where('user_id', $user_id)->first();
 

@@ -21,6 +21,7 @@ use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
@@ -172,6 +173,17 @@ class ECDCController extends Controller
 
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'student_id' => ['required', 'integer', 'exists:tbl_students,id'],
+            'classroom_id' => ['required', 'integer', 'exists:tbl_classrooms,id'],
+            'period' => ['required', 'integer', Rule::in([ECDC::BOSY, ECDC::EOSY])],
+            'date' => ['required', 'date'],
+            'score' => ['nullable', 'array'],
+            'score.*' => [Rule::in(['1', '-', '*'])],
+            'present_type' => ['nullable', 'array'],
+            'present_type.*' => ['nullable', Rule::in(['P', 'O', 'R'])],
+        ]);
+
         // dd($request);
         DB::beginTransaction();
         try {
@@ -193,10 +205,10 @@ class ECDCController extends Controller
 
             $ecdc = new ECDC;
 
-            $ecdc->date = $request->date;
-            $ecdc->period = $request->period;
+            $ecdc->date = $validated['date'];
+            $ecdc->period = $validated['period'];
             $ecdc->academic_year_id = $academic_year->id;
-            $ecdc->classroom_id = $request->classroom_id;
+            $ecdc->classroom_id = $validated['classroom_id'];
             $ecdc->source = 2;
             $ecdc->teacher_id = Teacher::where('user_id', Auth::user()->id)->value('id');
             $ecdc->created_at = Carbon::now('Asia/Manila');
@@ -206,13 +218,17 @@ class ECDCController extends Controller
 
             foreach ($competencies as $key => $competency) {
 
-                $score = isset($request->score[$competency->id]) ? $request->score[$competency->id] : 0;
+                $score = $validated['score'][$competency->id] ?? '*';
+                $present_type = $score === '1'
+                    ? ($validated['present_type'][$competency->id] ?? null)
+                    : null;
 
                 $student_ecdc = new StudentECDC;
                 $student_ecdc->student_id = $request->student_id;
                 $student_ecdc->ecdc_id = $ecdc->id;
                 $student_ecdc->ecdc_competency_id = $competency->id;
                 $student_ecdc->score = $score;
+                $student_ecdc->present_type = $present_type;
                 $student_ecdc->save();
 
             }
@@ -326,9 +342,9 @@ class ECDCController extends Controller
             'student_id' => $student->id,
         ];
 
-        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->groupBy('ecdc_id')->value('ecdc_id');
+        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
 
         $bosy_result = ($bosy_id) ? ECDC::getJsonResult($bosy_id)[$student->id] : 'No Record';
         $mosy_result = ($mosy_id) ? ECDC::getJsonResult($mosy_id)[$student->id] : 'No Record';
@@ -346,15 +362,20 @@ class ECDCController extends Controller
         foreach ($domains as $key => $domain) {
             $domain_competencies[$domain->id] = [
                 'domain' => $domain->domain,
+                'color' => ECDC::domainColor($key),
                 'competencies' => ECDCCompetency::where('domain_id', $domain->id)->get(),
             ];
         }
-        $periods = ['bosy', 'mosy', 'eosy'];
+        $periods = ['bosy', 'eosy'];
+        $assessment_periods = [
+            'bosy' => '1st Assessment',
+            'mosy' => '2nd Assessment',
+        ];
 
         return view('ecdc.card', compact(
             'page', 'student', 'classroom',
             'results', 'domains', 'domain_competencies',
-            'periods'
+            'periods', 'assessment_periods'
         ));
     }
 
@@ -369,9 +390,9 @@ class ECDCController extends Controller
             'student_id' => $student->id,
         ];
 
-        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->groupBy('ecdc_id')->value('ecdc_id');
+        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
 
         $bosy_result = ($bosy_id) ? ECDC::getJsonResult($bosy_id)[$student->id] : 'No Record';
         $mosy_result = ($mosy_id) ? ECDC::getJsonResult($mosy_id)[$student->id] : 'No Record';
@@ -389,12 +410,13 @@ class ECDCController extends Controller
         foreach ($domains as $key => $domain) {
             $domain_competencies[$domain->id] = [
                 'domain' => $domain->domain,
+                'color' => ECDC::domainColor($key),
                 'competencies' => ECDCCompetency::where('domain_id', $domain->id)->get(),
             ];
         }
         // dd($results);
 
-        $periods = ['bosy', 'mosy', 'eosy'];
+        $periods = ['bosy', 'eosy'];
 
         $classroom = CustomFunction::getClassroomDetails($classroom->id);
 
@@ -645,7 +667,8 @@ class ECDCController extends Controller
             ];
             $ecdcId = StudentECDC::getECD($filter)
                 ->where('period', ECDC::EOSY)
-                ->groupBy('ecdc_id')
+                ->select('tbl_student_ecdcs.ecdc_id')
+                ->distinct()
                 ->value('ecdc_id');
 
             $result = null;
@@ -888,7 +911,7 @@ class ECDCController extends Controller
                         if ($competency_id != '*' && $available_competencies->contains($competency_id)) {
 
                             $get_score = $spreadsheet->getSheetByName('ENCODE here')->getCell($col.$row)->getValue();
-                            $score = ($get_score != 1) ? 0 : 1;
+                            $score = ($get_score != 1) ? '-' : '1';
                             $data[$check_lrn[0]->student_id][$competency_id] = $score;
                         }
                     }
@@ -990,9 +1013,9 @@ class ECDCController extends Controller
             'student_id' => $student->id,
         ];
 
-        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->groupBy('ecdc_id')->value('ecdc_id');
+        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
 
         $bosy_result = ($bosy_id) ? ECDC::getJsonResult($bosy_id)[$student->id] : 'No Record';
         $mosy_result = ($mosy_id) ? ECDC::getJsonResult($mosy_id)[$student->id] : 'No Record';
@@ -1019,14 +1042,18 @@ class ECDCController extends Controller
         $age = $date->diff($birthdate);
         $age = $age->y.'.'.$age->m;
 
-        $periods = ['bosy', 'mosy', 'eosy'];
+        $periods = ['bosy', 'eosy'];
+        $assessment_periods = [
+            'bosy' => '1st Assessment',
+            'mosy' => '2nd Assessment',
+        ];
         // dd($user);
         $classroom = CustomFunction::getClassroomDetails($classroom->id);
 
         return view('ecdc.card_tabs.print', compact(
             'student', 'classroom',
             'results', 'domains', 'domain_competencies',
-            'periods', 'person', 'age',
+            'periods', 'assessment_periods', 'person', 'age',
             'user', 'academic_year'
         ));
 
