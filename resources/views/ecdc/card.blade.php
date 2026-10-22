@@ -2,7 +2,10 @@
 
 @section('page_name', $page['name'])
 
-@section('page_title', $page['title'])
+@section('page_title')
+    {{ $page['title'] }}
+    <span class="badge badge-primary badge-pill align-middle">LRN: {{ $student->lrn }}</span>
+@endsection
 
 @section('page_script')
 @endsection

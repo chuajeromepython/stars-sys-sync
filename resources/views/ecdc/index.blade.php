@@ -253,6 +253,34 @@
             letter-spacing: .09em;
         }
 
+        .ecdc-period-report {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+            padding: 5px 9px;
+            border: 1px solid currentColor;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, .9);
+            color: inherit;
+            font-size: .68rem;
+            font-weight: 700;
+            line-height: 1.2;
+            text-decoration: none;
+        }
+
+        .ecdc-period-report:hover,
+        .ecdc-period-report:focus {
+            background: #fff;
+            color: var(--ecdc-ink);
+            text-decoration: none;
+        }
+
+        .ecdc-period-report:focus-visible {
+            outline: 3px solid var(--ecdc-ink);
+            outline-offset: 2px;
+        }
+
         .ecdc-classroom-action {
             display: flex;
             align-items: center;
@@ -379,10 +407,26 @@
                                 <div class="badge bg-teal ecdc-period ecdc-period--bosy">
                                     <strong>{{ $classroom['details']['bosy'] }}</strong>
                                     <span>BOSY</span>
+                                    @can('ecdcs.download')
+                                        <a class="ecdc-period-report bg-teal"
+                                            href="{{ route('ecdcs.classroom.report.download', ['classroom' => $classroom['classroom_id'], 'period' => \App\Models\ECDC::BOSY]) }}"
+                                            aria-label="Download BOSY SF5-K report for Kinder {{ $classroom['section'] }}">
+                                            <i class="fas fa-file-excel" aria-hidden="true"></i>
+                                            <span>Download report</span>
+                                        </a>
+                                    @endcan
                                 </div>
                                 <div class="badge bg-purple ecdc-period ecdc-period--eosy">
                                     <strong>{{ $classroom['details']['eosy'] }}</strong>
                                     <span>EOSY</span>
+                                    @can('ecdcs.download')
+                                        <a class="ecdc-period-report bg-purple"
+                                            href="{{ route('ecdcs.classroom.report.download', ['classroom' => $classroom['classroom_id'], 'period' => \App\Models\ECDC::EOSY]) }}"
+                                            aria-label="Download EOSY SF5-K report for Kinder {{ $classroom['section'] }}">
+                                            <i class="fas fa-file-excel" aria-hidden="true"></i>
+                                            <span>Download report</span>
+                                        </a>
+                                    @endcan
                                 </div>
                             </div>
 
