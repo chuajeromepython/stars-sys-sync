@@ -30,6 +30,23 @@ class ReportManagementTest extends TestCase
         $this->provisionRbac();
     }
 
+    public function test_teacher_assessment_type_options_include_diagnostic(): void
+    {
+        DB::table('tbl_assessment_types')->insert([
+            ['type' => 'Summative'], ['type' => 'Term Exam'],
+            ['type' => 'Diagnostic'], ['type' => 'ECD'],
+        ]);
+
+        $response = $this->actingAs($this->userWithRole(Role::Teacher))
+            ->postJson('/getAssessmentTypePerGradeLevel', ['grade_level_id' => 1]);
+
+        $response->assertOk();
+        $this->assertSame(
+            ['Summative', 'Term Exam', 'Diagnostic'],
+            array_column($response->json(), 'type')
+        );
+    }
+
     public function test_report_hierarchy_dropdowns_are_populated_for_assigned_accounts(): void
     {
         [$division, $district, $school] = $this->hierarchy();

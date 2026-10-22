@@ -299,14 +299,7 @@ class APIController extends Controller
 
     public function getAssessmentTypePerGradeLevel(Request $request)
     {
-
-        if ($request->grade_level_id < 13) {
-            $ids = [1, 2];
-        } else {
-            $ids = [3];
-        }
-
-        $assessment_types = AssessmentType::whereIn('id', $ids)->get();
+        $assessment_types = AssessmentType::whereIn('type', ['Summative', 'Term Exam', 'Diagnostic'])->get();
 
         return $assessment_types;
     }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class CustomFunction extends Model
 {
@@ -1133,7 +1134,9 @@ class CustomFunction extends Model
                 'answers' => $answers,
             ];
         }
-        Storage::disk('public')->put('res-'.$class_assessment_id.'.json', json_encode($result));
+        if (! Storage::disk('public')->put('res-'.$class_assessment_id.'.json', json_encode($result, JSON_THROW_ON_ERROR))) {
+            throw new RuntimeException('Unable to save the assessment results.');
+        }
 
         return $result;
     }

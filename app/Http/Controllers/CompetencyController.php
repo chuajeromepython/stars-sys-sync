@@ -216,7 +216,12 @@ class CompetencyController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getSheetByName('ENCODE here')->toArray();
+        $worksheet = $spreadsheet->getSheetByName('ENCODE here');
+        if ($worksheet === null) {
+            return redirect('/competencies')->withErrors(['error' => 'The workbook must contain an ENCODE here sheet.']);
+        }
+
+        $sheet = $worksheet->toArray();
         $errors = [];
         $error_messages = [];
 
@@ -225,6 +230,11 @@ class CompetencyController extends Controller
 
             foreach ($sheet as $key => $row) {
                 if ($key > 1) {
+                    $row = array_map(
+                        fn ($value) => is_string($value) ? preg_replace('/^\s+|\s+$/u', '', $value) : $value,
+                        $row
+                    );
+
                     if ($row[0] == null) {
                         break;
                     }
@@ -234,7 +244,9 @@ class CompetencyController extends Controller
                     $subject = Subject::where('title', $row[2])->first();
 
                     if (is_null($subject)) {
-                        return redirect('/competencies')->withErrors(['error' => 'Subject not found!']);
+                        $errors[] = ['Error on row '.$line.' : Subject not found.'];
+
+                        continue;
                     }
 
                     if ($subject->subject_components->count() < 1) {

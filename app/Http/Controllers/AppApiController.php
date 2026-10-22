@@ -388,58 +388,31 @@ class AppApiController extends Controller
                 }
 
                 foreach ($data as $student_id => $answers) {
+                    StudentScore::updateOrCreate(
+                        ['student_id' => $student_id, 'class_assessment_id' => $class_assessment->id],
+                        ['score' => $answers['score']]
+                    );
+                    StudentAnswer::where('student_id', $student_id)
+                        ->where('class_assessment_id', $class_assessment->id)
+                        ->whereNotIn('item_number', array_keys($answers['answer']))
+                        ->delete();
 
-                    $is_student_existing = StudentScore::where([
-                        'class_assessment_id' => $request->assessment_id,
-                        'student_id' => $student_id,
-                    ])->get();
-
-                    if ($is_student_existing->count() == 0) {
-
-                        StudentScore::firstOrCreate(
-                            [
-                                'student_id' => $student_id,
-                                'class_assessment_id' => $class_assessment->id,
-                            ],
-                            [
-                                'score' => $answers['score'],
-                                'student_id' => $student_id,
-                                'class_assessment_id' => $class_assessment->id,
-                            ]
-                        );
-
-                        // $student_score = StudentScore::where('class_assessment_id', $class_assessment->id)
-                        //     ->where('student_id', $student_id)
-                        //     ->first();
-
-                        // if(empty($student_score)){
-                        //     dd($student_id, $answers);
-                        // }
-                        // $student_score->student_id = $student_id;
-                        // $student_score->score = $answers['score'];
-                        // $student_score->class_assessment_id = $class_assessment->id;
-                        // $student_score->save();
-
-                        foreach ($answers['answer'] as $item_number => $answer) {
-                            $student_answer = StudentAnswer::where('student_id', $student_id)
-                                ->where('item_number', $item_number)
-                                ->where('class_assessment_id', $class_assessment->id)
-                                ->first();
-
-                            if (empty($student_answer)) {
-                                $student_answer = new StudentAnswer;
-                            }
-
-                            $student_answer->student_id = $student_id;
-                            $student_answer->answer = $answer['answer'];
-                            $student_answer->is_correct = $answer['is_correct'];
-                            $student_answer->item_number = $item_number;
-                            $student_answer->class_assessment_id = $class_assessment->id;
-                            $student_answer->save();
-                        }
+                    foreach ($answers['answer'] as $item_number => $answer) {
+                        $student_answer = StudentAnswer::where([
+                            'student_id' => $student_id,
+                            'item_number' => $item_number,
+                            'class_assessment_id' => $class_assessment->id,
+                        ])->first() ?? new StudentAnswer;
+                        $student_answer->student_id = $student_id;
+                        $student_answer->item_number = $item_number;
+                        $student_answer->class_assessment_id = $class_assessment->id;
+                        $student_answer->answer = $answer['answer'];
+                        $student_answer->is_correct = $answer['is_correct'];
+                        $student_answer->save();
                     }
                 }
 
+                CustomFunction::updateAssessmentResult($class_assessment->id);
                 DB::commit();
                 $result = true;
             } catch (Exception $e) {

@@ -11,6 +11,7 @@ use App\Models\Teacher;
 use App\Models\TeacherClass;
 use App\Models\User;
 use App\Services\DataTable\DataTablePaginator;
+use App\Support\UserHierarchy;
 use Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,8 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class TeacherController extends Controller
 {
+    public function __construct(private UserHierarchy $userHierarchy) {}
+
     /**
      * Display a listing of the resource.
      *
@@ -33,10 +36,24 @@ class TeacherController extends Controller
             'crumb' => ['Teacher' => '/teachers'],
         ];
 
-        $school_id = CustomFunction::resolveSchoolIdForUser();
+        $hierarchy = $this->userHierarchy->forUser(Auth::user());
+        $districts = DB::table('tbl_districts')
+            ->when($hierarchy['division_id'] && $hierarchy['scope'] !== 'system', fn ($query) => $query->where('division_id', $hierarchy['division_id']))
+            ->when($hierarchy['district_id'], fn ($query) => $query->where('id', $hierarchy['district_id']))
+            ->when($hierarchy['scope'] === 'none', fn ($query) => $query->whereRaw('1 = 0'))
+            ->orderBy('name')->get(['id', 'name']);
+        $schools = School::query()
+            ->when($hierarchy['division_id'] && $hierarchy['scope'] !== 'system', fn ($query) => $query->whereIn('district_id', $districts->pluck('id')))
+            ->when($hierarchy['district_id'], fn ($query) => $query->where('district_id', $hierarchy['district_id']))
+            ->when($hierarchy['school_id'], fn ($query) => $query->whereKey($hierarchy['school_id']))
+            ->when($hierarchy['scope'] === 'none', fn ($query) => $query->whereRaw('1 = 0'))
+            ->orderBy('name')->get(['id', 'name', 'district_id']);
 
         return view('teachers.index', [
             'page' => $page,
+            'hierarchy' => $hierarchy,
+            'districts' => $districts,
+            'schools' => $schools,
         ]);
     }
 
@@ -45,7 +62,8 @@ class TeacherController extends Controller
      */
     public function data(Request $request, DataTablePaginator $paginator): JsonResponse
     {
-        $school_id = CustomFunction::resolveSchoolIdForUser();
+        $hierarchy = $this->userHierarchy->forUser($request->user());
+        $canManageTeachers = $request->user()->can('teachers.manage');
 
         $query = User::select(
             'tbl_teachers.id as id', 'username', 'user_id',
@@ -53,7 +71,23 @@ class TeacherController extends Controller
         )->join('tbl_teachers', 'tbl_teachers.user_id', 'tbl_users.id')
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
             ->where('classification', 'Teacher')
-            ->where('school_id', $school_id);
+            ->join('tbl_schools', 'tbl_teachers.school_id', '=', 'tbl_schools.id');
+
+        match ($hierarchy['scope']) {
+            'teacher' => $query->where('tbl_teachers.id', $hierarchy['teacher_id']),
+            'school' => $query->where('tbl_teachers.school_id', $hierarchy['school_id']),
+            'district' => $query->where('tbl_schools.district_id', $hierarchy['district_id']),
+            'division' => $query->whereIn('tbl_schools.district_id', DB::table('tbl_districts')->where('division_id', $hierarchy['division_id'])->select('id')),
+            'none' => $query->whereRaw('1 = 0'),
+            default => null,
+        };
+
+        if ($request->integer('district_id') > 0) {
+            $query->where('tbl_schools.district_id', $request->integer('district_id'));
+        }
+        if ($request->integer('school_id') > 0) {
+            $query->where('tbl_teachers.school_id', $request->integer('school_id'));
+        }
 
         $columns = [
             [
@@ -70,8 +104,9 @@ class TeacherController extends Controller
                 'data' => 'action',
                 'orderable' => false,
                 'searchable' => false,
-                'render' => fn ($row) => '<a href="/teachers/'.(int) $row->id
-                    .'/edit" class="btn btn-primary btn-sm"><i class="fa fa-pen"></i></a>',
+                'render' => fn ($row) => $canManageTeachers
+                    ? '<a href="/teachers/'.(int) $row->id.'/edit" class="btn btn-primary btn-sm"><i class="fa fa-pen"></i></a>'
+                    : '',
             ],
         ];
 
