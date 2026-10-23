@@ -9,19 +9,20 @@ use App\Models\ClassAssessment;
 use App\Models\District;
 use App\Models\Period;
 use App\Models\School;
-use App\Models\SchoolSupervisor;
 use App\Models\Section;
 use App\Models\Semester;
 use App\Models\StudentAnswer;
-use App\Models\Teacher;
 use App\Models\Track;
 use App\Models\User;
 use App\Support\ReportScope;
+use App\Support\UserHierarchy;
 use Auth;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
+    public function __construct(private UserHierarchy $userHierarchy) {}
+
     public function index()
     {
         $page = [
@@ -43,6 +44,9 @@ class ReportController extends Controller
 
     public function generate(Request $request)
     {
+        $request->validate([
+            'assessment_date' => ['required', 'date_format:Y-m-d'],
+        ]);
 
         $result = [];
         switch ($request->report_type_id) {
@@ -66,13 +70,18 @@ class ReportController extends Controller
         START OF CRITICAL FUNCTIONS HERE - CHARIZ XD
     ===============================================*/
 
-    public function getAssessments($request)
+    public function getAssessments(Request $request)
     {
-
         $academic_year = AcademicYear::active();
+
+        if ($academic_year === null) {
+            return collect();
+        }
+
         $assessments = Assessment::select(
             'tbl_assessments.id as id', 'school_id', 'district_id',
-            'section_id', 'tbl_assessments.teacher_id', 'number_of_items', 'tbl_class_assessments.id as class_assessment_id'
+            'section_id', 'tbl_assessments.teacher_id', 'number_of_items', 'tbl_assessments.date',
+            'tbl_class_assessments.id as class_assessment_id'
         )
             ->join('tbl_class_assessments', 'tbl_assessments.id', 'tbl_class_assessments.assessment_id')
             ->join('tbl_teacher_classes', 'tbl_class_assessments.class_id', 'tbl_teacher_classes.id')
@@ -81,6 +90,7 @@ class ReportController extends Controller
             ->join('tbl_districts', 'tbl_schools.district_id', 'tbl_districts.id')
             ->join('tbl_divisions', 'tbl_districts.division_id', 'tbl_divisions.id')
             ->where('tbl_classrooms.academic_year_id', $academic_year->id)
+            ->where('tbl_assessments.academic_year_id', $academic_year->id)
             ->where('assessment_type_id', $request->assessment_type_id)
             ->where('tbl_assessments.grade_level_id', $request->grade_level_id)
             ->where('tbl_assessments.subject_id', $request->subject_id)
@@ -96,40 +106,34 @@ class ReportController extends Controller
             $assessments = $assessments->where('tbl_classrooms.semester_id', $request->semester_id);
         }
 
-        $district_id = $request->district_id;
-        $school_id = $request->school_id;
-        $teacher_id = $request->teacher_id;
+        $hierarchy = $this->userHierarchy->forUser(Auth::user());
 
-        if (Auth::user() == 'District Supervisor') {
-            $district_id = DistrictSupervisor::where('user_id', Auth::user()->id)->value('district_id');
-        }
-        if (Auth::user() == 'Department Head') {
-            $school_id = DepartmentHead::where('user_id', Auth::user()->id)->value('school_id');
-            $district_id = School::where('id', $school_id)->value('district_id');
-        }
-        if (Auth::user() == 'School Head') {
-            $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
-            $district_id = School::where('id', $school_id)->value('district_id');
-        }
-        if (Auth::user() == 'Teacher') {
-            $teacher_id = Teacher::where('user_id', Auth::user()->id)->value('id');
-            $school_id = Teacher::where('user_id', Auth::user()->id)->value('school_id');
-            $district_id = School::where('id', $school_id)->value('district_id');
+        match ($hierarchy['scope']) {
+            'teacher' => $assessments->where('tbl_assessments.teacher_id', $hierarchy['teacher_id']),
+            'school' => $assessments->where('school_id', $hierarchy['school_id']),
+            'district' => $assessments->where('district_id', $hierarchy['district_id']),
+            'division' => $assessments->where('tbl_divisions.id', $hierarchy['division_id']),
+            'none' => $assessments->whereRaw('1 = 0'),
+            default => null,
+        };
+
+        if ($request->integer('district_id') > 0) {
+            $assessments->where('district_id', $request->integer('district_id'));
         }
 
-        if ($district_id != null || $district_id != 0) {
-            $assessments = $assessments->where('district_id', $request->district_id);
-        }
-        if ($school_id != null) {
-            $assessments = $assessments->where('school_id', $school_id);
-        }
-        if ($teacher_id != null) {
-            $assessments = $assessments->where('tbl_assessments.teacher_id', $teacher_id);
+        if ($request->integer('school_id') > 0) {
+            $assessments->where('school_id', $request->integer('school_id'));
         }
 
-        $assessments = $assessments->get();
+        if ($request->integer('teacher_id') > 0) {
+            $assessments->where('tbl_assessments.teacher_id', $request->integer('teacher_id'));
+        }
 
-        return $assessments;
+        if ($request->filled('assessment_date')) {
+            $assessments->whereDate('tbl_assessments.date', $request->date('assessment_date'));
+        }
+
+        return $assessments->get();
 
     }
 

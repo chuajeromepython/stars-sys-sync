@@ -23,6 +23,7 @@ function generate(){
                 "grade_level_id" : $('#grade_level').val(),
                 "subject_id" : $('#subject').val(),
                 "assessment_type_id" : $('#assessment_type').val(),
+                "assessment_date" : $('#assessment_date').val(),
                 "report_type_id" : $('#report_type').val(),
                 "track_id" : $('#track').val(),
                 "strand_id" : $('#strand').val(),
@@ -172,6 +173,7 @@ function validateFields(){
     var grade_level_id     = $('#grade_level').val();
     var subject_id         = $('#subject').val();
     var assessment_type_id = $('#assessment_type').val();
+    var assessment_date     = $('#assessment_date').val();
     var report_type_id     = $('#report_type').val();
     var track_id           = $('#track').val();
     var strand_id          = $('#strand').val();
@@ -201,6 +203,9 @@ function validateFields(){
     }
     if(assessment_type_id == null){
         errors.push("Assessment Type cannot be null.");
+    }
+    if(!assessment_date){
+        errors.push("Date of Assessment cannot be null.");
     }
     if(report_type_id == null){
         errors.push("Report Type cannot be null.");

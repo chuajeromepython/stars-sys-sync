@@ -14,7 +14,6 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentHeadController;
 use App\Http\Controllers\DiagnosticController;
-use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\DistrictSupervisorController;
 use App\Http\Controllers\DivisionAdministratorController;
 use App\Http\Controllers\DivisionController;
@@ -27,9 +26,13 @@ use App\Http\Controllers\GradeLevelController;
 use App\Http\Controllers\ItemBankController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\QuestionController;
-use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\RoleDashboardController;
+use App\Http\Controllers\RoleDashboardPageController;
+use App\Http\Controllers\RoleScopedDistrictController;
+use App\Http\Controllers\RoleScopedLookupController;
+use App\Http\Controllers\RoleScopedSchoolController;
+use App\Http\Controllers\SchoolReportController;
 use App\Http\Controllers\SchoolSupervisorController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\SemesterController;
@@ -101,8 +104,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Dashboard
     Route::middleware('permission:dashboard.view')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'index']);
-        Route::get('/dashboard/records', [DashboardController::class, 'records']);
+        Route::get('/dashboard', [RoleDashboardPageController::class, 'index']);
+        Route::get('/dashboard/records', [RoleDashboardController::class, 'records']);
         Route::get('/download_template/{code}', [DashboardController::class, 'download_template']);
     });
 
@@ -201,25 +204,25 @@ Route::middleware(['auth'])->group(function () {
 
     // District
     Route::middleware('permission:districts.view')->group(function () {
-        Route::get('/districts', [DistrictController::class, 'index']);
+        Route::get('/districts', [RoleScopedDistrictController::class, 'index']);
     });
     Route::middleware('permission:districts.manage')->group(function () {
-        Route::post('/districts/store', [DistrictController::class, 'store']);
-        Route::post('/districts/update', [DistrictController::class, 'update']);
-        Route::post('/districts/destroy', [DistrictController::class, 'destroy']);
+        Route::post('/districts/store', [RoleScopedDistrictController::class, 'store']);
+        Route::post('/districts/update', [RoleScopedDistrictController::class, 'update']);
+        Route::post('/districts/destroy', [RoleScopedDistrictController::class, 'destroy']);
     });
 
     // School
     Route::middleware('permission:schools.view')->group(function () {
-        Route::get('/schools', [SchoolController::class, 'index']);
-        Route::get('/schools/edit', [SchoolController::class, 'edit']);
+        Route::get('/schools', [RoleScopedSchoolController::class, 'index']);
+        Route::get('/schools/edit', [RoleScopedSchoolController::class, 'legacyEdit']);
     });
     Route::middleware('permission:schools.manage')->group(function () {
-        Route::get('/schools/create', [SchoolController::class, 'create']);
-        Route::get('/schools/{school}/edit', [SchoolController::class, 'edit']);
-        Route::post('/schools/store', [SchoolController::class, 'store']);
-        Route::post('/schools/update', [SchoolController::class, 'update']);
-        Route::post('/schools/destroy', [SchoolController::class, 'destroy']);
+        Route::get('/schools/create', [RoleScopedSchoolController::class, 'create']);
+        Route::get('/schools/{school}/edit', [RoleScopedSchoolController::class, 'edit']);
+        Route::post('/schools/store', [RoleScopedSchoolController::class, 'store']);
+        Route::post('/schools/update', [RoleScopedSchoolController::class, 'update']);
+        Route::post('/schools/destroy', [RoleScopedSchoolController::class, 'destroy']);
     });
 
     // Grade Level
@@ -492,7 +495,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/ecdcs/upload', [ECDCController::class, 'upload']);
     });
     Route::middleware('permission:ecdcs.download')->group(function () {
-        Route::get('/ecdcs/classroom/{classroom}/report/download', [ECDCController::class, 'download_classroom_report'])
+        Route::get('/ecdcs/classroom/{classroom}/report/download/{period?}', [ECDCController::class, 'download_classroom_report'])
             ->name('ecdcs.classroom.report.download');
         Route::get('/ecdcs/{ecdc}/students/{student_id}/download', [ECDCController::class, 'download_student_result']);
         Route::get('/ecdcs/{classroom}/download_template', [ECDCController::class, 'download_template']);
@@ -500,10 +503,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Reports
     Route::middleware('permission:reports.view')->group(function () {
-        Route::get('/reports', [ReportController::class, 'index']);
+        Route::get('/reports', [SchoolReportController::class, 'index']);
     });
     Route::middleware('permission:reports.generate')->group(function () {
-        Route::post('/reports/generate', [ReportController::class, 'generate']);
+        Route::post('/reports/generate', [SchoolReportController::class, 'generate']);
     });
 
     // Item Bank
@@ -530,7 +533,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('permission:api.lookups')->group(function () {
         Route::post('/getStudentAnswers', [APIController::class, 'getStudentAnswers']);
         Route::post('/getDistricts', [APIController::class, 'getDistricts']);
-        Route::post('/getDistrictsPerDivision', [APIController::class, 'getDistrictsPerDivision']);
+        Route::post('/getDistrictsPerDivision', [RoleScopedLookupController::class, 'districtsForDivision']);
         Route::post('/getSchools', [APIController::class, 'getSchools']);
         Route::post('/searchLRN', [APIController::class, 'searchLRN']);
         Route::post('/getGradeLevelPerEducationLevel', [APIController::class, 'getGradeLevelPerEducationLevel']);

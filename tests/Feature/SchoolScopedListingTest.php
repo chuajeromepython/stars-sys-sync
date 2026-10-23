@@ -106,11 +106,25 @@ class SchoolScopedListingTest extends TestCase
      * The student listing resolved a null school for a teacher, so the table
      * rendered with no rows at all despite the school having students.
      */
-    public function test_a_teacher_sees_the_students_of_their_school(): void
+    public function test_a_teacher_sees_only_students_in_an_assigned_classroom(): void
     {
         $this->studentIn($this->school(), 'lrn-0001');
+        $teacher = $this->teacher($this->school());
 
-        $response = $this->actingAs($this->teacher($this->school()))
+        $response = $this->actingAs($teacher)
+            ->getJson('/students/data?draw=1&start=0&length=10');
+
+        $response->assertOk();
+        $this->assertSame(0, $response->json('recordsTotal'));
+
+        DB::table('tbl_teacher_classes')->insert([
+            'classroom_id' => DB::table('tbl_student_classrooms')->value('classroom_id'),
+            'teacher_id' => Teacher::where('user_id', $teacher->id)->value('id'),
+            'subject_id' => DB::table('tbl_subjects')->insertGetId(['title' => 'Mathematics']),
+            'advisory' => 1,
+        ]);
+
+        $response = $this->actingAs($teacher)
             ->getJson('/students/data?draw=1&start=0&length=10');
 
         $response->assertOk();
@@ -178,6 +192,83 @@ class SchoolScopedListingTest extends TestCase
 
         $response->assertOk();
         $this->assertSame(0, $response->json('recordsTotal'));
+    }
+
+    public function test_student_and_teacher_lists_follow_district_and_division_assignments_and_filters(): void
+    {
+        $divisionId = DB::table('tbl_divisions')->insertGetId(['name' => 'Home Division']);
+        $otherDivisionId = DB::table('tbl_divisions')->insertGetId(['name' => 'Other Division']);
+        $firstDistrictId = DB::table('tbl_districts')->insertGetId(['name' => 'First District', 'division_id' => $divisionId]);
+        $secondDistrictId = DB::table('tbl_districts')->insertGetId(['name' => 'Second District', 'division_id' => $divisionId]);
+        $outsideDistrictId = DB::table('tbl_districts')->insertGetId(['name' => 'Outside District', 'division_id' => $otherDivisionId]);
+
+        $firstSchool = $this->school();
+        $secondSchool = $this->otherSchool();
+        $outsideSchool = $this->makeSchool('SCH-OUT', 'Outside School');
+        DB::table('tbl_schools')->where('id', $firstSchool->id)->update(['district_id' => $firstDistrictId]);
+        DB::table('tbl_schools')->where('id', $secondSchool->id)->update(['district_id' => $secondDistrictId]);
+        DB::table('tbl_schools')->where('id', $outsideSchool->id)->update(['district_id' => $outsideDistrictId]);
+
+        $this->studentIn($firstSchool, 'lrn-first');
+        $this->studentIn($secondSchool, 'lrn-second');
+        $this->studentIn($outsideSchool, 'lrn-outside');
+        $firstTeacher = $this->teacher($firstSchool, 'first');
+        $this->teacher($secondSchool, 'second');
+        $this->teacher($outsideSchool, 'outside');
+        DB::table('tbl_teacher_classes')->insert([
+            'classroom_id' => DB::table('tbl_student_classrooms')->where('student_id', Student::where('lrn', 'lrn-first')->value('id'))->value('classroom_id'),
+            'teacher_id' => Teacher::where('user_id', $firstTeacher->id)->value('id'),
+            'subject_id' => DB::table('tbl_subjects')->insertGetId(['title' => 'Mathematics']),
+            'advisory' => 0,
+        ]);
+
+        $districtUser = $this->makeUser(Role::DistrictSupervisor->value, 'district@deped.gov.ph');
+        DB::table('tbl_district_supervisors')->insert([
+            'user_id' => $districtUser->id, 'district_id' => $firstDistrictId,
+            'email' => $districtUser->username, 'status' => 1,
+        ]);
+        $divisionUser = $this->makeUser(Role::DivisionAdministrator->value, 'division-assigned@deped.gov.ph');
+        DB::table('tbl_division_administrators')->insert([
+            'user_id' => $divisionUser->id, 'division_id' => $divisionId,
+            'email' => $divisionUser->username, 'status' => 1,
+        ]);
+
+        $this->actingAs($districtUser)->getJson('/students/data?draw=1&start=0&length=10')
+            ->assertOk()->assertJsonPath('recordsTotal', 1);
+        $this->actingAs($districtUser)->getJson('/teachers/data?draw=1&start=0&length=10')
+            ->assertOk()->assertJsonPath('recordsTotal', 1);
+        $this->actingAs($districtUser)->getJson('/students/data?draw=1&start=0&length=10&school_id='.$secondSchool->id)
+            ->assertOk()->assertJsonPath('recordsTotal', 0);
+
+        $this->actingAs($divisionUser)->getJson('/students/data?draw=1&start=0&length=10')
+            ->assertOk()->assertJsonPath('recordsTotal', 2)->assertJsonPath('data.0.action', '');
+        $this->actingAs($divisionUser)->getJson('/teachers/data?draw=1&start=0&length=10')
+            ->assertOk()->assertJsonPath('recordsTotal', 2);
+        $this->actingAs($divisionUser)->getJson('/students/data?draw=1&start=0&length=10&district_id='.$secondDistrictId)
+            ->assertOk()->assertJsonPath('recordsTotal', 1);
+        $this->actingAs($divisionUser)->getJson('/teachers/data?draw=1&start=0&length=10&school_id='.$firstSchool->id)
+            ->assertOk()->assertJsonPath('recordsTotal', 1);
+        $this->actingAs($divisionUser)->getJson('/students/data?draw=1&start=0&length=10&teacher_id='.Teacher::where('user_id', $firstTeacher->id)->value('id'))
+            ->assertOk()->assertJsonPath('recordsTotal', 1);
+    }
+
+    public function test_student_year_filter_defaults_to_active_year(): void
+    {
+        $student = $this->studentIn($this->school(), 'lrn-old');
+        $oldYear = new AcademicYear;
+        $oldYear->from = '2025';
+        $oldYear->to = '2026';
+        $oldYear->is_active = 0;
+        $oldYear->save();
+        $activeClassroomId = DB::table('tbl_student_classrooms')->where('student_id', $student->id)->value('classroom_id');
+        DB::table('tbl_classrooms')->where('id', $activeClassroomId)->update(['academic_year_id' => $oldYear->id]);
+
+        $schoolHead = $this->schoolHead($this->school());
+        $this->actingAs($schoolHead)->get('/students')->assertOk()->assertSee('Academic Year');
+        $this->actingAs($schoolHead)->getJson('/students/data?draw=1&start=0&length=10')
+            ->assertOk()->assertJsonPath('recordsTotal', 0);
+        $this->actingAs($schoolHead)->getJson('/students/data?draw=1&start=0&length=10&academic_year_id='.$oldYear->id)
+            ->assertOk()->assertJsonPath('recordsTotal', 1);
     }
 
     public function test_a_department_head_resolves_their_school(): void
@@ -330,6 +421,13 @@ class SchoolScopedListingTest extends TestCase
         $student->user_id = $user->id;
         $student->school_id = $school->id;
         $student->save();
+
+        $classroom = $this->classroomIn($school, 'Students');
+        DB::table('tbl_student_classrooms')->insert([
+            'student_id' => $student->id,
+            'classroom_id' => $classroom->id,
+            'status' => 1,
+        ]);
 
         return $student;
     }

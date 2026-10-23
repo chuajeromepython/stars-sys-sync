@@ -12,6 +12,16 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-12">
+                            <label class="text-muted">Division</label>
+                            <select class="select2bs4 form-control" name="division_id" required>
+                                @foreach($divisions as $division)
+                                    <option value="{{ $division->id }}" {{ $division->id == $division_id ? 'selected' : '' }}>
+                                        {{ $division->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-12">
                             <label class="text-muted">District</label>
                             <input type="text" name="name" class="form-control">
                         </div>

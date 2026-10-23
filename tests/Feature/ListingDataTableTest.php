@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\InteractsWithRbac;
 use Tests\TestCase;
@@ -219,6 +220,21 @@ class ListingDataTableTest extends TestCase
         $student->user_id = $user->id;
         $student->school_id = $school->id;
         $student->save();
+
+        $yearId = DB::table('tbl_academic_years')->value('id')
+            ?? DB::table('tbl_academic_years')->insertGetId(['from' => '2026', 'to' => '2027', 'is_active' => 1]);
+        $gradeId = DB::table('tbl_grade_levels')->value('id')
+            ?? DB::table('tbl_grade_levels')->insertGetId(['level' => 'Grade 1']);
+        $sectionId = DB::table('tbl_sections')->where('school_id', $school->id)->value('id')
+            ?? DB::table('tbl_sections')->insertGetId(['section' => 'A', 'school_id' => $school->id]);
+        $classroomId = DB::table('tbl_classrooms')->where('school_id', $school->id)->value('id')
+            ?? DB::table('tbl_classrooms')->insertGetId([
+                'section_id' => $sectionId, 'grade_level_id' => $gradeId,
+                'academic_year_id' => $yearId, 'school_id' => $school->id,
+            ]);
+        DB::table('tbl_student_classrooms')->insert([
+            'student_id' => $student->id, 'classroom_id' => $classroomId, 'status' => 1,
+        ]);
 
         return $student;
     }

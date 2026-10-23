@@ -91,6 +91,7 @@
         .bg-sub-7{background-color: #D8B4FE;}
     </style>
 
+	<link rel="stylesheet" href="/vendor/AdminLTE3/plugins/fontawesome-free/css/all.min.css">
 	<link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
@@ -101,7 +102,7 @@
                 <div class="col">
                     <table class="table table-bordered table-sm b-2">
                         <tr>
-                            <th colspan="7" class="bg-light">
+                            <th colspan="5" class="bg-light">
                                 <center>
                                     ECDC Summary Report
                                 </center>
@@ -109,13 +110,15 @@
                         </tr>
                         <tr>
                             <th style="width: 25%"></th>
-                            <th colspan="2" style="width: 25%">BOSY</th>
-                            <th colspan="2" style="width: 25%">MOSY</th>
-                            <th colspan="2" style="width: 25%">EOSY</th>
+                            <th colspan="2" style="width: 37.5%">BOSY</th>
+                            <th colspan="2" style="width: 37.5%">EOSY</th>
                         </tr>
                         <tr>
                             <th>Date Tested</th>
-                            @foreach ($results as $period => $result)
+                            @foreach ($periods as $period)
+                                @php
+                                    $result = $results[$period];
+                                @endphp
                                 <td colspan="2">
                                     <center>
                                         {{ ($result != "No Record") ? $result['date_tested'] : ""}}
@@ -125,7 +128,10 @@
                         </tr>
                         <tr>
                             <th>Age</th>
-                            @foreach ($results as $period => $result)
+                            @foreach ($periods as $period)
+                                @php
+                                    $result = $results[$period];
+                                @endphp
                                 <td colspan="2">
                                     <center>
                                         {{ ($result != "No Record") ? $result['age'] : ""}}
@@ -139,13 +145,14 @@
                             <th>Scale Score</th>
                             <th>Raw Score</th>
                             <th>Scale Score</th>
-                            <th>Raw Score</th>
-                            <th>Scale Score</th>
                         </tr>
                         @foreach ($domains as $domain)
                             <tr>
                                 <td>{{$domain->domain}}</td>
-                                @foreach ($results as $period => $result)
+                                @foreach ($periods as $period)
+                                    @php
+                                        $result = $results[$period];
+                                    @endphp
                                     @if  ($result != "No Record")
                                         <td>
                                             <center>
@@ -168,7 +175,10 @@
                         @endforeach
                         <tr>
                             <th>Sum of Scaled Scores</th>
-                            @foreach ($results as $period => $result)
+                            @foreach ($periods as $period)
+                                @php
+                                    $result = $results[$period];
+                                @endphp
                                 <td colspan="2">
                                     <center>
                                         {{ ($result != "No Record") ? $result['total_scaled_score'] : ""}}
@@ -178,7 +188,10 @@
                         </tr>
                         <tr>
                             <th>Standard Scores</th>
-                            @foreach ($results as $period => $result)
+                            @foreach ($periods as $period)
+                                @php
+                                    $result = $results[$period];
+                                @endphp
                                 <td colspan="2">
                                     <center>
                                         {{ ($result != "No Record") ? $result['standard_score'] : ""}}
@@ -188,7 +201,10 @@
                         </tr>
                     </table>
                     <center><h3>INTERPRETATION</h3></center>
-                    @foreach ($results as $period => $result)
+                    @foreach ($periods as $period)
+                        @php
+                            $result = $results[$period];
+                        @endphp
                         <h3>{{ strtoupper($period) }}   :
                             <center>
                                 @if ($result != "No Record")
@@ -349,57 +365,54 @@
                         <div class="col">
                             <table class="table table-bordered table-sm b-2" style="height:7.5in;">
                                 <tr class="bg-main-{{$domain_id}}">
-                                    <th rowspan="2" colspan="2" style="width: 55%; vertical-align: middle">
+                                    <th rowspan="2" colspan="2" style="width: 64%; vertical-align: middle">
                                         
                                         {{$domain['domain']}}
                                     </th>
-                                    <th colspan="2" style="width: 15%" class="bl-2">BOSY</th>
-                                    <th colspan="2" style="width: 15%" class="bl-2">MOSY</th>
-                                    <th colspan="2" style="width: 15%" class="bl-2">EOSY</th>
+                                    @foreach ($assessment_periods as $assessment_label)
+                                        <th colspan="3" style="width: 18%" class="bl-2">{{ $assessment_label }}</th>
+                                    @endforeach
                                 </tr>
                                 <tr class="bg-sub-{{$domain_id}}">
-                                    <th class="bl-2 bb-2">Kayang gawin</th>
-                                    <th class="br-2 bb-2">Di pa kayang gawin</th> 
-                                    <th class="bl-2 bb-2">Kayang gawin</th>
-                                    <th class="br-2 bb-2">Di pa kayang gawin</th> 
-                                    <th class="bl-2 bb-2">Kayang gawin</th>
-                                    <th class="br-2 bb-2">Di pa kayang gawin</th> 
+                                    @foreach ($assessment_periods as $assessment_label)
+                                        <th class="bl-2 bb-2">P</th>
+                                        <th class="bb-2">O</th>
+                                        <th class="br-2 bb-2">R</th>
+                                    @endforeach
                                 </tr>
                                 @php
-                                    $blank = "<td class='bl-2'></td><td></td>";
                                     $count = 1;
+                                    $present_types = ['P', 'O', 'R'];
                                 @endphp
                                 @foreach ($domain['competencies'] as $competency)
                                     <tr>
                                         <td>{{$count++}}</td>
                                         <td>{{$competency->competency}}</td>
-                                        @foreach ($periods as $period)
+                                        @foreach ($assessment_periods as $period => $assessment_label)
                                             @if ($results[$period] != "No Record")
-                                                @if (isset($results[$period]['domains'][$domain_id]["competencies"][$competency->id]))
-                                                    @php $row = $results[$period]['domains'][$domain_id]["competencies"][$competency->id] @endphp
-                                                    <td class="bl-2">
-                                                        <center>
-                                                            {!!
-                                                                ($row['score'] == 1) ?
-                                                                "&#10003;" :
-                                                                ""
-                                                            !!}
-                                                        </center>
-                                                    </td>
-                                                    <td  class="br-2">
-                                                        <center>
-                                                            {!!
-                                                                ($row['score'] == 0) ?
-                                                                "&#10003;" :
-                                                                ""
-                                                            !!}
-                                                        </center>
-                                                    </td>
+                                                @php
+                                                    $row = collect($results[$period]['domains'][$domain_id]['competencies'] ?? [])
+                                                        ->firstWhere('ecdc_competency_id', $competency->id);
+                                                @endphp
+                                                @if ($row)
+                                                    @foreach ($present_types as $present_type)
+                                                        <td @class(['bl-2' => $loop->first, 'br-2' => $loop->last])>
+                                                            <center>
+                                                                @if (($row['present_type'] ?? null) === $present_type)
+                                                                    @if (($row['status'] ?? $row['score']) === '1')
+                                                                        <i class="fa fa-check text-success" aria-label="Present"></i>
+                                                                    @else
+                                                                        {{ $row['status'] ?? $row['score'] }}
+                                                                    @endif
+                                                                @endif
+                                                            </center>
+                                                        </td>
+                                                    @endforeach
                                                 @else
-                                                    {!! $blank !!}
+                                                    <td class="bl-2"></td><td></td><td class="br-2"></td>
                                                 @endif
                                             @else
-                                                {!! $blank !!}
+                                                <td class="bl-2"></td><td></td><td class="br-2"></td>
                                             @endif
                                             
                                         @endforeach
@@ -407,8 +420,8 @@
                                 @endforeach
                                 <tr class="b-2 bg-sub-{{$domain_id}}">
                                     <th class="b-2" colspan="2">KABUUANG ISKOR</th>
-                                    @foreach ($periods as $period)
-                                        <th class="b-2" colspan="2">
+                                    @foreach ($assessment_periods as $period => $assessment_label)
+                                        <th class="b-2" colspan="3">
                                             @if ($results[$period] != "No Record")
                                                 @if (isset($results[$period]['domains'][$domain_id]["score"]))
                                                     {{$results[$period]['domains'][$domain_id]["score"]}}
@@ -432,57 +445,54 @@
                         <div class="col">
                             <table class="table table-bordered table-sm b-2" style="height:7.5in;">
                                 <tr class="bg-main-{{$domain_id}}">
-                                    <th rowspan="2" colspan="2" style="width: 55%; vertical-align: middle">
+                                    <th rowspan="2" colspan="2" style="width: 64%; vertical-align: middle">
                                         
                                         {{$domain['domain']}}
                                     </th>
-                                    <th colspan="2" style="width: 15%" class="bl-2">BOSY</th>
-                                    <th colspan="2" style="width: 15%" class="bl-2">MOSY</th>
-                                    <th colspan="2" style="width: 15%" class="bl-2">EOSY</th>
+                                    @foreach ($assessment_periods as $assessment_label)
+                                        <th colspan="3" style="width: 18%" class="bl-2">{{ $assessment_label }}</th>
+                                    @endforeach
                                 </tr>
                                 <tr class="bg-sub-{{$domain_id}}">
-                                    <th class="bl-2 bb-2">Kayang gawin</th>
-                                    <th class="br-2 bb-2">Di pa kayang gawin</th> 
-                                    <th class="bl-2 bb-2">Kayang gawin</th>
-                                    <th class="br-2 bb-2">Di pa kayang gawin</th> 
-                                    <th class="bl-2 bb-2">Kayang gawin</th>
-                                    <th class="br-2 bb-2">Di pa kayang gawin</th> 
+                                    @foreach ($assessment_periods as $assessment_label)
+                                        <th class="bl-2 bb-2">P</th>
+                                        <th class="bb-2">O</th>
+                                        <th class="br-2 bb-2">R</th>
+                                    @endforeach
                                 </tr>
                                 @php
-                                    $blank = "<td class='bl-2'></td><td></td>";
                                     $count = 1;
+                                    $present_types = ['P', 'O', 'R'];
                                 @endphp
                                 @foreach ($domain['competencies'] as $competency)
                                     <tr>
                                         <td>{{$count++}}</td>
                                         <td>{{$competency->competency}}</td>
-                                        @foreach ($periods as $period)
+                                        @foreach ($assessment_periods as $period => $assessment_label)
                                             @if ($results[$period] != "No Record")
-                                                @if (isset($results[$period]['domains'][$domain_id]["competencies"][$competency->id]))
-                                                    @php $row = $results[$period]['domains'][$domain_id]["competencies"][$competency->id] @endphp
-                                                    <td class="bl-2">
-                                                        <center>
-                                                            {!!
-                                                                ($row['score'] == 1) ?
-                                                                "&#10003;" :
-                                                                ""
-                                                            !!}
-                                                        </center>
-                                                    </td>
-                                                    <td  class="br-2">
-                                                        <center>
-                                                            {!!
-                                                                ($row['score'] == 0) ?
-                                                                "&#10003;" :
-                                                                ""
-                                                            !!}
-                                                        </center>
-                                                    </td>
+                                                @php
+                                                    $row = collect($results[$period]['domains'][$domain_id]['competencies'] ?? [])
+                                                        ->firstWhere('ecdc_competency_id', $competency->id);
+                                                @endphp
+                                                @if ($row)
+                                                    @foreach ($present_types as $present_type)
+                                                        <td @class(['bl-2' => $loop->first, 'br-2' => $loop->last])>
+                                                            <center>
+                                                                @if (($row['present_type'] ?? null) === $present_type)
+                                                                    @if (($row['status'] ?? $row['score']) === '1')
+                                                                        <i class="fa fa-check text-success" aria-label="Present"></i>
+                                                                    @else
+                                                                        {{ $row['status'] ?? $row['score'] }}
+                                                                    @endif
+                                                                @endif
+                                                            </center>
+                                                        </td>
+                                                    @endforeach
                                                 @else
-                                                    {!! $blank !!}
+                                                    <td class="bl-2"></td><td></td><td class="br-2"></td>
                                                 @endif
                                             @else
-                                                {!! $blank !!}
+                                                <td class="bl-2"></td><td></td><td class="br-2"></td>
                                             @endif
                                             
                                         @endforeach
@@ -490,8 +500,8 @@
                                 @endforeach
                                 <tr class="b-2  bg-sub-{{$domain_id}}">
                                     <th class="b-2" colspan="2">KABUUANG ISKOR</th>
-                                    @foreach ($periods as $period)
-                                        <th class="b-2" colspan="2">
+                                    @foreach ($assessment_periods as $period => $assessment_label)
+                                        <th class="b-2" colspan="3">
                                             @if ($results[$period] != "No Record")
                                                 @if (isset($results[$period]['domains'][$domain_id]["score"]))
                                                     {{$results[$period]['domains'][$domain_id]["score"]}}
@@ -517,57 +527,54 @@
                         @endif
                             <table class="table table-bordered table-sm b-2">
                                 <tr class="bg-main-{{$domain_id}}">
-                                    <th rowspan="2" colspan="2" style="width: 55%; vertical-align: middle">
+                                    <th rowspan="2" colspan="2" style="width: 64%; vertical-align: middle">
                                         
                                         {{$domain['domain']}}
                                     </th>
-                                    <th colspan="2" style="width: 15%" class="bl-2">BOSY</th>
-                                    <th colspan="2" style="width: 15%" class="bl-2">MOSY</th>
-                                    <th colspan="2" style="width: 15%" class="bl-2">EOSY</th>
+                                    @foreach ($assessment_periods as $assessment_label)
+                                        <th colspan="3" style="width: 18%" class="bl-2">{{ $assessment_label }}</th>
+                                    @endforeach
                                 </tr>
                                 <tr class="bg-sub-{{$domain_id}}">
-                                    <th class="bl-2 bb-2">Kayang gawin</th>
-                                    <th class="br-2 bb-2">Di pa kayang gawin</th> 
-                                    <th class="bl-2 bb-2">Kayang gawin</th>
-                                    <th class="br-2 bb-2">Di pa kayang gawin</th> 
-                                    <th class="bl-2 bb-2">Kayang gawin</th>
-                                    <th class="br-2 bb-2">Di pa kayang gawin</th> 
+                                    @foreach ($assessment_periods as $assessment_label)
+                                        <th class="bl-2 bb-2">P</th>
+                                        <th class="bb-2">O</th>
+                                        <th class="br-2 bb-2">R</th>
+                                    @endforeach
                                 </tr>
                                 @php
-                                    $blank = "<td class='bl-2'></td><td></td>";
                                     $count = 1;
+                                    $present_types = ['P', 'O', 'R'];
                                 @endphp
                                 @foreach ($domain['competencies'] as $competency)
                                     <tr>
                                         <td>{{$count++}}</td>
                                         <td>{{$competency->competency}}</td>
-                                        @foreach ($periods as $period)
+                                        @foreach ($assessment_periods as $period => $assessment_label)
                                             @if ($results[$period] != "No Record")
-                                                @if (isset($results[$period]['domains'][$domain_id]["competencies"][$competency->id]))
-                                                    @php $row = $results[$period]['domains'][$domain_id]["competencies"][$competency->id] @endphp
-                                                    <td class="bl-2">
-                                                        <center>
-                                                            {!!
-                                                                ($row['score'] == 1) ?
-                                                                "&#10003;" :
-                                                                ""
-                                                            !!}
-                                                        </center>
-                                                    </td>
-                                                    <td  class="br-2">
-                                                        <center>
-                                                            {!!
-                                                                ($row['score'] == 0) ?
-                                                                "&#10003;" :
-                                                                ""
-                                                            !!}
-                                                        </center>
-                                                    </td>
+                                                @php
+                                                    $row = collect($results[$period]['domains'][$domain_id]['competencies'] ?? [])
+                                                        ->firstWhere('ecdc_competency_id', $competency->id);
+                                                @endphp
+                                                @if ($row)
+                                                    @foreach ($present_types as $present_type)
+                                                        <td @class(['bl-2' => $loop->first, 'br-2' => $loop->last])>
+                                                            <center>
+                                                                @if (($row['present_type'] ?? null) === $present_type)
+                                                                    @if (($row['status'] ?? $row['score']) === '1')
+                                                                        <i class="fa fa-check text-success" aria-label="Present"></i>
+                                                                    @else
+                                                                        {{ $row['status'] ?? $row['score'] }}
+                                                                    @endif
+                                                                @endif
+                                                            </center>
+                                                        </td>
+                                                    @endforeach
                                                 @else
-                                                    {!! $blank !!}
+                                                    <td class="bl-2"></td><td></td><td class="br-2"></td>
                                                 @endif
                                             @else
-                                                {!! $blank !!}
+                                                <td class="bl-2"></td><td></td><td class="br-2"></td>
                                             @endif
                                             
                                         @endforeach
@@ -575,8 +582,8 @@
                                 @endforeach
                                 <tr class="b-2 bg-sub-{{$domain_id}}">
                                     <th class="b-2" colspan="2">KABUUANG ISKOR</th>
-                                    @foreach ($periods as $period)
-                                        <th class="b-2" colspan="2">
+                                    @foreach ($assessment_periods as $period => $assessment_label)
+                                        <th class="b-2" colspan="3">
                                             @if ($results[$period] != "No Record")
                                                 @if (isset($results[$period]['domains'][$domain_id]["score"]))
                                                     {{$results[$period]['domains'][$domain_id]["score"]}}
