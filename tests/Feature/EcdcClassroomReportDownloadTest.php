@@ -134,6 +134,28 @@ class EcdcClassroomReportDownloadTest extends TestCase
                 'score' => 1,
             ],
         ]);
+        $newestEcdcId = DB::table('tbl_ecdcs')->insertGetId([
+            'classroom_id' => $classroomId,
+            'academic_year_id' => $academicYearId,
+            'period' => '3',
+            'teacher_id' => $teacherId,
+            'source' => '2',
+            'date' => '2026-06-15',
+        ]);
+        DB::table('tbl_student_ecdcs')->insert([
+            [
+                'student_id' => $maleStudentId,
+                'ecdc_id' => $newestEcdcId,
+                'ecdc_competency_id' => 1,
+                'score' => 1,
+            ],
+            [
+                'student_id' => $femaleStudentId,
+                'ecdc_id' => $newestEcdcId,
+                'ecdc_competency_id' => 1,
+                'score' => 1,
+            ],
+        ]);
         Storage::disk('public')->put('ecdc-'.$ecdcId.'.json', json_encode([
             $maleStudentId => [
                 'name' => 'Able, Alex',
@@ -177,6 +199,18 @@ class EcdcClassroomReportDownloadTest extends TestCase
                 'name' => 'Able, Alex',
                 'standard_score' => 95,
                 'interpretation' => 'Average development',
+            ],
+        ]));
+        Storage::disk('public')->put('ecdc-' . $newestEcdcId . '.json', json_encode([
+            $maleStudentId => [
+                'name' => 'Able, Alex',
+                'standard_score' => 135,
+                'interpretation' => 'Suggest highly advanced development',
+            ],
+            $femaleStudentId => [
+                'name' => 'Baker, Bailey',
+                'standard_score' => 75,
+                'interpretation' => 'Suggest slight delay in overall development',
             ],
         ]));
 

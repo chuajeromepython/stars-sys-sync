@@ -30,25 +30,32 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class AppApiController extends Controller
 {
-    public function authenticate($username, $password)
+    public function authenticate(Request $request)
     {
+        $credentials = $request->validate([
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ]);
 
-        $credentials = [
-            'username' => $username,
-            'password' => $password,
-        ];
-        $result = [
-            'status' => 0,
-            'data' => null,
-            'message' => 'Not Found',
-        ];
-        if (Auth::attempt($credentials)) {
-            $result['data'] = Auth::user();
-            $result['status'] = '200';
-            $result['message'] = 'Successfully login';
+        if (! Auth::validate($credentials)) {
+            return response()->json([
+                'success' => false,
+                'status' => 401,
+                'data' => null,
+                'message' => 'Invalid credentials.',
+            ], 401);
         }
 
-        return response()->json($result);
+        $user = User::where('username', $credentials['username'])->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'status' => '200',
+            'data' => $user,
+            'token' => $user->createToken('mobile-app')->plainTextToken,
+            'token_type' => 'Bearer',
+            'message' => 'Successfully login',
+        ]);
     }
 
     public function syncClassroomsByTeacherUserId(Request $request)
