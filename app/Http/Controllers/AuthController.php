@@ -21,7 +21,7 @@ class AuthController extends Controller
         $competencies = Competency::count();
         $users = User::count();
 
-        return view('welcome', compact('schools', 'competencies', 'users'));
+        return view('landing', compact('schools', 'competencies', 'users'));
     }
 
     public function index()
