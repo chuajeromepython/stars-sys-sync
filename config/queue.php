@@ -31,6 +31,15 @@ return [
 
     'connections' => [
 
+        'ecdc_reports' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'ecdc-reports',
+            'retry_after' => 660,
+            'after_commit' => false,
+        ],
+
         'sync' => [
             'driver' => 'sync',
         ],

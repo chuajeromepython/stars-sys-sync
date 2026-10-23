@@ -136,14 +136,6 @@
                                 Download Template
                             </a>
                         </div>
-                        <div class="mx-1">
-                            @can('ecdcs.download')
-                                <a class="btn-block btn btn-primary" href="{{ route('ecdcs.classroom.report.download', $classroom->id) }}">
-                                    <i class="fa fa-file-excel"></i>
-                                    Download SF5-K
-                                </a>
-                            @endcan
-                        </div>
                        </div>
                     </div>
                 </div>

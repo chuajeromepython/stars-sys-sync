@@ -1,4 +1,47 @@
 $(function () {
+    const educationLevel = document.getElementById('education_level_id');
+    const seniorHighFilters = document.getElementById('senior-high-report-filters');
+    const gradeLevel = document.getElementById('grade_level_id');
+
+    function updateSeniorHighFilters() {
+        const isSeniorHigh = educationLevel.value === '3';
+        const range = { '1': [1, 6], '2': [7, 10], '3': [11, 12] }[educationLevel.value];
+        gradeLevel.disabled = !range;
+        for (const option of gradeLevel.options) {
+            if (!option.value) continue;
+            const grade = Number(option.dataset.grade);
+            option.disabled = !range || grade < range[0] || grade > range[1];
+            option.hidden = option.disabled;
+        }
+        if (gradeLevel.selectedOptions[0]?.disabled) gradeLevel.value = '';
+        seniorHighFilters.hidden = !isSeniorHigh;
+        seniorHighFilters.querySelectorAll('select').forEach(select => {
+            select.disabled = !isSeniorHigh;
+        });
+    }
+
+    educationLevel.addEventListener('change', updateSeniorHighFilters);
+    updateSeniorHighFilters();
+
+    const reportTabs = $('#report-tabs [role="tab"]');
+    reportTabs.on('shown.bs.tab', function () {
+        reportTabs.attr('tabindex', '-1');
+        $(this).attr('tabindex', '0');
+    });
+    reportTabs.on('keydown', function (event) {
+        const index = reportTabs.index(this);
+        const last = reportTabs.length - 1;
+        const next = {
+            ArrowRight: (index + 1) % reportTabs.length,
+            ArrowLeft: (index + last) % reportTabs.length,
+            Home: 0,
+            End: last,
+        }[event.key];
+        if (next === undefined) return;
+        event.preventDefault();
+        reportTabs.eq(next).tab('show').trigger('focus');
+    });
+
     $('#school_ids').select2({
         theme: 'bootstrap4',
         placeholder: 'Select one or more schools',
@@ -10,6 +53,9 @@ $(function () {
 
         const form = this;
         const button = $('#generate-school-reports');
+        const feedback = $('#school-report-feedback');
+        feedback.text('Generating your school reports...').removeClass('text-danger');
+        $('#school-report-results').attr('aria-busy', 'true');
         button.prop('disabled', true);
         button.html('<i class="fas fa-spinner fa-spin mr-2" aria-hidden="true"></i>Generating');
 
@@ -22,16 +68,19 @@ $(function () {
             },
             success: function (response) {
                 renderSchoolReports(response.reports || []);
+                feedback.text('Reports generated. Review the results beside this form.');
                 toastr.success('School reports generated.');
             },
             error: function (response) {
                 const message = response.responseJSON?.message
                     || 'The report could not be generated. Check your selected schools and filters.';
                 toastr.error(message);
+                feedback.text(message).addClass('text-danger');
             },
             complete: function () {
                 button.prop('disabled', false);
-                button.html('<i class="fas fa-file-alt mr-2" aria-hidden="true"></i>Generate reports');
+                $('#school-report-results').attr('aria-busy', 'false');
+                button.html('<i class="fas fa-file-alt mr-2" aria-hidden="true"></i>Generate school reports');
             },
         });
     });

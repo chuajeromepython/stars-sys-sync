@@ -640,19 +640,19 @@
                             </div>
                             <h4 class="font-poppins font-bold text-gray-900 mb-1"><a
                                     href="https://github.com/thecoderistkid">Glenn Nerrie A. Afurong</a></h4>
-                            <p class="text-primary text-sm font-medium mb-1">Collaborator</p>
-                            <p class="text-gray-500 text-xs">Web Application</p>
+                            <p class="text-primary text-sm font-medium mb-1">Web Application</p>
+                            <p class="text-gray-500 text-xs">Former Developer</p>
                         </div>
                         <div
                             class="card-modern w-72 shrink-0 snap-start bg-white p-6 rounded-2xl border border-gray-100 text-center">
                             <div class="relative group">
-                                <img src="/images/Male.png" alt="Jerome Chua"
+                                <img src="/images/landing/jerome_chua.jpg" alt="Jerome Chua"
                                     class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-gray-100 group-hover:border-primary transition-colors">
                             </div>
                             <h4 class="font-poppins font-bold text-gray-900 mb-1"><a
                                     href="https://github.com/chuajeromepython">Jerome S. Chua</a></h4>
-                            <p class="text-primary text-sm font-medium mb-1">Collaborator</p>
-                            <p class="text-gray-500 text-xs">Mobile Application</p>
+                            <p class="text-primary text-sm font-medium mb-1">Mobile Application</p>
+                            <p class="text-gray-500 text-xs">ACTS Computer College</p>
                         </div>
                     </div>
                 </div>

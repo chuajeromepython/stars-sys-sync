@@ -21,12 +21,14 @@
                             </select>
                         </div>
                         <div class="col-md-12 mb-3">
-                            <label for="file" class="text-muted">Date of Assessment</label>
-                            <input type="date" name="date" id="" class="form-control" required>
+                            <label for="ecdc-upload-date" class="text-muted">Classroom assessment date (optional)</label>
+                            <input type="date" name="date" id="ecdc-upload-date" class="form-control" aria-describedby="ecdc-upload-date-help">
+                            <small id="ecdc-upload-date-help" class="form-text text-muted">Each student's assessment date comes from row 3 of their P/O/R group: D3, G3, J3, and so on. If this classroom date is blank, the latest student date is used.</small>
                         </div>
                         <div class="col-md-12 mb-3">
                             <div class="form-group">
                                 <label for="file" class="text-muted">Browse ECDC Form</label>
+                                <p class="small text-muted">Use a freshly downloaded template. Enter 1 in one P, O, or R column per competency. An unmarked competency saves score "-" with no presentation type. Students without any 1 entries are skipped.</p>
                                 <div class="input-group">
                                     <div class="custom-file">
                                         <input type="file" class="custom-file-input" id="file" name="file">

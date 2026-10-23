@@ -22,6 +22,7 @@ use App\Http\Controllers\DivisionSupervisorController;
 use App\Http\Controllers\ECDCCompetencyController;
 use App\Http\Controllers\ECDCController;
 use App\Http\Controllers\ECDCDomainController;
+use App\Http\Controllers\EcdcSummaryReportController;
 use App\Http\Controllers\GradeLevelController;
 use App\Http\Controllers\ItemBankController;
 use App\Http\Controllers\PermissionController;
@@ -504,9 +505,15 @@ Route::middleware(['auth'])->group(function () {
     // Reports
     Route::middleware('permission:reports.view')->group(function () {
         Route::get('/reports', [SchoolReportController::class, 'index']);
+        Route::get('/reports/ecdc/{id}', [EcdcSummaryReportController::class, 'show'])
+            ->whereUuid('id')->middleware('throttle:ecdc-status')->name('reports.ecdc.show');
+        Route::get('/reports/ecdc/{id}/download', [EcdcSummaryReportController::class, 'download'])
+            ->whereUuid('id')->name('reports.ecdc.download');
     });
     Route::middleware('permission:reports.generate')->group(function () {
         Route::post('/reports/generate', [SchoolReportController::class, 'generate']);
+        Route::post('/reports/ecdc', [EcdcSummaryReportController::class, 'store'])
+            ->middleware('throttle:ecdc-generation')->name('reports.ecdc.store');
     });
 
     // Item Bank
