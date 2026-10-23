@@ -213,7 +213,7 @@ class DashboardRecordsServerSideTest extends TestCase
         $this->assertSame([], $response->json('data'));
     }
 
-    public function test_records_endpoint_returns_classrooms_for_active_academic_year(): void
+    public function test_records_endpoint_filters_classrooms_by_selected_academic_year(): void
     {
         $user = $this->createSchoolHead();
 
@@ -239,6 +239,24 @@ class DashboardRecordsServerSideTest extends TestCase
         $classroom->school_id = $this->school()->id;
         $classroom->save();
 
+        $oldAcademicYear = new AcademicYear;
+        $oldAcademicYear->from = '2025';
+        $oldAcademicYear->to = '2026';
+        $oldAcademicYear->is_active = 0;
+        $oldAcademicYear->save();
+
+        $oldSection = new Section;
+        $oldSection->section = 'B';
+        $oldSection->school_id = $this->school()->id;
+        $oldSection->save();
+
+        $oldClassroom = new Classroom;
+        $oldClassroom->section_id = $oldSection->id;
+        $oldClassroom->grade_level_id = $gradeLevel->id;
+        $oldClassroom->academic_year_id = $oldAcademicYear->id;
+        $oldClassroom->school_id = $this->school()->id;
+        $oldClassroom->save();
+
         $response = $this->actingAs($user)
             ->getJson('/dashboard/records?type=classrooms&draw=1&start=0&length=10');
 
@@ -247,6 +265,14 @@ class DashboardRecordsServerSideTest extends TestCase
         $this->assertSame(1, $response->json('recordsTotal'));
         $this->assertSame('Grade 1 - A', $response->json('data.0.record'));
         $this->assertSame('Grade 1', $response->json('data.0.detail'));
+
+        $oldResponse = $this->actingAs($user)->getJson(
+            '/dashboard/records?type=classrooms&academic_year_id='.$oldAcademicYear->id.'&draw=1&start=0&length=10'
+        );
+
+        $oldResponse->assertOk();
+        $this->assertSame(1, $oldResponse->json('recordsTotal'));
+        $this->assertSame('Grade 1 - B', $oldResponse->json('data.0.record'));
     }
 
     public function test_dashboard_page_renders_with_server_side_endpoint(): void

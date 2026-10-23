@@ -7,7 +7,6 @@ use App\Models\GradeLevel;
 use App\Models\Period;
 use App\Models\Subject;
 use App\Models\Week;
-use Illuminate\Support\Facades\DB;
 
 trait CompetencyTrait
 {
@@ -28,8 +27,8 @@ trait CompetencyTrait
             'description' => $row[1],
             'subject' => $row[2],
             'grade_level' => $row[3],
-            'period' => $row[4],
-            'week' => $row[5],
+            'period' => $row[4] ?? null,
+            'week' => $row[5] ?? null,
         ];
 
         $this->check_competency_if_exist($data, $error, $line);
@@ -79,10 +78,10 @@ trait CompetencyTrait
             'code' => $row[0],
             'description' => $row[1],
             'subject' => $row[2],
-            'subject_component' => $row[3],
-            'grade_level' => $row[4],
-            'period' => $row[5],
-            'week' => $row[6],
+            'subject_component' => $row[3] ?? null,
+            'grade_level' => $row[4] ?? null,
+            'period' => $row[5] ?? null,
+            'week' => $row[6] ?? null,
         ];
 
         $this->check_competency_if_exist($data, $error, $line);
@@ -104,7 +103,7 @@ trait CompetencyTrait
                 $error[] = 'Error on row '.$line.' : Invalid Subject.';
             }
 
-            if ($subject[0]->subject_components->count() > 0) {
+            if ($subject->isNotEmpty() && $subject[0]->subject_components->count() > 0) {
 
                 $sub_comp = $subject[0]->subject_components->toArray();
                 $searchKey = 'name';
@@ -142,22 +141,27 @@ trait CompetencyTrait
 
     public function check_competency_if_exist($data, &$error, $line)
     {
-        $is_code_exist = Competency::select('*')->where(DB::raw('code like "%'.$data['code'].'%"'))->get();
-        ($is_code_exist->count() > 0) ? $error[] = 'Error on row '.$line.' : Code '.$data['code'].' already exist' : '';
+        if (blank($data['code'])) {
+            $error[] = 'Error on row '.$line.' : Code cannot be null.';
+        } elseif (Competency::where('code', $data['code'])->exists()) {
+            $error[] = 'Error on row '.$line.' : Code '.$data['code'].' already exists.';
+        }
     }
 
     public function validate_grade_level($data, &$error, $line)
     {
         if ($data['grade_level'] == null) {
             $error[] = 'Error on row '.$line.' : Grade Level cannot be null.';
-        } else {
-            $grade_level = GradeLevel::where('level', $data['grade_level'])->get();
-            if ($grade_level->count() == 0) {
-                $error[] = 'Error on row '.$line.' : Invalid Grade Level.';
-            }
 
-            return $grade_level;
+            return collect();
         }
+
+        $grade_level = GradeLevel::where('level', $data['grade_level'])->get();
+        if ($grade_level->isEmpty()) {
+            $error[] = 'Error on row '.$line.' : Invalid Grade Level.';
+        }
+
+        return $grade_level;
     }
 
     public function validate_week($data, &$error, $line)

@@ -26,7 +26,7 @@ class DashboardDataTable
      *
      * @return array{query: Builder, columns: array<int, array<string, mixed>>}|null
      */
-    public function resolve(string $type, ?Authenticatable $user = null): ?array
+    public function resolve(string $type, ?Authenticatable $user = null, ?int $academicYearId = null): ?array
     {
         $user ??= Auth::user();
 
@@ -37,9 +37,9 @@ class DashboardDataTable
         $scope = $this->scope($user);
 
         return match ($type) {
-            'teachers' => $this->teachers($scope),
-            'students' => $this->students($scope),
-            'classrooms' => $this->classrooms($scope),
+            'teachers' => $this->teachers($scope, $academicYearId),
+            'students' => $this->students($scope, $academicYearId),
+            'classrooms' => $this->classrooms($scope, $academicYearId),
             default => null,
         };
     }
@@ -139,7 +139,7 @@ class DashboardDataTable
      * @param  array{teacher_id: int|null, school_id: int|null}  $scope
      * @return array{query: Builder, columns: array<int, array<string, mixed>>}
      */
-    private function teachers(array $scope): array
+    private function teachers(array $scope, ?int $academicYearId): array
     {
         $query = User::query()
             ->select([
@@ -158,6 +158,17 @@ class DashboardDataTable
         // teacher has no roster responsibility and is not offered this filter.
         if ($scope['school_id'] !== null) {
             $query->where('tbl_teachers.school_id', $scope['school_id']);
+        }
+
+        if ($academicYearId !== null) {
+            $query->whereExists(function ($sub) use ($academicYearId) {
+                $sub->select(DB::raw(1))
+                    ->from('tbl_teacher_classes')
+                    ->join('tbl_classrooms', 'tbl_teacher_classes.classroom_id', 'tbl_classrooms.id')
+                    ->whereColumn('tbl_teacher_classes.teacher_id', 'tbl_teachers.id')
+                    ->where('tbl_classrooms.academic_year_id', $academicYearId)
+                    ->whereNull('tbl_classrooms.deleted_at');
+            });
         }
 
         return [
@@ -193,7 +204,7 @@ class DashboardDataTable
      * @param  array{teacher_id: int|null, school_id: int|null}  $scope
      * @return array{query: Builder, columns: array<int, array<string, mixed>>}
      */
-    private function students(array $scope): array
+    private function students(array $scope, ?int $academicYearId): array
     {
         $query = Student::query()
             ->select([
@@ -217,12 +228,26 @@ class DashboardDataTable
             $query->whereExists(function ($sub) use ($classroomIds) {
                 $sub->select(DB::raw(1))
                     ->from('tbl_student_classrooms')
+                    ->join('tbl_classrooms', 'tbl_student_classrooms.classroom_id', 'tbl_classrooms.id')
                     ->whereColumn('tbl_student_classrooms.student_id', 'tbl_students.id')
                     ->whereIn('tbl_student_classrooms.classroom_id', $classroomIds)
-                    ->where('tbl_student_classrooms.status', 1);
+                    ->where('tbl_student_classrooms.status', 1)
+                    ->whereNull('tbl_classrooms.deleted_at');
             });
         } elseif ($scope['school_id'] !== null) {
             $query->where('tbl_students.school_id', $scope['school_id']);
+        }
+
+        if ($academicYearId !== null) {
+            $query->whereExists(function ($sub) use ($academicYearId) {
+                $sub->select(DB::raw(1))
+                    ->from('tbl_student_classrooms')
+                    ->join('tbl_classrooms', 'tbl_student_classrooms.classroom_id', 'tbl_classrooms.id')
+                    ->whereColumn('tbl_student_classrooms.student_id', 'tbl_students.id')
+                    ->where('tbl_student_classrooms.status', 1)
+                    ->where('tbl_classrooms.academic_year_id', $academicYearId)
+                    ->whereNull('tbl_classrooms.deleted_at');
+            });
         }
 
         return [
@@ -253,14 +278,14 @@ class DashboardDataTable
     }
 
     /**
-     * Classrooms for the active academic year, ordered by grade level and section.
+     * Classrooms for the selected academic year, ordered by grade level and section.
      *
      * @param  array{teacher_id: int|null, school_id: int|null}  $scope
      * @return array{query: Builder, columns: array<int, array<string, mixed>>}
      */
-    private function classrooms(array $scope): array
+    private function classrooms(array $scope, ?int $academicYearId): array
     {
-        $academicYear = AcademicYear::where('is_active', 1)->first();
+        $academicYearId ??= AcademicYear::where('is_active', 1)->value('id');
 
         $query = Classroom::query()
             ->select([
@@ -270,7 +295,7 @@ class DashboardDataTable
             ])
             ->join('tbl_sections', 'tbl_classrooms.section_id', 'tbl_sections.id')
             ->join('tbl_grade_levels', 'tbl_classrooms.grade_level_id', 'tbl_grade_levels.id')
-            ->where('tbl_classrooms.academic_year_id', $academicYear?->id)
+            ->where('tbl_classrooms.academic_year_id', $academicYearId)
             ->orderBy('tbl_grade_levels.level')
             ->orderBy('tbl_sections.section');
 

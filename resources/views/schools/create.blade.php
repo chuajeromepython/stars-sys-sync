@@ -33,8 +33,9 @@
                         <div class="col-md-4 mb-2">
                             <label class="text-muted">Category</label>
                             <select class="select2bs4 form-control" name="category_id">
-                                <option value="1">Public</option>
-                                <option value="2">Private</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->category }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-4 mb-2">
@@ -72,7 +73,6 @@
         </div>
     </form>
 @endsection
-
 
 
 

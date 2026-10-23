@@ -7,6 +7,18 @@
 @section('page_script')
 	<script type="text/javascript">
 		$(function() {
+			$(document).on('change', 'input[type="radio"][data-score-for]', function() {
+				var competencyId = $(this).data('score-for');
+				var isPresent = this.value === '1';
+				var typeRow = $('.present-type-row[data-competency-id="' + competencyId + '"]');
+
+				typeRow.toggleClass('d-none', !isPresent);
+
+				if (!isPresent) {
+					typeRow.find('input[type="radio"]').prop('checked', false);
+				}
+			});
+
 			$(document).on('change', '#classroom',function(){
 				id = $(this).val();
 				$('.btn-download-ecdc').attr('href', '/ecdcs/'+id+'/download_template');
@@ -71,9 +83,8 @@
                                     <small  class="text-bold text-primary">Period</small>
                                     <select class="select2bs4 form-control" name="period" id="period" required>
                                         <option selected disabled>-- Select Period --</option>
-                                        <option value="1">BoSY - Beginning of School Year</option>
-                                        <option value="2">MoSY - Mid of School Year</option>
-                                        <option value="3">EoSY - End of School Year</option>
+                                        <option value="1">BOSY</option>
+                                        <option value="3">EOSY</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -90,15 +101,49 @@
                                                 <center>{{$domain['domain']}}</center>
                                             </th>
                                         </tr>
-                                        <tr  class="text-{{$domain['color']}}""> 
-                                            <th style="width: 80%">Competencies</th>
-                                            <th style="width: 10%">Kayang Gawin</th>
-                                            <th style="width: 10%">Di pa kayang gawin</th>
+                                        <tr class="text-{{$domain['color']}}">
+                                            <th style="width: 55%">Competencies</th>
+                                            <th style="width: 15%">Present</th>
+                                            <th style="width: 15%">Not Present</th>
+                                            <th style="width: 15%">Not Tested</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach ($domain['competencies'] as $competency)
                                             <tr>
+                                                <td>{{$competency->id}}. {{$competency->competency}}</td>
+                                                @foreach ([
+                                                    '1' => 'Present',
+                                                    '-' => 'Not Present',
+                                                    '*' => 'Not Tested',
+                                                ] as $score => $label)
+                                                    <td>
+                                                        <label class="d-flex align-items-center justify-content-center mb-0">
+                                                            <input type="radio"
+                                                                name="score[{{$competency->id}}]"
+                                                                value="{{$score}}"
+                                                                data-score-for="{{$competency->id}}"
+                                                                aria-label="{{$label}}">
+                                                            <span class="ml-2">{{$label}}</span>
+                                                        </label>
+                                                    </td>
+                                                @endforeach
+                                            </tr>
+                                            <tr class="present-type-row d-none" data-competency-id="{{$competency->id}}">
+                                                <td class="text-muted font-weight-bold">Type</td>
+                                                @foreach (['P', 'O', 'R'] as $presentType)
+                                                    <td>
+                                                        <label class="d-flex align-items-center justify-content-center mb-0">
+                                                            <input type="radio"
+                                                                name="present_type[{{$competency->id}}]"
+                                                                value="{{$presentType}}"
+                                                                aria-label="{{$presentType}}">
+                                                            <span class="ml-2">{{$presentType}}</span>
+                                                        </label>
+                                                    </td>
+                                                @endforeach
+                                            </tr>
+                                            <tr class="d-none">
                                                 <td>{{$competency->id}}. {{$competency->competency}}</td>
                                                 <td>
                                                     <center> 

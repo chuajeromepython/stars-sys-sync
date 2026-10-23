@@ -481,6 +481,13 @@ div.dt-container div.dt-processing {
     white-space: nowrap;
 }
 
+/* DataTables appends its legacy four-dot animation after the configured
+   processing message. The shared spinner in the message is the only loading
+   indicator used by the application. */
+div.dt-container div.dt-processing > div:last-child {
+    display: none;
+}
+
 .dt-processing-spinner {
     animation: dtm-spin 0.7s linear infinite;
     border: 2px solid var(--dtm-line-strong);

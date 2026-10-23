@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class CustomFunction extends Model
 {
@@ -557,6 +558,7 @@ class CustomFunction extends Model
     {
         $classrooms = [];
         $teacher = Teacher::where('user_id', $id)->first();
+        $user = User::find($id);
 
         if (! $teacher) {
             return $classrooms;
@@ -581,9 +583,8 @@ class CustomFunction extends Model
             ->where('school_id', $school_id)
             ->where('academic_year_id', $academic_year->id)
             ->whereIn('grade_level_id', $grade_levels->keys());
-        
-        $user = User::find($id);
-        if ($user->hasRole('Teacher')) {
+
+        if ($user?->classification == 'Teacher') {
             $current_teacher = $teacher;
 
             if (! $current_teacher) {
@@ -611,7 +612,7 @@ class CustomFunction extends Model
                 $classes = 0;
                 $is_included = 1;
 
-                if ($user->hasRole('Teacher')) {
+                if ($user?->classification == 'Teacher') {
                     $classes = (int) ($room->current_teacher_classes_count ?? 0);
                     $is_advisory = ((int) ($room->current_teacher_advisory_count ?? 0) > 0) ? 1 : 0;
 
@@ -1133,7 +1134,9 @@ class CustomFunction extends Model
                 'answers' => $answers,
             ];
         }
-        Storage::disk('public')->put('res-'.$class_assessment_id.'.json', json_encode($result));
+        if (! Storage::disk('public')->put('res-'.$class_assessment_id.'.json', json_encode($result, JSON_THROW_ON_ERROR))) {
+            throw new RuntimeException('Unable to save the assessment results.');
+        }
 
         return $result;
     }
