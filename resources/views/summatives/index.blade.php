@@ -5,10 +5,11 @@
 @section('page_title', $page['title'])
 
 @section('page_script')
-    <script type="text/javascript" src="/js/periodicals.js"></script>
+    <script type="text/javascript" src="/js/term-exams.js"></script>
 @endsection
 
 @section('content')
+    @include('layouts.assessment-tabs')
 	@include('layouts.message')
     @include('summatives.upload')
     <div class="row">
@@ -23,9 +24,10 @@
                     </a>
                 </div>
                 <div class="card-body" >
-                    <table class="table table-bordered mb-3" id="dt_periodicals">
+                    <table class="table table-bordered mb-3" id="dt_term_exams">
                         <thead>
                             <tr>
+                                <th>ID</th>
                                 <th>Assessment Title</th>
                                 <th>Term</th>
                                 <th>Summative No.</th>
@@ -37,6 +39,7 @@
                         <tbody>
                             @foreach($assessments as $assessment)
                                 <tr>
+                                    <td>{{$assessment->id}}</td>
                                     <td>{{$assessment->assessment}}</td>
                                     <td>{{$assessment->period}}</td>
                                     <td>{{$assessment->summative_number}}</td>

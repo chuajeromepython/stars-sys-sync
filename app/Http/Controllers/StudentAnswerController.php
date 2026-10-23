@@ -126,10 +126,10 @@ class StudentAnswerController extends Controller
 
                 $fortmattedLRN = preg_replace('/\D/', '', $lrn);
 
-                $student = Student::select('student_id')
+                $student = Student::select('tbl_students.id as student_id')
                     ->join('tbl_student_classes', 'tbl_student_classes.student_id', 'tbl_students.id')
-                    ->where('lrn', $fortmattedLRN)
-                    ->where('class_id', $request->class_id)
+                    ->where('tbl_students.lrn', $fortmattedLRN)
+                    ->where('tbl_student_classes.class_id', $request->class_id)
                     ->get();
 
                 if ($student->count() == 0 || empty($fortmattedLRN)) {
@@ -222,13 +222,13 @@ class StudentAnswerController extends Controller
             }
 
             if ($result === true) {
-                return redirect('/periodicals/'.$request->assessment_id)->with('success', 'Class Assessment uploaded successfully.');
+                return redirect('/term-exams/'.$request->assessment_id)->with('success', 'Class Assessment uploaded successfully.');
             } else {
-                return back()->withErrors($result);
+                return redirect()->to(url()->previous())->withErrors(['error' => $result]);
             }
 
         } else {
-            return back()->withErrors($error);
+            return redirect()->to(url()->previous())->withErrors(['error' => $error]);
         }
 
     }
@@ -272,7 +272,7 @@ class StudentAnswerController extends Controller
             return redirect('/class_assessments/'.$request->class_assessment_id)
                 ->with('success', 'Student Answers successfully updated.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 }

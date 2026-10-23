@@ -14,4 +14,19 @@ class Question extends Model
     protected $table = 'tbl_questions';
 
     protected $guarded = [];
+
+    public function assessmentKey()
+    {
+        return $this->hasMany(AssessmentKey::class, 'questions_id', 'id');
+    }
+
+    public function competency()
+    {
+        return $this->belongsTo(Competency::class, 'competency_id', 'id');
+    }
+
+    public function options()
+    {
+        return $this->hasMany(Option::class, 'question_id', 'id');
+    }
 }

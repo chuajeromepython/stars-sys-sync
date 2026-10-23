@@ -60,7 +60,7 @@ class SubjectController extends Controller
 
             return redirect('/subjects')->with('success', 'New subject has been added successfully.');
         } else {
-            return back()->withErrors('Subject already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Subject already exists!']);
         }
     }
 
@@ -114,7 +114,7 @@ class SubjectController extends Controller
 
             return back()->with('success', 'Subject has been updated successfully.');
         } else {
-            return back()->withErrors('Subject already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Subject already exists!']);
         }
     }
 

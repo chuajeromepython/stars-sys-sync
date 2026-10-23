@@ -128,7 +128,7 @@ class ChiefCIDController extends Controller
         if ($result === true) {
             return back()->with('success', 'Chief CID has been updated successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 

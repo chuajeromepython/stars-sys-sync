@@ -110,7 +110,7 @@ class CompetencyController extends Controller
 
         } else {
 
-            return back()->withErrors($request->code.' competency already exists !');
+            return redirect()->to(url()->previous())->withErrors(['error' => $request->code.' competency already exists !']);
 
         }
     }
@@ -190,7 +190,7 @@ class CompetencyController extends Controller
 
         } else {
 
-            return back()->withErrors($request->code.' competency already exists !');
+            return redirect()->to(url()->previous())->withErrors(['error' => $request->code.' competency already exists !']);
 
         }
     }
@@ -216,7 +216,7 @@ class CompetencyController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $sheet = $spreadsheet->getSheetByName('ENCODE here')->toArray();
         $errors = [];
         $error_messages = [];
 
@@ -234,7 +234,7 @@ class CompetencyController extends Controller
                     $subject = Subject::where('title', $row[2])->first();
 
                     if (is_null($subject)) {
-                        return redirect('/competencies')->withErrors('Subject not found!');
+                        return redirect('/competencies')->withErrors(['error' => 'Subject not found!']);
                     }
 
                     if ($subject->subject_components->count() < 1) {
@@ -252,21 +252,19 @@ class CompetencyController extends Controller
                     }
                 }
 
-                return back()->withErrors($error_messages);
+                DB::rollBack();
+
+                return redirect('/competencies')->withErrors(['error' => $error_messages])->withInput();
             }
 
             DB::commit();
-            $result = true;
 
-        } catch (Exception $e) {
-            DB::rollBack();
-            $result = $e->getMessage();
-        }
-
-        if ($result === true) {
             return redirect('/competencies')->with('success', 'Competency Uploader has been uploaded successfully.');
-        } else {
-            return back()->withErrors($result);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect('/competencies')->withErrors([$e->getMessage()]);
         }
 
     }

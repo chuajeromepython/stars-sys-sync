@@ -21,7 +21,9 @@ class QrAuthorizationPayloadService
             'username' => $user->username,
             'userId' => $user->id,
             'host' => $this->host(),
-            'passKey' => $user->password,
+            // The password hash is deliberately not part of the payload. The QR
+            // code is rendered into a page and scanned by a device, so shipping
+            // the hash would hand out a credential that can be replayed offline.
             'firstName' => $user->person?->first_name ?? '',
             'middleName' => $user->person?->middle_name ?? '',
             'lastName' => $user->person?->last_name ?? '',

@@ -12,9 +12,6 @@ $(function() {
     $('#table_student').css("min-height", card_answer_key_height);
 
     $('#dt_students').dataTable({
-	    'language':{
-	        'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-	    },
 	    'scrollX': (screen_height > screen_width) ? true : false
 	});
 

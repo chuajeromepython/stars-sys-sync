@@ -59,7 +59,7 @@ class DivisionController extends Controller
 
             return back()->with('success', 'New division has been added successfully.');
         } else {
-            return back()->withErrors('Division already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Division already exists!']);
         }
     }
 
@@ -98,7 +98,7 @@ class DivisionController extends Controller
 
             return back()->with('success', 'Division has been updated successfully.');
         } else {
-            return back()->withErrors('Division already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Division already exists!']);
         }
     }
 

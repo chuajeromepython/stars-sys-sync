@@ -7,9 +7,6 @@
 @section('page_script')
     <script type="text/javascript">
          $('#dt_school').dataTable({
-            'language':{
-                'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-            }
         });
     </script>
 @endsection
