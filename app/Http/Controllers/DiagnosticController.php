@@ -86,11 +86,11 @@ class DiagnosticController extends Controller
             if ($result === true) {
                 return redirect('/diagnostics')->with('success', 'Diagnostic Test Successfully uploaded');
             } else {
-                return redirect('/diagnostics')->withErrors($result);
+                return redirect('/diagnostics')->withErrors(['error' => $result]);
             }
 
         } else {
-            return redirect('/diagnostics')->withErrors($answer_keys);
+            return redirect('/diagnostics')->withErrors(['error' => $answer_keys]);
         }
 
     }

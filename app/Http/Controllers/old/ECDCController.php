@@ -318,10 +318,10 @@ class ECDCController extends Controller
             "classroom_id" => $classroom->id,
             "student_id" => $student->id
         );
-        
-        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->groupBy('ecdc_id')->value('ecdc_id'); 
+
+        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->orderByDesc('tbl_ecdcs.id')->value('tbl_ecdcs.id');
+        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->orderByDesc('tbl_ecdcs.id')->value('tbl_ecdcs.id');
+        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->orderByDesc('tbl_ecdcs.id')->value('tbl_ecdcs.id');
 
         $bosy_result = ($bosy_id) ? ECDC::getJsonResult($bosy_id)[$student->id] : "No Record";
         $mosy_result = ($mosy_id) ? ECDC::getJsonResult($mosy_id)[$student->id] : "No Record";
@@ -363,10 +363,10 @@ class ECDCController extends Controller
             "classroom_id" => $classroom->id,
             "student_id" => $student->id
         );
-        
-        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->groupBy('ecdc_id')->value('ecdc_id'); 
+
+        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->orderByDesc('tbl_ecdcs.id')->value('tbl_ecdcs.id');
+        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->orderByDesc('tbl_ecdcs.id')->value('tbl_ecdcs.id');
+        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->orderByDesc('tbl_ecdcs.id')->value('tbl_ecdcs.id');
 
         $bosy_result = ($bosy_id) ? ECDC::getJsonResult($bosy_id)[$student->id] : "No Record";
         $mosy_result = ($mosy_id) ? ECDC::getJsonResult($mosy_id)[$student->id] : "No Record";

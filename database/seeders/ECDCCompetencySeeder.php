@@ -17,151 +17,151 @@ class ECDCCompetencySeeder extends Seeder
         $competencies = [
             0 => [
                 'domain_id' => 1,
-                'competency' => 'Nakaakyat ng silya o matataas na mga gamit gaya ng kama na walang tumutulong.',
+                'competency' => 'Nakaaakyat na ng mga silya o anumang mataas na muwebles tulad ng kama.',
             ],
             1 => [
                 'domain_id' => 1,
-                'competency' => 'Nakalalakad nang pabalik.',
+                'competency' => 'Nakalalakad na nang paurong.',
             ],
             2 => [
                 'domain_id' => 1,
-                'competency' => 'Nakatatakbo nang hindi nadadapa. ',
+                'competency' => 'Nakatatakbo na ng hindi nadadapa.',
             ],
             3 => [
                 'domain_id' => 1,
-                'competency' => 'Nakababa ng hagdan gamit ang parehong paa sa bawat baitang habang nakahawak sa gabay ng hagdan ang isang kamay.',
+                'competency' => 'Nakabababa na ng hagdan habang hawak ng tagapag-alaga ang isang kamay.',
             ],
             4 => [
                 'domain_id' => 1,
-                'competency' => 'Nakaaakyat ng hagdan gamit ang parehong paa sa bawat baitang habang nakahawak sa gabay ng hagdan.',
+                'competency' => 'Umaakyat na ng hagdan, parehong paa bawat baitang, habang nakahawak sa gabay ng hagdan.',
             ],
             5 => [
                 'domain_id' => 1,
-                'competency' => 'Nakaaakyat ng hagdan na salitan ang mga paa na hindi humahawak sa gabay ng hagdan.',
+                'competency' => 'Nakaaakyat na ng hagdan na salitan ang mga paa na hindi na humahawak sa gabay ng hagdan.',
             ],
             6 => [
                 'domain_id' => 1,
-                'competency' => 'Nakababa ng hagdan na salitan ang mga paa na  hindi humahawak sa gabay ng hagdan.',
+                'competency' => 'Nakabababa na ng hagdan na salitan ang mga paa na hindi na humahawak sa gabay ng hagdan.',
             ],
             7 => [
                 'domain_id' => 1,
-                'competency' => 'Naigagalaw ang mga parte ng katawan kapag inutusan.',
+                'competency' => 'Naigagalaw ang mga parte ng katawan ayon sa ipinag-uutos',
             ],
             8 => [
                 'domain_id' => 1,
-                'competency' => 'Nakatatalon.',
+                'competency' => 'Nakatatalon na.',
             ],
             9 => [
                 'domain_id' => 1,
-                'competency' => 'Naihahagis ang bola sa paitaas na direksyon.',
+                'competency' => 'Nakahahagis na ng bola nang paitaas na may direksyon.',
             ],
             10 => [
                 'domain_id' => 1,
-                'competency' => 'Nakalulundag ng 1 – 3 beses gamit ang mas gustong paa.',
+                'competency' => 'Nakalulundag na ng 1-3 beses gamit ang mas gamay na paa.',
             ],
             11 => [
                 'domain_id' => 1,
-                'competency' => 'Tumatalon at umiikot.',
+                'competency' => 'Nakatalon na nang may paikot.',
             ],
             12 => [
                 'domain_id' => 1,
-                'competency' => 'Nakasasayaw / nakasusunod sa mga hakbang ng sayaw, grupong gawain ayon sa kilos at galaw.',
+                'competency' => 'Nakasasayaw / Nakasusunod sa mga hakbang sa sayaw, grupong gawain ukol sa kilos at galaw.',
             ],
             13 => [
                 'domain_id' => 2,
-                'competency' => 'Nagagamit ang limang  daliri sa pagkuha ng pagkain,bagay mula sa patag na lugar.',
+                'competency' => 'Kinakabig ang mga laruan o pagkain.',
             ],
             14 => [
                 'domain_id' => 2,
-                'competency' => 'Nakukuha ang mga bagay gamit ang hinlalaki at hintututro.',
+                'competency' => 'Kinukuha ang mga bagay gamit ang hinlalaki at hintuturo.',
             ],
             15 => [
                 'domain_id' => 2,
-                'competency' => 'Nagpapakita ng higit na pagkagusto sa paggamit ng particular na kamay.',
+                'competency' => 'Nagpapakita ng higit na pagkagusto sa paggamit ng partikular na kamay',
             ],
             16 => [
                 'domain_id' => 2,
-                'competency' => 'Inilalagay / inaalis ang maliliit na bagay sa lalagyan ',
+                'competency' => 'Nailalagay/tinatanggal ang maliliit na bagay mula sa lalagyan',
             ],
             17 => [
                 'domain_id' => 2,
-                'competency' => 'Nahahawakan ang krayola gamit nang nakasara ang palad.',
+                'competency' => 'Nahawakan ang krayola gamit ang nakasarang palad',
             ],
             18 => [
                 'domain_id' => 2,
-                'competency' => 'Natatanggal ang takip ng bote/lalagyan, inaalis ang balot ng pagkain.',
+                'competency' => 'Natanggal ang takip ng bote/lalagyan, inaalis ang balot ng mga pagkain',
             ],
             19 => [
                 'domain_id' => 2,
-                'competency' => 'Nakaguguhit nang mabilis na di maintindihang anyo.',
+                'competency' => 'Kusang gumuguhit-guhit',
             ],
             20 => [
                 'domain_id' => 2,
-                'competency' => 'Nakaguguhit nang bilog na hugis.',
+                'competency' => 'Gumuguhit ng patayo at pahalang na marka',
             ],
             21 => [
                 'domain_id' => 2,
-                'competency' => 'Nakaguguhit nang patayo at pahalang na guhit.',
+                'competency' => 'Kusang gumuguhit ng bilog na hugis',
             ],
             22 => [
                 'domain_id' => 2,
-                'competency' => 'Nakaguguhit ng larawan ng tao (ulo, mata, katawan, braso, kamay/daliri).',
+                'competency' => 'Gumuguhit ng larawan ng tao (ulo, mata, katawan, braso, kamay, daliri, hita, paa)',
             ],
             23 => [
                 'domain_id' => 2,
-                'competency' => 'Nakaguguhit ng bahay gamit ang iba’t-ibang uri ng hugis .',
+                'competency' => 'Gumuguhit ng bahay gamit ang iba\'t-ibang uri ng hugis (parisukat, tatsulok)',
             ],
             24 => [
                 'domain_id' => 3,
-                'competency' => 'Nakakakain nang mag-isa tulad ng biskwit at tinapay (finger food).',
+                'competency' => 'Nakapagsusubo na ng mag-isa ng mga pagkain tulad ng biskwit at tinapay (finger food)',
             ],
             25 => [
                 'domain_id' => 3,
-                'competency' => 'Nakakakain nang mag-isa ng kanin at ulam gamit ang daliri ngunit may natatapong pagkain.',
+                'competency' => 'Nakapagsusubo na ng mag-isa gamit ang kutsara ngunit may natatapong pagkain',
             ],
             26 => [
                 'domain_id' => 3,
-                'competency' => 'Nakakakain nang mag-isa gamit ang kutsara ngunit may natatapong pagkain',
+                'competency' => 'Nakapagsusubo na ng mag-isa gamit ang kutsara ngunit walang natatapong pagkain',
             ],
             27 => [
                 'domain_id' => 3,
-                'competency' => 'Nakakakain nang mag-isa ng kanin at ulam gamit ang mga daliri na walang natatapong pagkain',
+                'competency' => 'Nakapagsusubo na ng mag-isa ng ulam at kanin gamit ang mga daliri na walang natatapong pagkain',
             ],
             28 => [
                 'domain_id' => 3,
-                'competency' => 'Nakakakain nang mag-isa gamit ang kutsara ngunit walang natatapong pagkain',
+                'competency' => 'Nakapagsusubo na ng mag-isa ng ulam at kanin gamit ang mga daliri ngunit may natatapong pagkain',
             ],
             29 => [
                 'domain_id' => 3,
-                'competency' => 'Nakakakain  nang hindi na kailangang subuan pa.',
+                'competency' => 'Nakakakain ng mag-isa na hindi na kailangang subuan pa',
             ],
             30 => [
                 'domain_id' => 3,
-                'competency' => 'Tumutulong sa paghawak ng baso sa pag – inom',
+                'competency' => 'Tumutulong sa paghawak ng baso/tasa sa pag-inom',
             ],
             31 => [
                 'domain_id' => 3,
-                'competency' => 'Nakaiinom sa baso ngunit may natatapon',
+                'competency' => 'Umiinom sa baso ngunit may natatapon',
             ],
             32 => [
                 'domain_id' => 3,
-                'competency' => 'Nakaiinom sa baso nang walang tumutulong.',
+                'competency' => 'Umiinom sa baso na walang umaalalay',
             ],
             33 => [
                 'domain_id' => 3,
-                'competency' => 'Nakakakuha nang inumin mag isa.',
+                'competency' => 'Kumukuha ng inumin nang mag-isa',
             ],
             34 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapagsasalin ng tubig (o anumang likido) mula sa pitsel na walang natatapon.',
+                'competency' => 'Binubuhos ang tubig (o anumang likido) mula sa pitsel na walang natatapon',
             ],
             35 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapaghahanda ng sariling pagkain / meryenda.',
+                'competency' => 'Naghahanda ng sariling pagkain/meryenda',
             ],
             36 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapaghahanda ng pagkain ng nakababatang kapatid/kapamilya kung walang kasamang matanda',
+                'competency' => 'Naghahanda ng pagkain para sa nakakabatang kapatid/ibang miyembro ng pamilya kung walang matanda sa bahay',
             ],
             37 => [
                 'domain_id' => 3,
@@ -169,143 +169,143 @@ class ECDCCompetencySeeder extends Seeder
             ],
             38 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapaghuhubad ng shorts na may garter.',
+                'competency' => 'Nahuhubad ang shorts na may garter na mag-isa',
             ],
             39 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapaghuhubad ang sando.',
+                'competency' => 'Nahuhubad ang sando na mag-isa',
             ],
             40 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapagbibihis mag-isa maliban sa pagbubutones at pagtatali ng laso ng sapatos',
+                'competency' => 'Nabibihisan ang sarili na walang tumutulong, maliban sa pagbubutones at pagtatali',
             ],
             41 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapagbibihis mag-isa at nakapagbubutones at nakapagtatali ng laso ng sapatos',
+                'competency' => 'Nabibihisan ang sarili na walang tumutulong, kasama na ang pagbubutones at pagtatali',
             ],
             42 => [
                 'domain_id' => 3,
-                'competency' => 'Naipakikita o naipahihiwatig na naihi o nadumi sa shorts',
+                'competency' => 'Ipinakita o ipinahiwatig na naihi o nadumi sa shorts',
             ],
             43 => [
                 'domain_id' => 3,
-                'competency' => 'Naipaalam sa tagapag-alaga ang pangangailangang umihi o dumumi upang makapunta sa tamang lugar (hal. banyo, CR)',
+                'competency' => 'Pinapaalam sa tagapag-alaga ang pangangailangang umihi o dumumi upang makapunta sa tamang lugar (hal., banyo, CR)',
             ],
             44 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapupunta sa tamang lugar upang umihi o dumumi ngunit paminsan-minsan ay may pagkakataong hindi mapigilang maihi o madumi sa shorts',
+                'competency' => 'Pumupunta sa tamang lugar upang umihi o dumumi ngunit paminsan-minsan ay may pagkakataong hindi mapigilang maihi o madumi sa shorts',
             ],
             45 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapupunta sa tamang lugar upang umihi o dumumi',
+                'competency' => 'Matagumpay na pumupunta sa tamang lugar upang umihi o dumumi',
             ],
             46 => [
                 'domain_id' => 3,
-                'competency' => 'Nalilinis ang sarili pagkatapos dumumi',
+                'competency' => 'Pinupunasan ang sarili pagkatapos dumumi',
             ],
             47 => [
                 'domain_id' => 3,
-                'competency' => 'Nakikipagtulungan kung pinapaliguan (hal. Kinukuskos ang mga braso)',
+                'competency' => 'Nakikipagtulungan kung pinapaliguan (hal., kinukuskos ang mga braso)',
             ],
             48 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapaghuhugas at nakapagpupunas ng mga kamay nang walang tumutulong',
+                'competency' => 'Naghuhugas at nagpupunas ng mga kamay na walang tumutulong',
             ],
             49 => [
                 'domain_id' => 3,
-                'competency' => 'Nakapaghihilamos ng mukha nang walang tumutulong',
+                'competency' => 'Naghihilamos ng mukha nang walang tumutulong',
             ],
             50 => [
                 'domain_id' => 3,
-                'competency' => ' Nakaliligo mag-isa',
+                'competency' => 'Naliligo nang walang tumutulong',
             ],
             51 => [
                 'domain_id' => 4,
-                'competency' => 'Naituturo ang kasapi ng pamilya na tinutukoy',
+                'competency' => 'Tinuturo ang mga kapamilya o pamilyar na bagay kapag ipinaturo',
             ],
             52 => [
                 'domain_id' => 4,
-                'competency' => 'Naituturo ang 5 bahagi ng katawan na tinutukoy',
+                'competency' => 'Tinuturo ang 5 parte ng katawan kung inuutusan',
             ],
             53 => [
                 'domain_id' => 4,
-                'competency' => 'Naituturo ang 5 binanggit na larawan mula ipinakikitang aklat',
+                'competency' => 'Tinuturo ang 5 napangalanang larawan ng mga bagay',
             ],
             54 => [
                 'domain_id' => 4,
-                'competency' => 'Nakasusunod sa isang antas na utos na may simpleng pang-ukol (hal. Sa ibabaw, sa ilalim, sa loob)',
+                'competency' => 'Sumusunod sa isang lebel na utos na may simpleng pang-ukol (hal., sa ibabaw, sa ilalim)',
             ],
             55 => [
                 'domain_id' => 4,
-                'competency' => 'Nakasusunod sa  dalawang antas na utos na may simpleng pang-ukol(hal. Kunin sa ilalim mesa ang bola at ilagay sa loob ng bag)',
+                'competency' => 'Sumusunod sa dalawang lebel na utos na may simpleng pang-ukol',
             ],
             56 => [
                 'domain_id' => 5,
-                'competency' => 'Nakagagamit ng 5-20 nakikilalang salita (maliban sa mama at papa o kahlintulad nito)',
+                'competency' => 'Gumagamit ng 5-20 nakikilalang salita',
             ],
             57 => [
                 'domain_id' => 5,
-                'competency' => 'Nakagagamit ng panghalip (hal. Ako, akin)',
+                'competency' => 'Gumagamit ng panghalip (hal., ako akin)',
             ],
             58 => [
                 'domain_id' => 5,
-                'competency' => 'Nakagagamit ng 2-3 kombinasyon ng pandiwa-pantangi (verb-noun combinations) (hal.hingi gatas)',
+                'competency' => 'Gumagamit ng 2-3 kombinasyon ng pandiwa-pantangi (verb-noun combinations) [hal., hingi pera]',
             ],
             59 => [
                 'domain_id' => 5,
-                'competency' => 'Napangangalanan ang mga bagay na nakikita sa larawan',
+                'competency' => 'Napapangalanan ang mga bagay na nakikita sa larawan (4)',
             ],
             60 => [
                 'domain_id' => 5,
-                'competency' => 'Nakapagsasalita ng 2-3 tamang pangungusap ',
+                'competency' => 'Nagsasalita sa tamang pangungusap na may 2-3 salita',
             ],
             61 => [
                 'domain_id' => 5,
-                'competency' => 'Nakapagtatanong ng “ano…”',
+                'competency' => 'Nagtatanong ng ano',
             ],
             62 => [
                 'domain_id' => 5,
-                'competency' => 'Nakapagtatanong ng “sino” at “bakit”',
+                'competency' => 'Nagtatanong ng sino at bakit',
             ],
             63 => [
                 'domain_id' => 5,
-                'competency' => 'Nakapagkukwento ng katatapos na karanasan (kapag tinanong/diniktahan) na naaayon sa pagkakasunod-sunod ng pangyayari gamit ang mga salitang tumutukoy sa pangnakaraan',
+                'competency' => 'Kinukuwento ang mga katatapos na karanasan (kapag tinanong/diniktahan) na naayon sa pagkakasunod-sunod ng pangyayari gamit ang mga salitang tumutukoy sa pangnakaraan (past tense)',
             ],
             64 => [
                 'domain_id' => 6,
-                'competency' => 'Nasusundan ng tingin ang direksyon ng nahuhulog na bagay',
+                'competency' => 'Tinitingnan ang direksyon ng nahuhulog na bagay',
             ],
             65 => [
                 'domain_id' => 6,
-                'competency' => 'Nahahanap ang mga bagay na nakatago o natatakpan',
+                'competency' => 'Hinahanap ang mga bagay na bahagyang nakatago',
             ],
             66 => [
                 'domain_id' => 6,
-                'competency' => 'Nagagaya ang mga kilos na kakakita pa lamang',
+                'competency' => 'Ginagaya ang mga kilos na kakakita pa lamang',
             ],
             67 => [
                 'domain_id' => 6,
-                'competency' => 'Nag-aalok ng isang bagay ngunit hindi ito binibitawan.',
+                'competency' => 'Binibigay ang bagay ngunit hindi ito binibitiwan',
             ],
             68 => [
                 'domain_id' => 6,
-                'competency' => 'Nahahanap ang nakatagong bagay.',
+                'competency' => 'Hinahanap ang mga bagay na lubusang nakatago',
             ],
             69 => [
                 'domain_id' => 6,
-                'competency' => 'Nagpapakita ng simpleng pagpapanggap sa paglalaro',
+                'competency' => 'Naglalaro ng kunwakunwarian',
             ],
             70 => [
                 'domain_id' => 6,
-                'competency' => 'Nakapagtutugma ng mga bagay-bagay',
+                'competency' => 'Tinutugma ang mga bagay',
             ],
             71 => [
                 'domain_id' => 6,
-                'competency' => 'Nakapagtutugma ng 2-3 kulay',
+                'competency' => 'Tinutugma ang 2-3 kulay',
             ],
             72 => [
                 'domain_id' => 6,
-                'competency' => 'Nakapagtutugma ng mga larawan',
+                'competency' => 'Tinutugma ang mga larawan',
             ],
             73 => [
                 'domain_id' => 6,
@@ -313,63 +313,63 @@ class ECDCCompetencySeeder extends Seeder
             ],
             74 => [
                 'domain_id' => 6,
-                'competency' => 'Nauuri ang mga bagay ayon sa 2 katangian (hal. laki at kulay)',
+                'competency' => 'Inaayos ang mga bagay ayon sa 2 katangian (hal. laki at kulay)',
             ],
             75 => [
                 'domain_id' => 6,
-                'competency' => 'Naiaayos ang mga bagay mula sa pinakamaliit hanggang sa pinakamalaki',
+                'competency' => 'Inaayos ang mga bagay mula sa pinakamaliit hanggang sa pinakamalaki',
             ],
             76 => [
                 'domain_id' => 6,
-                'competency' => 'Nakikilala ang 4 hanggang 6 na kulay',
+                'competency' => 'Pinapangalan ang 4-6 na kulay',
             ],
             77 => [
                 'domain_id' => 6,
-                'competency' => 'Natutulad ang  mga hugis',
+                'competency' => 'Gumuguhit/ginagaya ang isang disenyo',
             ],
             78 => [
                 'domain_id' => 6,
-                'competency' => 'Nakababanggit ng 3 hayop o gulay kapag tinanong',
+                'competency' => 'Pinapangalanan ang 3 hayop o gulay kapag tinanong',
             ],
             79 => [
                 'domain_id' => 6,
-                'competency' => 'Nasasabi ang gamit ng mga bagay sa bahay',
+                'competency' => 'Sinasabi ang mga gamit ng mga bagay sa bahay',
             ],
             80 => [
                 'domain_id' => 6,
-                'competency' => 'Nakabubuo ng isang simpleng puzzle',
+                'competency' => 'Nakakabuo ng isang simpleng puzzle',
             ],
             81 => [
                 'domain_id' => 6,
-                'competency' => 'Nauunawaan ang magkasalungat na mga salita sa pamamagitan ng pagkumpleto ng pangungusap ( hal.Ang aso ay malaki , ang daga ay ______?',
+                'competency' => 'Naiintindihan ang magkakasalungat na mga salita sa pamamagitan ng pagkumpleto ng pangungusap (hal., Ang aso ay malaki, ang daga ay ____)',
             ],
             82 => [
                 'domain_id' => 6,
-                'competency' => 'Naituturo ang kaliwa at kanang bahagi ng katawan',
+                'competency' => 'Tinuturo ang kaliwa at kanang bahagi ng katawan',
             ],
             83 => [
                 'domain_id' => 6,
-                'competency' => 'Nasasabi kung ano ang mali sa larawan ( hal. Ano ang mali sa larawang ito?)',
+                'competency' => 'Nasasabi kung ano ang mali sa larawan (hal., Ano ang mali sa larawan?)',
             ],
             84 => [
                 'domain_id' => 6,
-                'competency' => 'Napagtutugma ang malaki at maliit na mga titik',
+                'competency' => 'Tunutugma ang malalaki at maliliit na mga titik',
             ],
             85 => [
                 'domain_id' => 7,
-                'competency' => 'Masayang pinapanood ang mga gawain ng mga tao o hayop sa malapit na lugar/kapaligiran',
+                'competency' => 'Natutuwang nanonood ng mga ginagawa ng mga tao o hayop sa malapit na lugar',
             ],
             86 => [
                 'domain_id' => 7,
-                'competency' => 'Nakalalapit sa mga hindi kakilala ngunit sa simula ay maaaring maging mahiyain o hindi mapalagay.',
+                'competency' => 'Lumalapit sa mga hindi kakilala ngunit sa una ay maaaring maging mahiyain o hindi mapalagay',
             ],
             87 => [
                 'domain_id' => 7,
-                'competency' => 'Nakapaglalarong mag-isa ngunit nais na malapit sa mga kakilalang nakatatanda o kapatid',
+                'competency' => 'Naglalarong mag-isa ngunit gustong malapit sa mga pamilyar na nakatatanda o kapatid',
             ],
             88 => [
                 'domain_id' => 7,
-                'competency' => 'Tumatawa/tumitili nang malakas habang naglalaro',
+                'competency' => 'Tumatawa/tumitili nang malakas sa paglalaro',
             ],
             89 => [
                 'domain_id' => 7,
@@ -377,7 +377,7 @@ class ECDCCompetencySeeder extends Seeder
             ],
             90 => [
                 'domain_id' => 7,
-                'competency' => 'Napagugulong ang bola papunta sa kalaro',
+                'competency' => 'Napagugulong ang bola sa kalaro o tagapag-alaga',
             ],
             91 => [
                 'domain_id' => 7,
@@ -385,75 +385,75 @@ class ECDCCompetencySeeder extends Seeder
             ],
             92 => [
                 'domain_id' => 7,
-                'competency' => 'Nagpapakita ng respeto sa nakatatanda gamit ang "opo" o "po" ( o anumang katumbas nito) sa halip na kanilang pangalan.',
+                'competency' => 'Nagpapakita ng respeto sa nakataanda gamit ang “Opo”, “Po” (o anumang katumbas nito) sa halip na kanilang unang pangalan',
             ],
             93 => [
                 'domain_id' => 7,
-                'competency' => 'Nagpapahihiram ng sariling laruan sa iba.',
+                'competency' => 'Pinahihiram ang sariling laruan sa iba',
             ],
             94 => [
                 'domain_id' => 7,
-                'competency' => 'Nagagaya ang mga ginagawa ng nakatatanda (hal. pagluluto, paghuhugas)',
+                'competency' => 'Ginagaya ang mga ginagawa ng mga nakatatanda (hal., pagluluto, paghuhugas)',
             ],
             95 => [
                 'domain_id' => 7,
-                'competency' => 'Natutukoy ang damdamin ng iba.',
+                'competency' => 'Natutukoy ang nararamdaman ng iba',
             ],
             96 => [
                 'domain_id' => 7,
-                'competency' => 'Naisasagawa ang mga kilos na naaayon sa kultura na hindi na hinihiling/iniuutos (hal. Pagmamano, paghalik).',
+                'competency' => 'Naisasagawa nang tama ang mga nakasanayang pag-uugali nang hindi pinaaalahanan (hal., pagmamano, paghalik)',
             ],
             97 => [
                 'domain_id' => 7,
-                'competency' => 'Naaliw ang mga kalaro o kapatid kung nababalisa/nag-aalala.',
+                'competency' => 'Napasasaya ang nalulungkot na mga kalaro.',
             ],
             98 => [
                 'domain_id' => 7,
-                'competency' => 'Nagsisikap na masolusyunan kung may hadlang/problema sa kanyang nais gawin.',
+                'competency' => 'Nagsusumikap kung may mga problema at hadlang sa kaniyang mga nais/gusto.',
             ],
             99 => [
                 'domain_id' => 7,
-                'competency' => 'Nakatutulong sa mga gawaing pambahay (hal. nagpupunas ng mesa, nagdidilig ng mga halaman).',
+                'competency' => 'Tumutulong sa mga gawaing pambahay (hal., Nagpupunas ng mesa, magdidilig ng mga haalman)',
             ],
             100 => [
                 'domain_id' => 7,
-                'competency' => 'Nakapag-uusisa tungkol sa kapaligiran ngunit alam kung kailangang huminto sa pagtatanong.',
+                'competency' => 'Naipakikita ang pagiging mausisa sa kapaligiran subalit nalalaman kung kailan dapat huminto sa pagtatanong sa nakatatanda.',
             ],
             101 => [
                 'domain_id' => 7,
-                'competency' => 'Nakapaghihintay ng pagkakataon (hal. Sa paghuhugas ng kamay, sa pagkuha ng pagkain).',
+                'competency' => 'Nakapaghihintay sa kaniyang panahon/oras',
             ],
             102 => [
                 'domain_id' => 7,
-                'competency' => 'Nakahihingi ng permiso na malaro ang mga laruan na ginagamit ng ibang bata.',
+                'competency' => 'Nakahihingi ng pahintulot na mahiram ang laruan na nilalaro ng iba',
             ],
             103 => [
                 'domain_id' => 7,
-                'competency' => 'Naipagtatanggol ang sariling pag-aari nang may determinasyon.',
+                'competency' => 'Naipaglalaban nang may determinasyon ang sariling gamit',
             ],
             104 => [
                 'domain_id' => 7,
-                'competency' => 'Naglalaro nang maayos sa mga pangkatang laro (hal. hindi nandadaya para manalo).',
+                'competency' => 'Nakikipaglaro ng maayos sa grupo (hal. Hindi nandadaya para manalo)',
             ],
             105 => [
                 'domain_id' => 7,
-                'competency' => 'Naikukwento ang mga mabigat na nararamdaman (hal. Galit, lungkot).',
+                'competency' => 'Nasasabi ang mga nararanasang hindi magandang nararamdaman (hal galit, lingkot, pag-aalala)',
             ],
             106 => [
                 'domain_id' => 7,
-                'competency' => 'Natatanggap ang isang kasunduang ginawa ng tagapag-alaga (hal. Linisin muna ang kuwarto bago maglaro sa labas).',
+                'competency' => 'Tinatanggap ang isang kasunduang ginawa ng tagapag-alaga (la., luinisin muna ang kuwarto bago maglaro sa labas)',
             ],
             107 => [
                 'domain_id' => 7,
-                'competency' => 'Naipakikita ang responsibilidad sa pagbabantay sa mga nakababatang kapatid/myembro ng pamilya.',
+                'competency' => 'Responsableng nagbabantay sa mga nakababatang kapatid/ ibang miyembro ng pamilya',
             ],
             108 => [
                 'domain_id' => 7,
-                'competency' => 'Nakatutulong sa mga nakakatanda at nakababata sa anumang sitwasyon upang maiwasan ang bangayan/pakikipag-away',
+                'competency' => 'Nakikipagtulungan sa mga nakakatanda at nakababata sa anumang sitwasyon upang maiwasan ang pag-aaway at alitan',
             ],
         ];
 
-        DB::table('tbl_ecdc_competencies')->insert($competencies);
 
+        DB::table('tbl_ecdc_competencies')->insert($competencies);
     }
 }

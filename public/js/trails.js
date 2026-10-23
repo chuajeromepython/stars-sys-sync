@@ -25,7 +25,7 @@ $(function() {
 });
 
 function getTrails(model){
-    $(".table").dataTable().fnDestroy()
+    $(".table").DataTable().destroy();
     $.ajax({
         url: '/trails/'+model,
         type: "GET",

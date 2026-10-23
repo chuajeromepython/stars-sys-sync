@@ -20,17 +20,14 @@
 				<tr>
 					<th class="">Teacher</th>
 					<td colspan="3">
-						{{$class->first_name}}
-						{{$class->middle_name}}
-						{{$class->last_name}}
-						{{$class->suffix}}
+						{{$teacher}}
 					</td>
 					<th class="w-20">Date</th>
 					<td class="w-30">{{$assessment->date}}</td>
 				</tr>
 				<tr>
 					<th>Type</th>
-					<td>Periodical</td>
+					<td>Term Exam</td>
 					<th>Period</th>
 					<td>{{$assessment->period}}</td>
 					<th>No. of Items</th>
@@ -42,7 +39,7 @@
 					<th class="">Section</th>
 					<td class="">{{$class->section}}</td>
 					<th>Subject</th>
-					<td>{{$class->subject}}</td>
+					<td>{{$assessment->subject}}</td>
 				</tr>
 			</table>
 

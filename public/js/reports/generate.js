@@ -23,6 +23,7 @@ function generate(){
                 "grade_level_id" : $('#grade_level').val(),
                 "subject_id" : $('#subject').val(),
                 "assessment_type_id" : $('#assessment_type').val(),
+                "assessment_date" : $('#assessment_date').val(),
                 "report_type_id" : $('#report_type').val(),
                 "track_id" : $('#track').val(),
                 "strand_id" : $('#strand').val(),
@@ -50,7 +51,7 @@ function generate(){
 
 function generateLevelofCompetencies(data){
 
-    $('#dt_least_learned').dataTable().fnDestroy();
+    $('#dt_least_learned').DataTable().destroy();
     $('.div_LC').fadeIn();
     var html = "";    
     $.each(data, function(key, item) {
@@ -64,9 +65,6 @@ function generateLevelofCompetencies(data){
     // redeclare datatable
     $('#dt_least_learned_tbody').html(html);
     $('#dt_least_learned').dataTable({
-        'language':{
-            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-        },
         'pageLength' : 5,
         'scrollX': true
     });
@@ -77,7 +75,7 @@ function generateAchievementLevel(data){
     var html = "";
     var references = ["total","M","CAM","MTM","AVR","L","VL","ANM"];
 
-    $('#dt_achievement_level').dataTable().fnDestroy();
+    $('#dt_achievement_level').DataTable().destroy();
     $('.div_AC').fadeIn();
 
     $.each(data.data, function(name, achievements) {
@@ -100,9 +98,6 @@ function generateAchievementLevel(data){
     $('#header_achievement_level').html(data.header)
     $('#dt_achievement_level_tbody').html(html)
     $('#dt_achievement_level').dataTable({
-        'language':{
-            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-        },
         'pageLength' : 5,
         'scrollX': true
     });
@@ -158,16 +153,16 @@ function generateScoreAnalysis(data){
     $('#header_score_analysis').html(data.header);
     $('#row_total').html(html_total);
     $('#dt_score_analysis_tbody').html(html);
-    let table = $('#dt_score_analysis').DataTable().destroy();
-    table.rows().remove();
+
+    // The tbody has just been rewritten by hand, so the running table has to go
+    // before it can be initialised again. `destroy()` hands back the API of the
+    // table it removed: calling rows()/draw() on that one draws a detached
+    // table, so the reference is simply not kept.
+    $('#dt_score_analysis').DataTable().destroy();
     $('#dt_score_analysis').DataTable({
-        'language':{
-            'zeroRecords': '<span class="badge text-white bg-danger">No Records Found</span>',
-        },
         'pageLength' : 5,
         'scrollX': true
     });
-    table.draw();
 }
 
 function validateFields(){
@@ -178,6 +173,7 @@ function validateFields(){
     var grade_level_id     = $('#grade_level').val();
     var subject_id         = $('#subject').val();
     var assessment_type_id = $('#assessment_type').val();
+    var assessment_date     = $('#assessment_date').val();
     var report_type_id     = $('#report_type').val();
     var track_id           = $('#track').val();
     var strand_id          = $('#strand').val();
@@ -207,6 +203,9 @@ function validateFields(){
     }
     if(assessment_type_id == null){
         errors.push("Assessment Type cannot be null.");
+    }
+    if(!assessment_date){
+        errors.push("Date of Assessment cannot be null.");
     }
     if(report_type_id == null){
         errors.push("Report Type cannot be null.");

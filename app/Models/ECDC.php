@@ -20,6 +20,56 @@ class ECDC extends Model
 
     protected $table = 'tbl_ecdcs';
 
+    /**
+     * The assessment period as the ECDC module stores it. The mobile app
+     * labels the periods (BOSY, MOSY, EOSY) while the module and its reports
+     * keep the numeric values of the constants above.
+     */
+    public static function normalizePeriod(mixed $period): ?string
+    {
+        $label = strtoupper(trim((string) $period));
+
+        return match ($label) {
+            'BOSY', (string) self::BOSY => (string) self::BOSY,
+            'MOSY', (string) self::MOSY => (string) self::MOSY,
+            'EOSY', (string) self::EOSY => (string) self::EOSY,
+            default => null,
+        };
+    }
+
+    /**
+     * The label the mobile app and the printed forms use for a stored period.
+     */
+    public static function periodLabel(mixed $period): ?string
+    {
+        return match (self::normalizePeriod($period)) {
+            (string) self::BOSY => 'BOSY',
+            (string) self::MOSY => 'MOSY',
+            (string) self::EOSY => 'EOSY',
+            default => null,
+        };
+    }
+
+    /**
+     * The AdminLTE palette used to colour the domain bands in the ECDC forms
+     * and printed reports. The palette repeats, so the module keeps working
+     * once more domains exist than the palette has colours.
+     */
+    public static function domainColor(int $index): string
+    {
+        $colors = [
+            'red',
+            'orange',
+            'yellow',
+            'green',
+            'primary',
+            'info',
+            'purple',
+        ];
+
+        return $colors[$index % count($colors)];
+    }
+
     public static function saveResults($ecdc_id)
     {
 
@@ -29,18 +79,36 @@ class ECDC extends Model
         $data = [];
         foreach ($students as $key => $student) {
 
-            $students_ecdcs = StudentECDC::where('ecdc_id', $ecdc_id)
-                ->join('tbl_ecdc_competencies', 'tbl_student_ecdcs.ecdc_competency_id', 'tbl_ecdc_competencies.id')
+            $students_ecdcs = StudentECDC::select(
+                'tbl_student_ecdcs.id as student_ecdc_id',
+                'tbl_student_ecdcs.ecdc_competency_id',
+                'tbl_student_ecdcs.date_of_assessment',
+                'tbl_student_ecdcs.score',
+                'tbl_student_ecdcs.present_type',
+                'tbl_ecdc_competencies.competency',
+                'tbl_ecdc_competencies.domain_id'
+            )->join('tbl_ecdc_competencies', 'tbl_student_ecdcs.ecdc_competency_id', 'tbl_ecdc_competencies.id')
+                ->where('ecdc_id', $ecdc_id)
                 ->where('student_id', $student->student_id)
                 ->get();
 
             if ($students_ecdcs->count() > 0) {
                 foreach ($students_ecdcs as $key => $students_ecdc) {
+                    $status = (string) $students_ecdc->score;
+
+                    if ($status === '0') {
+                        $status = '-';
+                    }
+
                     $data[$student->student_id][$students_ecdc->ecdc_competency_id] = [
-                        'student_ecdc_id' => $students_ecdc->id,
+                        'student_ecdc_id' => $students_ecdc->student_ecdc_id,
                         'ecdc_competency_id' => $students_ecdc->ecdc_competency_id,
+                        'domain_id' => $students_ecdc->domain_id,
                         'competency' => $students_ecdc->competency,
-                        'score' => $students_ecdc->score,
+                        'date_of_assessment' => $students_ecdc->date_of_assessment,
+                        'score' => $status,
+                        'status' => $status,
+                        'present_type' => $students_ecdc->present_type,
                     ];
                 }
             }
@@ -66,7 +134,11 @@ class ECDC extends Model
                 ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
                 ->where('tbl_students.id', $student_id)
                 ->first();
-            $date = new DateTime($ecdc->date);
+            $date_tested = collect($competencies)
+                ->pluck('date_of_assessment')
+                ->filter()
+                ->first() ?? $ecdc->date;
+            $date = new DateTime($date_tested);
             $birthdate = new DateTime($student->birth_date);
             $age = $date->diff($birthdate);
             $age = $age->y.'.'.$age->m;
@@ -76,14 +148,20 @@ class ECDC extends Model
             $domains = [];
 
             foreach ($competencies as $competency_id => $points) {
-                $domain_id = ECDC::getDomain($competency_id);
+                // The domain is read from the competency itself, so adding or
+                // removing a competency cannot misattribute a recorded score.
+                $domain_id = $points['domain_id'] ?? ECDC::getDomain($competency_id);
+
+                if ($domain_id === null) {
+                    continue;
+                }
 
                 if (array_key_exists($domain_id, $domains_score)) {
                     // $domains_score[$domain_id] = $domains_score[$domain_id]+$points['score'];
 
-                    $domains_score[$domain_id] = $domains_score[$domain_id] + $points['score'];
+                    $domains_score[$domain_id] += $points['status'] === '1' ? 1 : 0;
                 } else {
-                    $domains_score[$domain_id] = $points['score'];
+                    $domains_score[$domain_id] = $points['status'] === '1' ? 1 : 0;
                 }
                 // push competency on perspective domain
 
@@ -106,7 +184,7 @@ class ECDC extends Model
                 'lrn' => $student->lrn,
                 'name' => $student->last_name.', '.$student->first_name.' '.$student->middle_name,
                 'age' => $age,
-                'date_tested' => $ecdc->date,
+                'date_tested' => $date_tested,
                 'domains' => $domains,
                 'total_scaled_score' => $total_scaled_score,
                 'standard_score' => ECDC::getStandardScore($total_scaled_score),
@@ -123,8 +201,7 @@ class ECDC extends Model
 
     public static function getJsonResult($ecdc_id)
     {
-        $path = storage_path().'\app\public\ecdc-'.$ecdc_id.'.json';
-        $results = json_decode(file_get_contents($path), true);
+        $results = json_decode(Storage::disk('public')->get('ecdc-'.$ecdc_id.'.json'), true);
 
         return $results;
     }
@@ -147,30 +224,27 @@ class ECDC extends Model
         return $interpretation;
     }
 
+    /**
+     * The domain a competency belongs to, resolved from the competency record
+     * itself. Domains and competencies are managed from the ECDC Domains
+     * module, so the identifier ranges of the original instrument can no
+     * longer be assumed.
+     */
     public static function getDomain($competency_id)
     {
-
-        $domain_id = 0;
-        if ($competency_id >= 1 && $competency_id <= 13) {
-            $domain_id = 1;
-        } elseif ($competency_id >= 14 && $competency_id <= 24) {
-            $domain_id = 2;
-        } elseif ($competency_id >= 25 && $competency_id <= 51) {
-            $domain_id = 3;
-        } elseif ($competency_id >= 52 && $competency_id <= 56) {
-            $domain_id = 4;
-        } elseif ($competency_id >= 57 && $competency_id <= 64) {
-            $domain_id = 5;
-        } elseif ($competency_id >= 65 && $competency_id <= 85) {
-            $domain_id = 6;
-        } elseif ($competency_id >= 86 && $competency_id <= 109) {
-            $domain_id = 7;
-        }
-
-        return $domain_id;
+        return ECDCCompetency::whereKey($competency_id)->value('domain_id');
 
     }
 
+    /**
+     * The scaled score for a domain total, looked up in the age appropriate
+     * reference table.
+     *
+     * A score beyond the tabulated range is clamped to the highest tabulated
+     * value, because adding competencies to a domain raises the achievable
+     * total past the published table. A domain that has no reference table
+     * contributes 0, so a newly created domain cannot break a result.
+     */
     public static function getScaledScore($score, $domain_id, $age)
     {
 
@@ -184,9 +258,23 @@ class ECDC extends Model
             $reference = ECDC::getScaledScoreAgeBracket_C();
         }
 
-        $scaled_score = $reference[$domain_id][$score];
+        $domain_reference = $reference[$domain_id] ?? null;
 
-        return $scaled_score;
+        if ($domain_reference === null || $domain_reference === []) {
+            return 0;
+        }
+
+        if (array_key_exists($score, $domain_reference)) {
+            return $domain_reference[$score];
+        }
+
+        $scores = array_keys($domain_reference);
+
+        if ($score < min($scores)) {
+            return $domain_reference[min($scores)];
+        }
+
+        return $domain_reference[max($scores)];
 
     }
 

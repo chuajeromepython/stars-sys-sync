@@ -51,7 +51,7 @@ class SubjectComponentController extends Controller
             return back()->with('success', 'New subject component has been added successfully.');
 
         } else {
-            return back()->withErrors('Subject component already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Subject component already exists!']);
         }
     }
 
@@ -81,7 +81,7 @@ class SubjectComponentController extends Controller
             return back()->with('success', 'New subject component has been added successfully.');
 
         } else {
-            return back()->withErrors('Subject component already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Subject component already exists!']);
         }
     }
 
@@ -118,7 +118,7 @@ class SubjectComponentController extends Controller
             return back()->with('success', 'Subject Component has been updated successfully.');
 
         } else {
-            return back()->withErrors('Subject Component already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Subject Component already exists!']);
         }
     }
 

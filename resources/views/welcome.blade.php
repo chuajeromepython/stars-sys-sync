@@ -159,7 +159,7 @@
                         <img src="/images/landing/scanner.png" class="img-fluid" alt="">
                         <h3>Answer Sheet Scanner</h3>
                         <p>Automated checking of answer sheets through mobile application. 
-                            <br><b><a href="https://exscanner.edu.vn/deped-ph" target="_blank">ExScanner</a></b>
+                            <br><b><a href="#" target="_blank">STARS APP</a></b>
                         </p>
                     </div>
                 </div>
@@ -377,7 +377,7 @@
         <div class="col-lg-2 col-md-6 d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="100">
             <div class="member">
                 <div class="member-img">
-                <img src="/images/landing/team1.png" class="img-fluid" alt="">
+                <img src="/images/landing/SUSAN-DL.jpg" class="img-fluid" alt="">
               
                 </div>
                 <div class="member-info">
@@ -393,7 +393,7 @@
         <div class="col-lg-2 col-md-6 d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="200">
             <div class="member">
                 <div class="member-img">
-                <img src="/images/landing/team2.png" class="img-fluid" alt="">
+                <img src="/images/landing/Punzalan.jpg" class="img-fluid" alt="">
               
                 </div>
                 <div class="member-info">
@@ -409,7 +409,7 @@
         <div class="col-lg-2 col-md-6 d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="300">
             <div class="member">
                 <div class="member-img">
-                <img src="/images/landing/team3.png" class="img-fluid" alt="">
+                <img src="/images/landing/REPIA.png" class="img-fluid" alt="">
               
                 </div>
                 <div class="member-info">
@@ -637,14 +637,11 @@
             <ul>
                 <li><i class="bi bi-chevron-right"></i> <a href="https://depedlaguna.com.ph">DepEd Laguna</a></li>
                 <li><i class="bi bi-chevron-right"></i> <a href="https://laguna.gov.ph">Provincial Government of Laguna</a></li>
-                <li><i class="bi bi-chevron-right"></i> <a href="https://exscanner.edu.vn/deped-ph/">ExScanner</a></li>
+                <li><i class="bi bi-chevron-right"></i> <a href="#">STARS APP</a></li>
             </ul>
         </div>
         <div class="col-lg-3 col-3 footer-links">
-            <center>
-                
-            <img src="/images/una.png" style="height:200px">
-            </center>
+            
         </div>
         <div class="col-lg-3 col-3 footer-links">
             <img src="/images/matatag.png" style="width:100%">

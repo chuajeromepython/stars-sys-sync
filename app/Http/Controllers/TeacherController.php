@@ -7,11 +7,13 @@ use App\Models\CustomFunction;
 use App\Models\DivisionAdministrator;
 use App\Models\Person;
 use App\Models\School;
-use App\Models\SchoolSupervisor;
 use App\Models\Teacher;
 use App\Models\TeacherClass;
 use App\Models\User;
+use App\Services\DataTable\DataTablePaginator;
+use App\Support\UserHierarchy;
 use Auth;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,8 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class TeacherController extends Controller
 {
+    public function __construct(private UserHierarchy $userHierarchy) {}
+
     /**
      * Display a listing of the resource.
      *
@@ -32,20 +36,81 @@ class TeacherController extends Controller
             'crumb' => ['Teacher' => '/teachers'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
-        $teachers = User::select(
-            'tbl_teachers.id', 'username', 'user_id',
-            'first_name', 'middle_name', 'last_name', 'suffix'
+        $hierarchy = $this->userHierarchy->forUser(Auth::user());
+        $districts = DB::table('tbl_districts')
+            ->when($hierarchy['division_id'] && $hierarchy['scope'] !== 'system', fn ($query) => $query->where('division_id', $hierarchy['division_id']))
+            ->when($hierarchy['district_id'], fn ($query) => $query->where('id', $hierarchy['district_id']))
+            ->when($hierarchy['scope'] === 'none', fn ($query) => $query->whereRaw('1 = 0'))
+            ->orderBy('name')->get(['id', 'name']);
+        $schools = School::query()
+            ->when($hierarchy['division_id'] && $hierarchy['scope'] !== 'system', fn ($query) => $query->whereIn('district_id', $districts->pluck('id')))
+            ->when($hierarchy['district_id'], fn ($query) => $query->where('district_id', $hierarchy['district_id']))
+            ->when($hierarchy['school_id'], fn ($query) => $query->whereKey($hierarchy['school_id']))
+            ->when($hierarchy['scope'] === 'none', fn ($query) => $query->whereRaw('1 = 0'))
+            ->orderBy('name')->get(['id', 'name', 'district_id']);
+
+        return view('teachers.index', [
+            'page' => $page,
+            'hierarchy' => $hierarchy,
+            'districts' => $districts,
+            'schools' => $schools,
+        ]);
+    }
+
+    /**
+     * Server-side processed teacher records for the teacher listing table.
+     */
+    public function data(Request $request, DataTablePaginator $paginator): JsonResponse
+    {
+        $hierarchy = $this->userHierarchy->forUser($request->user());
+        $canManageTeachers = $request->user()->can('teachers.manage');
+
+        $query = User::select(
+            'tbl_teachers.id as id', 'username', 'user_id',
+            'tbl_persons.first_name', 'tbl_persons.middle_name', 'tbl_persons.last_name', 'tbl_persons.suffix'
         )->join('tbl_teachers', 'tbl_teachers.user_id', 'tbl_users.id')
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
             ->where('classification', 'Teacher')
-            ->where('school_id', $school_id)
-            ->get();
+            ->join('tbl_schools', 'tbl_teachers.school_id', '=', 'tbl_schools.id');
 
-        return view('teachers.index', compact(
-            'page',
-            'teachers',
-        ));
+        match ($hierarchy['scope']) {
+            'teacher' => $query->where('tbl_teachers.id', $hierarchy['teacher_id']),
+            'school' => $query->where('tbl_teachers.school_id', $hierarchy['school_id']),
+            'district' => $query->where('tbl_schools.district_id', $hierarchy['district_id']),
+            'division' => $query->whereIn('tbl_schools.district_id', DB::table('tbl_districts')->where('division_id', $hierarchy['division_id'])->select('id')),
+            'none' => $query->whereRaw('1 = 0'),
+            default => null,
+        };
+
+        if ($request->integer('district_id') > 0) {
+            $query->where('tbl_schools.district_id', $request->integer('district_id'));
+        }
+        if ($request->integer('school_id') > 0) {
+            $query->where('tbl_teachers.school_id', $request->integer('school_id'));
+        }
+
+        $columns = [
+            [
+                'data' => 'username',
+                'column' => 'username',
+                'render' => fn ($row, $value) => e($value),
+            ],
+            [
+                'data' => 'name',
+                'column' => 'tbl_persons.last_name',
+                'render' => fn ($row, $value) => e(trim($row->first_name.' '.$row->middle_name.' '.$row->last_name.' '.$row->suffix)),
+            ],
+            [
+                'data' => 'action',
+                'orderable' => false,
+                'searchable' => false,
+                'render' => fn ($row) => $canManageTeachers
+                    ? '<a href="/teachers/'.(int) $row->id.'/edit" class="btn btn-primary btn-sm"><i class="fa fa-pen"></i></a>'
+                    : '',
+            ],
+        ];
+
+        return response()->json($paginator->paginate($query, $request, $columns));
     }
 
     /**
@@ -61,7 +126,7 @@ class TeacherController extends Controller
             'crumb' => ['Teacher' => '/teachers', 'Add Teacher' => '/teachers/create'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
 
         $school = School::find($school_id);
 
@@ -127,11 +192,11 @@ class TeacherController extends Controller
             if ($result === true) {
                 return back()->with('success', 'New teacher has been added successfully.');
             } else {
-                return back()->withErrors($result);
+                return redirect()->to(url()->previous())->withErrors(['error' => $result]);
             }
 
         } else {
-            return back()->withErrors('Username is already taken.')->withInput($request->all);
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Username is already taken.'])->withInput($request->all);
         }
     }
 
@@ -159,7 +224,7 @@ class TeacherController extends Controller
         ];
 
         if (Auth::user()->classification == 'School Head') {
-            $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+            $school_id = CustomFunction::resolveSchoolIdForUser();
             $schools = School::where('id', $school_id)->get();
         } elseif (Auth::user()->classification == 'Division Administrator') {
             $division_id = DivisionAdministrator::find(Auth::user()->id)->value('division_id');
@@ -223,7 +288,7 @@ class TeacherController extends Controller
         if ($result === true) {
             return back()->with('success', 'Teacher has been updated successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 
@@ -240,7 +305,7 @@ class TeacherController extends Controller
         $has_record = TeacherClass::where('teacher_id', $teacher->id)->get();
 
         if ($has_record->count() > 0) {
-            return back()->withErrors('Teacher "'.$user->username.'" has Class Record.');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Teacher "'.$user->username.'" has Class Record.']);
         } else {
             $user->delete();
         }
@@ -260,8 +325,8 @@ class TeacherController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file'));
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
-        $sheet = $spreadsheet->getActiveSheet()->toArray();
+        $school_id = CustomFunction::resolveSchoolIdForUser();
+        $sheet = $spreadsheet->getSheetByName('ENCODE here')->toArray();
         $data = [];
         $errors = [];
         $error_messages = [];
@@ -330,7 +395,7 @@ class TeacherController extends Controller
                     }
                 }
 
-                return back()->withErrors($error_messages);
+                return redirect()->to(url()->previous())->withErrors(['error' => $error_messages]);
             }
 
             DB::commit();
@@ -344,7 +409,7 @@ class TeacherController extends Controller
         if ($result === true) {
             return redirect('/teachers')->with('success', 'Teacher Uploader has been uploaded successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
 
     }

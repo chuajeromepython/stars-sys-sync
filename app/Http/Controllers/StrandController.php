@@ -74,7 +74,7 @@ class StrandController extends Controller
 
             return redirect('/strands')->with('success', 'New strand has been added successfully.');
         } else {
-            return back()->withErrors('Strand already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Strand already exists!']);
         }
     }
 
@@ -122,7 +122,7 @@ class StrandController extends Controller
 
             return redirect('/strands')->with('success', 'Strand has been updated successfully.');
         } else {
-            return back()->withErrors('Strand already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Strand already exists!']);
         }
     }
 
@@ -146,7 +146,7 @@ class StrandController extends Controller
                 ? $courses->count().' active Course found.'
                 : $courses->count().' active Courses found.';
 
-            return back()->withErrors($errors);
+            return redirect()->to(url()->previous())->withErrors(['error' => $errors]);
         }
 
     }

@@ -16,15 +16,43 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
+                    @can('teachers.manage')
                     <a href="/teachers/create" class="btn btn-primary" ><i class="fa fa-plus mr-2"></i> Add Teacher</a>
+                    @endcan
+                    @can('teachers.upload')
                     <a href="#" class="btn btn-info" 
                         data-toggle="modal" 
                         data-target="#upload_modal_teachers">
                         <i class="fa fa-upload mr-2"></i> 
                         Upload Teacher
                     </a>
+                    @endcan
                 </div>
                 <div class="card-body" >
+                    @if (in_array($hierarchy['scope'], ['system', 'division', 'district']))
+                        <div class="row mb-3">
+                            @if (in_array($hierarchy['scope'], ['system', 'division']))
+                                <div class="col-md-4">
+                                    <label for="teacher-district">District</label>
+                                    <select class="form-control" id="teacher-district" name="district_id">
+                                        <option value="">All districts</option>
+                                        @foreach ($districts as $district)
+                                            <option value="{{ $district->id }}">{{ $district->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+                            <div class="col-md-4">
+                                <label for="teacher-school">School</label>
+                                <select class="form-control" id="teacher-school" name="school_id">
+                                    <option value="">All schools</option>
+                                    @foreach ($schools as $school)
+                                        <option value="{{ $school->id }}" data-district="{{ $school->district_id }}">{{ $school->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    @endif
                     <table class="table table-bordered mb-3" id="dt_teachers">
                         <thead>
                             <tr>
@@ -33,29 +61,7 @@
                                 <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach($teachers as $teacher)
-                                <tr>
-                                    <td>{{$teacher->username}}</td>
-                                    <td>
-                                        {{$teacher->first_name}}
-                                        {{$teacher->middle_name}}
-                                        {{$teacher->last_name}}
-                                        {{$teacher->suffix}}
-                                    </td>
-                                    <th>
-                                        <center>
-                                        <a href="/teachers/{{$teacher->id}}/edit" class="btn-primary btn-sm btn"><i class="fa fa-pen"></i></a>
-                                        {{-- <a href="#" class="btn-danger btn-sm btn btn-destroy"
-                                        data-toggle="modal" data-target="#destroy_modal"
-                                        data-destroy_id="{{$teacher->user_id}}" 
-                                        data-destroy_username="{{$teacher->username}}">
-                                        <i class="fa fa-trash"></i></a> --}}
-                                       </center>
-                                    </th>
-                                </tr>
-                            @endforeach
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>

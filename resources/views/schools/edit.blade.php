@@ -58,7 +58,7 @@
                         <select class="select2bs4 form-control" name="division_id" id="division">
                             @foreach($divisions as $division)
                                 <option value="{{$division->id}}"
-                                    {{ ($current_division->id == $division->id) ? 'selected' : '' }}>
+                                    {{ ($currentDivision->id == $division->id) ? 'selected' : '' }}>
                                     {{$division->name}}</option>
                             @endforeach
                         </select>
@@ -75,9 +75,12 @@
                     <div class="col-md-3 mb-2">
                         <label class="text-muted">Category</label>
                         <select class="select2bs4 form-control" name="category_id">
-                            <option value="1" {{ ($school->school_category_id == 1) ? 'selected' : '' }}>
-                                Public</option>
-                            <option value="2" {{ ($school->school_category_id == 2) ? 'selected' : '' }}>Private</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}"
+                                    {{ ($school->school_category_id == $category->id) ? 'selected' : '' }}>
+                                    {{ $category->category }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="col-md-3 mb-2">
@@ -117,6 +120,5 @@
         </div>
     </form>
 @endsection
-
 
 

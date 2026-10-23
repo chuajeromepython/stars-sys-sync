@@ -11,7 +11,6 @@ use App\Models\CustomFunction;
 use App\Models\GradeLevel;
 use App\Models\Person;
 use App\Models\School;
-use App\Models\SchoolSupervisor;
 use App\Models\Section;
 use App\Models\Semester;
 use App\Models\Strand;
@@ -19,8 +18,11 @@ use App\Models\Student;
 use App\Models\StudentClassroom;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\DataTable\DataTablePaginator;
+use App\Support\UserHierarchy;
 use Auth;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +30,8 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class StudentController extends Controller
 {
+    public function __construct(private UserHierarchy $userHierarchy) {}
+
     /**
      * Display a listing of the resource.
      *
@@ -41,8 +45,49 @@ class StudentController extends Controller
             'crumb' => ['Student' => '/students'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
-        $students = Student::select(
+        $hierarchy = $this->userHierarchy->forUser(Auth::user());
+        $academicYears = AcademicYear::orderByDesc('from')->get();
+        $selectedAcademicYearId = (int) (request('academic_year_id') ?: AcademicYear::active()?->id);
+        $districts = DB::table('tbl_districts')
+            ->when($hierarchy['division_id'] && $hierarchy['scope'] !== 'system', fn ($query) => $query->where('division_id', $hierarchy['division_id']))
+            ->when($hierarchy['district_id'], fn ($query) => $query->where('id', $hierarchy['district_id']))
+            ->when($hierarchy['scope'] === 'none', fn ($query) => $query->whereRaw('1 = 0'))
+            ->orderBy('name')->get(['id', 'name']);
+        $schools = School::query()
+            ->when($hierarchy['division_id'] && $hierarchy['scope'] !== 'system', fn ($query) => $query->whereIn('district_id', $districts->pluck('id')))
+            ->when($hierarchy['district_id'], fn ($query) => $query->where('district_id', $hierarchy['district_id']))
+            ->when($hierarchy['school_id'], fn ($query) => $query->whereKey($hierarchy['school_id']))
+            ->when($hierarchy['scope'] === 'none', fn ($query) => $query->whereRaw('1 = 0'))
+            ->orderBy('name')->get(['id', 'name', 'district_id']);
+        $teachers = Teacher::query()
+            ->join('tbl_users', 'tbl_teachers.user_id', '=', 'tbl_users.id')
+            ->join('tbl_persons', 'tbl_users.person_id', '=', 'tbl_persons.id')
+            ->whereIn('tbl_teachers.school_id', $schools->pluck('id'))
+            ->when($hierarchy['teacher_id'], fn ($query) => $query->where('tbl_teachers.id', $hierarchy['teacher_id']))
+            ->orderBy('tbl_persons.last_name')
+            ->get(['tbl_teachers.id', 'tbl_teachers.school_id', 'tbl_persons.first_name', 'tbl_persons.last_name']);
+
+        return view('students.index', [
+            'page' => $page,
+            'academicYears' => $academicYears,
+            'selectedAcademicYearId' => $selectedAcademicYearId,
+            'hierarchy' => $hierarchy,
+            'districts' => $districts,
+            'schools' => $schools,
+            'teachers' => $teachers,
+        ]);
+    }
+
+    /**
+     * Server-side processed student records for the student listing table.
+     */
+    public function data(Request $request, DataTablePaginator $paginator): JsonResponse
+    {
+        $hierarchy = $this->userHierarchy->forUser($request->user());
+        $academicYearId = $request->integer('academic_year_id') ?: AcademicYear::active()?->id;
+        $canManageStudents = $request->user()->can('students.manage');
+
+        $query = Student::select(
             'tbl_students.id as id', 'lrn',
             'tbl_persons.first_name',
             'tbl_persons.middle_name',
@@ -52,13 +97,72 @@ class StudentController extends Controller
         )
             ->join('tbl_users', 'tbl_students.user_id', 'tbl_users.id')
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
-            ->where('school_id', $school_id)
-            ->get();
+            ->whereExists(function ($classrooms) use ($academicYearId, $hierarchy, $request) {
+                $classrooms->selectRaw('1')
+                    ->from('tbl_student_classrooms')
+                    ->join('tbl_classrooms', 'tbl_student_classrooms.classroom_id', '=', 'tbl_classrooms.id')
+                    ->join('tbl_schools', 'tbl_classrooms.school_id', '=', 'tbl_schools.id')
+                    ->leftJoin('tbl_districts', 'tbl_schools.district_id', '=', 'tbl_districts.id')
+                    ->whereColumn('tbl_student_classrooms.student_id', 'tbl_students.id')
+                    ->whereNull('tbl_student_classrooms.deleted_at')
+                    ->whereNull('tbl_classrooms.deleted_at')
+                    ->where('tbl_classrooms.academic_year_id', $academicYearId);
 
-        return view('students.index', compact(
-            'page',
-            'students',
-        ));
+                match ($hierarchy['scope']) {
+                    'teacher' => $classrooms->whereExists(function ($classes) use ($hierarchy) {
+                        $classes->selectRaw('1')->from('tbl_teacher_classes')
+                            ->whereColumn('tbl_teacher_classes.classroom_id', 'tbl_classrooms.id')
+                            ->where('tbl_teacher_classes.teacher_id', $hierarchy['teacher_id']);
+                    }),
+                    'school' => $classrooms->where('tbl_classrooms.school_id', $hierarchy['school_id']),
+                    'district' => $classrooms->where('tbl_schools.district_id', $hierarchy['district_id']),
+                    'division' => $classrooms->where('tbl_districts.division_id', $hierarchy['division_id']),
+                    'none' => $classrooms->whereRaw('1 = 0'),
+                    default => null,
+                };
+
+                if ($request->integer('district_id') > 0) {
+                    $classrooms->where('tbl_schools.district_id', $request->integer('district_id'));
+                }
+                if ($request->integer('school_id') > 0) {
+                    $classrooms->where('tbl_classrooms.school_id', $request->integer('school_id'));
+                }
+                if ($request->integer('teacher_id') > 0) {
+                    $classrooms->whereExists(function ($classes) use ($request) {
+                        $classes->selectRaw('1')->from('tbl_teacher_classes')
+                            ->whereColumn('tbl_teacher_classes.classroom_id', 'tbl_classrooms.id')
+                            ->where('tbl_teacher_classes.teacher_id', $request->integer('teacher_id'));
+                    });
+                }
+            });
+
+        $columns = [
+            [
+                'data' => 'lrn',
+                'column' => 'lrn',
+                'render' => fn ($row, $value) => e($value),
+            ],
+            [
+                'data' => 'name',
+                'column' => 'tbl_persons.last_name',
+                'render' => fn ($row, $value) => e(trim($row->last_name.', '.$row->first_name.' '.$row->middle_name.' '.$row->suffix)),
+            ],
+            [
+                'data' => 'gender',
+                'column' => 'tbl_persons.gender',
+                'render' => fn ($row, $value) => e($value),
+            ],
+            [
+                'data' => 'action',
+                'orderable' => false,
+                'searchable' => false,
+                'render' => fn ($row) => $canManageStudents
+                    ? '<a href="/students/'.(int) $row->id.'/edit" class="btn btn-primary btn-sm"><i class="fa fa-pen"></i></a>'
+                    : '',
+            ],
+        ];
+
+        return response()->json($paginator->paginate($query, $request, $columns));
     }
 
     /**
@@ -74,7 +178,7 @@ class StudentController extends Controller
             'crumb' => ['Student' => '/students'],
         ];
 
-        $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+        $school_id = CustomFunction::resolveSchoolIdForUser();
         $school = School::find($school_id);
 
         return view('students.create', compact(
@@ -99,11 +203,11 @@ class StudentController extends Controller
                 'gender' => 'required',
             ]);
 
-            $school_id = SchoolSupervisor::where('user_id', Auth::user()->id)->value('school_id');
+            $school_id = CustomFunction::resolveSchoolIdForUser();
             $check_lrn = Student::where('lrn', $request->lrn)->first();
 
             if ($check_lrn) {
-                return back()->withErrors('Student already exists!');
+                return redirect()->to(url()->previous())->withErrors(['error' => 'Student already exists!']);
             } else {
 
                 $person = new Person;
@@ -141,7 +245,7 @@ class StudentController extends Controller
         if ($result === true) {
             return redirect('/students')->with('success', 'Student has been added successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 
@@ -220,7 +324,7 @@ class StudentController extends Controller
         if ($result === true) {
             return redirect('/students/'.$request->student_id.'/edit')->with('success', 'Student has been updated successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 
@@ -254,7 +358,7 @@ class StudentController extends Controller
         $teacher = Teacher::where('user_id', Auth::user()->id)->first();
 
         if (count($error) > 0) {
-            return back()->withErrors($error);
+            return redirect()->to(url()->previous())->withErrors(['error' => $error]);
         }
 
         for ($x = $cell['start']; $x <= 100; $x++) {
@@ -338,7 +442,7 @@ class StudentController extends Controller
         if ($result === true) {
             return redirect('/classrooms/'.$classroom->id)->with('success', 'SF1 has been uploaded successfully.');
         } else {
-            return back()->withErrors($result);
+            return redirect()->to(url()->previous())->withErrors(['error' => $result]);
         }
     }
 
@@ -380,7 +484,7 @@ class StudentController extends Controller
             } elseif ($sf1_2022 == 'School Year') {
                 $version = '2022';
             } else {
-                return back()->withErrors('Unknown SF1 version');
+                return redirect()->to(url()->previous())->withErrors(['error' => 'Unknown SF1 version']);
             }
 
             switch ($version) {
@@ -541,7 +645,16 @@ class StudentController extends Controller
         ];
 
         $student = Student::where('user_id', Auth::user()->id)->first();
+
+        // This screen is a student's own results page. Roles that hold the
+        // permission but are not a student have no record to read, and the null
+        // used to be dereferenced straight away.
+        abort_if($student === null, 403, 'Only a student account can view class assessments.');
+
         $academic_year = AcademicYear::active();
+
+        abort_if($academic_year === null, 404, 'No Active Academic Year. Please Contact the Division Administrator.');
+
         $assessments = ClassAssessment::select(
             'tbl_class_assessments.id as id',
             'tbl_assessments.title as assessment', 'date', 'number_of_items',
@@ -582,9 +695,19 @@ class StudentController extends Controller
         ];
 
         $student = Student::where('user_id', Auth::user()->id)->first();
+
+        abort_if($student === null, 403, 'Only a student account can view class assessments.');
+
         $assessment = Assessment::find($class_assessment->assessment_id);
+        abort_if($assessment === null, 404);
+
         $get_result = ClassAssessment::getResults($class_assessment->id);
-        $result = $get_result[$student->id];
+
+        // A result file that has not been generated yet, or that no longer
+        // carries this student, is a missing record rather than a fatal error.
+        $result = $get_result[$student->id] ?? null;
+
+        abort_if($result === null, 404, 'No result has been recorded for this assessment yet.');
 
         $questions = AssessmentKey::where('assessment_id', $assessment->id)
             ->select('code', 'item_number', 'tbl_questions.id as id', 'description')
@@ -595,7 +718,7 @@ class StudentController extends Controller
 
         foreach ($questions as $key => $question) {
 
-            $is_correct = $result['answers'][$question->item_number]['is_correct'];
+            $is_correct = $result['answers'][$question->item_number]['is_correct'] ?? 0;
             if (isset($competencies[$question->code]['total_corrects'])) {
                 $competencies[$question->code]['total_corrects'] += $is_correct;
             } else {

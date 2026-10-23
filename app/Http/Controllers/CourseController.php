@@ -71,7 +71,7 @@ class CourseController extends Controller
 
             return redirect('/courses')->with('success', 'New course has been added successfully.');
         } else {
-            return back()->withErrors('Course already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Course already exists!']);
         }
     }
 
@@ -121,7 +121,7 @@ class CourseController extends Controller
 
             return redirect('/courses')->with('success', 'Course has been updated successfully.');
         } else {
-            return back()->withErrors('Course already exists!');
+            return redirect()->to(url()->previous())->withErrors(['error' => 'Course already exists!']);
         }
     }
 

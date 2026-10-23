@@ -6,7 +6,10 @@ use App\Models\Assessment;
 use App\Models\ClassAssessment;
 use App\Models\CustomFunction;
 use App\Models\StudentScore;
+use App\Models\Teacher;
+use App\Models\TeacherClass;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 
@@ -15,16 +18,15 @@ class ClassAssessmentController extends Controller
     public function show(ClassAssessment $class_assessment, Request $request)
     {
 
-        $assessment = Assessment::find($class_assessment->assessment_id);
-        $assessment_details = CustomFunction::getAssessmentDetails($assessment->id);
+        $assessment_details = CustomFunction::getAssessmentDetails($class_assessment->assessment_id);
 
-        if ($assessment_details->type == 'Periodical') {
+        if ($assessment_details?->type == 'Term Exam') {
             if ($request->assessment_path == 'diagnostics') {
                 $key = 'Diagnostic Test';
                 $link = '/diagnostics';
             } else {
                 $key = 'Term Exam';
-                $link = '/periodicals';
+                $link = '/term-exams';
             }
         } else {
             $key = 'Summative';
@@ -41,9 +43,8 @@ class ClassAssessmentController extends Controller
         ];
 
         $assessment_keys = CustomFunction::getAssessmentKeys($class_assessment->assessment_id);
-        $result = CustomFunction::updateAssessmentResult($class_assessment->id);
         $students = StudentScore::select(
-            'student_id', 'score', 'first_name', 'last_name', 'middle_name', 'lrn'
+            'student_id', 'score', 'first_name', 'last_name', 'middle_name', 'suffix', 'lrn'
         )->join('tbl_students', 'tbl_student_scores.student_id', 'tbl_students.id')
             ->join('tbl_users', 'tbl_students.user_id', 'tbl_users.id')
             ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
@@ -55,15 +56,56 @@ class ClassAssessmentController extends Controller
         ));
     }
 
+    /**
+     * Resolve the teacher class the report belongs to.
+     *
+     * The class assessment records the owning teacher class on class_id, so it
+     * is the only reliable source. Previously the reports looked the class up
+     * by the authenticated user, which returned null for any non-teacher
+     * viewer (school head, division administrator) and blew up in the view.
+     */
+    private function resolveClassDetails(ClassAssessment $class_assessment)
+    {
+        $class = CustomFunction::getClassDetails($class_assessment->class_id)
+            ?? CustomFunction::getClassDetails(null, Auth::id());
+
+        if (! $class) {
+            abort(404, 'The class for this assessment could not be resolved.');
+        }
+
+        return $class;
+    }
+
+    private function assessmentTeacherName(ClassAssessment $class_assessment): string
+    {
+        $assessment = Assessment::find($class_assessment->assessment_id);
+        $classroomId = TeacherClass::whereKey($class_assessment->class_id)->value('classroom_id');
+        $subjectTeacherId = TeacherClass::where('classroom_id', $classroomId)
+            ->where('subject_id', $assessment?->subject_id)
+            ->value('teacher_id');
+        $teacherId = $subjectTeacherId ?? $assessment?->teacher_id;
+        $teacher = Teacher::query()
+            ->join('tbl_users', 'tbl_teachers.user_id', '=', 'tbl_users.id')
+            ->join('tbl_persons', 'tbl_users.person_id', '=', 'tbl_persons.id')
+            ->where('tbl_teachers.id', $teacherId)
+            ->first(['tbl_persons.first_name', 'tbl_persons.middle_name', 'tbl_persons.last_name']);
+
+        $teacher ??= CustomFunction::getClassDetails($class_assessment->class_id);
+
+        return trim(implode(' ', array_filter([
+            $teacher?->first_name, $teacher?->middle_name, $teacher?->last_name,
+        ])));
+    }
+
     public function results(ClassAssessment $class_assessment)
     {
-
         $results = ClassAssessment::getResults($class_assessment->id);
         $assessment = CustomFunction::getAssessmentDetails($class_assessment->assessment_id);
-        $class = CustomFunction::getClassDetails($class_assessment->class_id);
+        $class = $this->resolveClassDetails($class_assessment);
+        $teacher = $this->assessmentTeacherName($class_assessment);
 
         return view('class_assessments.reports.result',
-            compact('results', 'assessment', 'class', 'class_assessment')
+            compact('results', 'assessment', 'class', 'class_assessment', 'teacher')
         );
     }
 
@@ -72,12 +114,12 @@ class ClassAssessmentController extends Controller
 
         $results = ClassAssessment::getScoreAnalysis($class_assessment->id);
         $assessment = CustomFunction::getAssessmentDetails($class_assessment->assessment_id);
-        $class = CustomFunction::getClassDetails($class_assessment->class_id);
+        $class = $this->resolveClassDetails($class_assessment);
+        $teacher = $this->assessmentTeacherName($class_assessment);
 
         return view('class_assessments.reports.score_analysis',
-            compact('results', 'assessment', 'class', 'class_assessment')
+            compact('results', 'assessment', 'class', 'class_assessment', 'teacher')
         );
-
     }
 
     public function item_analysis(ClassAssessment $class_assessment)
@@ -85,10 +127,11 @@ class ClassAssessmentController extends Controller
 
         $results = ClassAssessment::getItemAnalysis($class_assessment->id);
         $assessment = CustomFunction::getAssessmentDetails($class_assessment->assessment_id);
-        $class = CustomFunction::getClassDetails($class_assessment->class_id);
+        $class = $this->resolveClassDetails($class_assessment);
+        $teacher = $this->assessmentTeacherName($class_assessment);
 
         return view('class_assessments.reports.item_analysis',
-            compact('results', 'assessment', 'class', 'class_assessment')
+            compact('results', 'assessment', 'class', 'class_assessment', 'teacher')
         );
 
     }
@@ -98,10 +141,11 @@ class ClassAssessmentController extends Controller
 
         $results = ClassAssessment::getDisriminationIndex($class_assessment->id);
         $assessment = CustomFunction::getAssessmentDetails($class_assessment->assessment_id);
-        $class = CustomFunction::getClassDetails($class_assessment->class_id);
+        $class = $this->resolveClassDetails($class_assessment);
+        $teacher = $this->assessmentTeacherName($class_assessment);
 
         return view('class_assessments.reports.discrimination_index',
-            compact('results', 'assessment', 'class', 'class_assessment')
+            compact('results', 'assessment', 'class', 'class_assessment', 'teacher')
         );
 
     }
@@ -121,7 +165,7 @@ class ClassAssessmentController extends Controller
         $row = 9;
         $count = 1;
 
-        $teacher = $class->first_name.' '.$class->middle_name.' '.$class->last_name;
+        $teacher = $this->assessmentTeacherName($class_assessment);
         $sheet->setCellValue('C1', $assessment->assessment);
         $sheet->setCellValue('C2', $teacher);
         $sheet->setCellValue('C4', $assessment->level);
@@ -204,7 +248,7 @@ class ClassAssessmentController extends Controller
         $spreadsheet->getDefaultStyle()->getFont()->setSize(10);
 
         $row = 9;
-        $teacher = $class->first_name.' '.$class->middle_name.' '.$class->last_name;
+        $teacher = $this->assessmentTeacherName($class_assessment);
         $sheet->setCellValue('C1', $assessment->assessment);
         $sheet->setCellValue('C2', $teacher);
         $sheet->setCellValue('C4', $assessment->level);
@@ -281,7 +325,7 @@ class ClassAssessmentController extends Controller
         $spreadsheet->getDefaultStyle()->getFont()->setName('Bahnschrift');
         $spreadsheet->getDefaultStyle()->getFont()->setSize(10);
 
-        $teacher = $class->first_name.' '.$class->middle_name.' '.$class->last_name;
+        $teacher = $this->assessmentTeacherName($class_assessment);
         $sheet->setCellValue('C1', $assessment->assessment);
         $sheet->setCellValue('C2', $teacher);
         $sheet->setCellValue('C4', $assessment->level);
@@ -349,7 +393,7 @@ class ClassAssessmentController extends Controller
         $spreadsheet->getDefaultStyle()->getFont()->setName('Bahnschrift');
         $spreadsheet->getDefaultStyle()->getFont()->setSize(10);
 
-        $teacher = $class->first_name.' '.$class->middle_name.' '.$class->last_name;
+        $teacher = $this->assessmentTeacherName($class_assessment);
         $sheet->setCellValue('C1', $assessment->assessment);
         $sheet->setCellValue('C2', $teacher);
         $sheet->setCellValue('C4', $assessment->level);

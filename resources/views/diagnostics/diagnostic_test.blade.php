@@ -5,13 +5,13 @@
 @section('page_title', $page['title'])
 
 @section('page_script')
-    <script type="text/javascript" src="/js/periodicals.js"></script>
+    <script type="text/javascript" src="/js/term-exams.js"></script>
 @endsection
 
 @section('content')
 	@include('layouts.message')
     @include('diagnostics.upload_csv')
-    @include('periodicals.edit_answer_key')
+    @include('term_exams.edit_answer_key')
     <a href="/diagnostics" class="btn btn-danger mr-3 mb-3">
         <i class="fa fa-angle-left mr-2"></i> Back
     </a>

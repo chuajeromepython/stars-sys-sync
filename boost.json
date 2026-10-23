@@ -1,12 +1,17 @@
 {
     "agents": [
-        "cursor",
-        "kiro",
-        "copilot"
+        "codex"
     ],
-    "cloud": false,
-    "guidelines": true,
+    "cloud": true,
+    "packages": [
+        "spatie/laravel-permission"
+    ],
     "skills": [
-        "laravel-best-practices"
+        "infer-conventions",
+        "deploying-to-cloud",
+        "laravel-best-practices",
+        "testing-best-practices",
+        "tailwindcss-development",
+        "laravel-permission-development"
     ]
 }

@@ -15,12 +15,14 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <a href="/competencies/create" class="btn btn-primary"><i class="fa fa-plus mr-2"></i> Add Competencies</a>
-                    <a href="#" class="btn btn-info"
-                        data-toggle="modal" 
-                        data-target="#upload_modal_competencies">
-                        <i class="fa fa-upload mr-2"></i> Upload Competencies
-                    </a>
+                      @if(Auth::user()->classification == 'Division Administrator')
+                        <a href="/competencies/create" class="btn btn-primary"><i class="fa fa-plus mr-2"></i> Add Competencies</a>
+                        <a href="#" class="btn btn-info"
+                            data-toggle="modal" 
+                            data-target="#upload_modal_competencies">
+                            <i class="fa fa-upload mr-2"></i> Upload Competencies
+                        </a>
+                    @endif
                 </div>
                 <div class="card-body" >
                     <table class="table table-bordered mb-3" id="dt_competencies">
@@ -30,7 +32,9 @@
                                 <th>Description</th>
                                 <th style="width: 15%;">Subject</th>
                                 <th style="width: 10%;">Grade Level</th>
+                                @if(Auth::user()->classification == 'Division Administrator')
                                 <th style="width: 10%;">Action</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -40,12 +44,14 @@
                                     <td>{{$competency->description}}</td>
                                     <td>{{$competency->title}}</td>
                                     <td>{{$competency->level}}</td>
+                                    @if(Auth::user()->classification == 'Division Administrator')
                                     <th>
                                         <center>
                                          <a href="/competencies/{{$competency->id}}/edit" class="btn-primary btn-sm btn"><i class="fa fa-pen"></i></a>
                                         <a href="/subjects//destroy" class="btn-danger btn-sm btn"><i class="fa fa-trash"></i></a>
                                        </center>
                                     </th>
+                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>
