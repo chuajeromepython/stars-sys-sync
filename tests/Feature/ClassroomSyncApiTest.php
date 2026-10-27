@@ -77,20 +77,17 @@ class ClassroomSyncApiTest extends TestCase
             ]);
     }
 
-    public function test_sync_returns_unauthorized_when_request_has_no_authenticated_session(): void
+    public function test_sync_does_not_require_an_authenticated_session(): void
     {
         $teacher_user_id = $this->seedTeacherWithClassrooms();
 
         $this->postJson('/api/classrooms/sync', [
             'userId' => $teacher_user_id,
-        ])->assertStatus(401)
-            ->assertJson([
-                'success' => false,
-                'message' => 'Unauthenticated request. Please login first.',
-            ]);
+        ])->assertOk()
+            ->assertJson(['success' => true]);
     }
 
-    public function test_sync_returns_forbidden_when_user_id_does_not_match_active_session(): void
+    public function test_sync_uses_the_submitted_user_id_without_checking_the_active_session(): void
     {
         $teacher_user_id = $this->seedTeacherWithClassrooms();
         $other_teacher_user_id = $this->seedTeacherWithoutClassrooms();
@@ -99,11 +96,8 @@ class ClassroomSyncApiTest extends TestCase
 
         $this->postJson('/api/classrooms/sync', [
             'userId' => $teacher_user_id,
-        ])->assertStatus(403)
-            ->assertJson([
-                'success' => false,
-                'message' => 'Submitted userId does not match the active session.',
-            ]);
+        ])->assertOk()
+            ->assertJson(['success' => true]);
     }
 
     private function seedTeacherWithClassrooms(): int

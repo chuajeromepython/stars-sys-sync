@@ -15,12 +15,17 @@ use App\Models\StudentClassroom;
 use App\Models\StudentECDC;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\EcdcSpreadsheet;
+use App\Support\RoleDataScope;
 use Auth;
 use Carbon\Carbon;
 use DateTime;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
@@ -172,6 +177,17 @@ class ECDCController extends Controller
 
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'student_id' => ['required', 'integer', 'exists:tbl_students,id'],
+            'classroom_id' => ['required', 'integer', 'exists:tbl_classrooms,id'],
+            'period' => ['required', 'integer', Rule::in([ECDC::BOSY, ECDC::EOSY])],
+            'date' => ['required', 'date'],
+            'score' => ['nullable', 'array'],
+            'score.*' => [Rule::in(['1', '-', '*'])],
+            'present_type' => ['nullable', 'array'],
+            'present_type.*' => ['nullable', Rule::in(['P', 'O', 'R'])],
+        ]);
+
         // dd($request);
         DB::beginTransaction();
         try {
@@ -193,10 +209,10 @@ class ECDCController extends Controller
 
             $ecdc = new ECDC;
 
-            $ecdc->date = $request->date;
-            $ecdc->period = $request->period;
+            $ecdc->date = $validated['date'];
+            $ecdc->period = $validated['period'];
             $ecdc->academic_year_id = $academic_year->id;
-            $ecdc->classroom_id = $request->classroom_id;
+            $ecdc->classroom_id = $validated['classroom_id'];
             $ecdc->source = 2;
             $ecdc->teacher_id = Teacher::where('user_id', Auth::user()->id)->value('id');
             $ecdc->created_at = Carbon::now('Asia/Manila');
@@ -206,13 +222,17 @@ class ECDCController extends Controller
 
             foreach ($competencies as $key => $competency) {
 
-                $score = isset($request->score[$competency->id]) ? $request->score[$competency->id] : 0;
+                $score = $validated['score'][$competency->id] ?? '*';
+                $present_type = $score === '1'
+                    ? ($validated['present_type'][$competency->id] ?? null)
+                    : null;
 
                 $student_ecdc = new StudentECDC;
                 $student_ecdc->student_id = $request->student_id;
                 $student_ecdc->ecdc_id = $ecdc->id;
                 $student_ecdc->ecdc_competency_id = $competency->id;
                 $student_ecdc->score = $score;
+                $student_ecdc->present_type = $present_type;
                 $student_ecdc->save();
 
             }
@@ -305,11 +325,13 @@ class ECDCController extends Controller
 
     public function card(Classroom $classroom, Student $student)
     {
+        $student->loadMissing('user.person');
+        $person = $student->user?->person;
         $classroom = CustomFunction::getClassroomDetails($classroom->id);
         $page = [
             'name' => 'Assessment',
             'sub_name' => 'ECDC',
-            'title' => 'ECDC : '.$classroom->level.'-'.$classroom->section.' :'.$student->lrn,
+            'title' => 'ECDC : '.$classroom->level.'-'.$classroom->section.' : '.trim($person?->last_name.', '.$person?->first_name.' '.$person?->middle_name, ' ,'),
             'crumb' => [
                 'Assessment' => '#',
                 'ECDC' => '/ecdcs',
@@ -326,9 +348,9 @@ class ECDCController extends Controller
             'student_id' => $student->id,
         ];
 
-        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->groupBy('ecdc_id')->value('ecdc_id');
+        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
 
         $bosy_result = ($bosy_id) ? ECDC::getJsonResult($bosy_id)[$student->id] : 'No Record';
         $mosy_result = ($mosy_id) ? ECDC::getJsonResult($mosy_id)[$student->id] : 'No Record';
@@ -346,15 +368,20 @@ class ECDCController extends Controller
         foreach ($domains as $key => $domain) {
             $domain_competencies[$domain->id] = [
                 'domain' => $domain->domain,
+                'color' => ECDC::domainColor($key),
                 'competencies' => ECDCCompetency::where('domain_id', $domain->id)->get(),
             ];
         }
-        $periods = ['bosy', 'mosy', 'eosy'];
+        $periods = ['bosy', 'eosy'];
+        $assessment_periods = [
+            'bosy' => '1st Assessment',
+            'mosy' => '2nd Assessment',
+        ];
 
         return view('ecdc.card', compact(
             'page', 'student', 'classroom',
             'results', 'domains', 'domain_competencies',
-            'periods'
+            'periods', 'assessment_periods'
         ));
     }
 
@@ -369,9 +396,9 @@ class ECDCController extends Controller
             'student_id' => $student->id,
         ];
 
-        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->groupBy('ecdc_id')->value('ecdc_id');
+        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
 
         $bosy_result = ($bosy_id) ? ECDC::getJsonResult($bosy_id)[$student->id] : 'No Record';
         $mosy_result = ($mosy_id) ? ECDC::getJsonResult($mosy_id)[$student->id] : 'No Record';
@@ -389,12 +416,13 @@ class ECDCController extends Controller
         foreach ($domains as $key => $domain) {
             $domain_competencies[$domain->id] = [
                 'domain' => $domain->domain,
+                'color' => ECDC::domainColor($key),
                 'competencies' => ECDCCompetency::where('domain_id', $domain->id)->get(),
             ];
         }
         // dd($results);
 
-        $periods = ['bosy', 'mosy', 'eosy'];
+        $periods = ['bosy', 'eosy'];
 
         $classroom = CustomFunction::getClassroomDetails($classroom->id);
 
@@ -592,21 +620,42 @@ class ECDCController extends Controller
 
     }
 
-    public function download_classroom_report(Classroom $classroom): StreamedResponse
+    public function download_classroom_report(Classroom $classroom, ?int $period = null): StreamedResponse
     {
+        $period ??= ECDC::EOSY;
+        abort_unless(in_array($period, [ECDC::BOSY, ECDC::EOSY], true), 404);
+
         $academicYear = AcademicYear::active();
         abort_if($academicYear === null, 404, 'No active academic year was found.');
 
+        $classroom->loadMissing('advisoryTeacherClass.teacher.user.person');
+        $adviser = $classroom->advisoryTeacherClass?->teacher?->user?->person;
         $classroomDetails = CustomFunction::getClassroomDetails($classroom->id);
         $schoolDetails = DB::table('tbl_schools')
             ->leftJoin('tbl_districts', 'tbl_schools.district_id', 'tbl_districts.id')
             ->leftJoin('tbl_divisions', 'tbl_districts.division_id', 'tbl_divisions.id')
             ->where('tbl_schools.id', $classroom->school_id)
             ->select(
-                'tbl_schools.code', 'tbl_schools.name',
+                'tbl_schools.code', 'tbl_schools.name', 'tbl_schools.district_id',
+                'tbl_districts.division_id',
                 'tbl_districts.name as district', 'tbl_divisions.name as division'
             )
             ->first();
+        $schoolHeadName = $this->getAssignedStaffName(
+            'tbl_school_supervisors',
+            'school_id',
+            (int) $classroom->school_id
+        );
+        $districtSupervisorName = $this->getAssignedStaffName(
+            'tbl_district_supervisors',
+            'district_id',
+            (int) $schoolDetails->district_id
+        );
+        $divisionSupervisorName = $this->getAssignedStaffName(
+            'tbl_division_supervisors',
+            'division_id',
+            (int) $schoolDetails->division_id
+        );
 
         $students = StudentClassroom::query()
             ->select(
@@ -636,6 +685,8 @@ class ECDCController extends Controller
         $femaleRows = $this->getRosterRows($sheet, 59, 89);
         $maleStudents = [];
         $femaleStudents = [];
+        $periodResultsByEcdcId = [];
+        $refreshedEcdcIds = [];
 
         foreach ($students as $student) {
             $filter = [
@@ -644,17 +695,29 @@ class ECDCController extends Controller
                 'student_id' => $student->student_id,
             ];
             $ecdcId = StudentECDC::getECD($filter)
-                ->where('period', ECDC::EOSY)
-                ->groupBy('ecdc_id')
+                ->where('period', $period)
+                ->select('tbl_student_ecdcs.ecdc_id')
+                ->distinct()
                 ->value('ecdc_id');
 
             $result = null;
             if ($ecdcId) {
-                $cachePath = 'ecdc-'.$ecdcId.'.json';
-                $periodResults = Storage::disk('public')->exists($cachePath)
-                    ? ECDC::getJsonResult($ecdcId)
-                    : ECDC::getResults($ecdcId);
-                $result = $periodResults[$student->student_id] ?? null;
+                if (! array_key_exists($ecdcId, $periodResultsByEcdcId)) {
+                    $cachePath = 'ecdc-'.$ecdcId.'.json';
+                    $periodResultsByEcdcId[$ecdcId] = Storage::disk('public')->exists($cachePath)
+                        ? ECDC::getJsonResult($ecdcId)
+                        : ECDC::getResults($ecdcId);
+                }
+
+                $periodResults = $periodResultsByEcdcId[$ecdcId];
+                $result = is_array($periodResults) ? ($periodResults[$student->student_id] ?? null) : null;
+
+                if ((! is_array($result) || ! is_numeric($result['standard_score'] ?? null))
+                    && ! isset($refreshedEcdcIds[$ecdcId])) {
+                    $refreshedEcdcIds[$ecdcId] = true;
+                    $periodResultsByEcdcId[$ecdcId] = ECDC::getResults($ecdcId);
+                    $result = $periodResultsByEcdcId[$ecdcId][$student->student_id] ?? null;
+                }
             }
 
             $entry = [
@@ -672,12 +735,21 @@ class ECDCController extends Controller
         abort_if(count($femaleStudents) > count($femaleRows), 422, 'The SF5-K template has no remaining female learner rows.');
 
         $sheet->setCellValue('D4', $schoolDetails->name ?? $classroomDetails->name);
-        $sheet->setCellValue('G4', $schoolDetails->district ?? '');
-        $sheet->setCellValue('J4', $schoolDetails->division ?? '');
-        $sheet->setCellValue('S4', 'Region IV – A CALABARZON');
+        $sheet->setCellValue('H4', $schoolDetails->district ?? '');
+        $sheet->setCellValue('K4', $schoolDetails->division ?? '');
+        $sheet->setCellValue('T4', 'Region IV – A CALABARZON');
         $sheet->setCellValueExplicit('D6', (string) ($schoolDetails->code ?? ''), DataType::TYPE_STRING);
         $sheet->setCellValue('G6', $classroomDetails->section);
         $sheet->setCellValue('L6', $academicYear->from.'-'.$academicYear->to);
+        $sheet->setCellValue(
+            'N63',
+            $adviser === null
+                ? null
+                : mb_strtoupper(trim($adviser->last_name.', '.$adviser->first_name.' '.$adviser->middle_name))
+        );
+        $sheet->setCellValue('N69', $schoolHeadName);
+        $sheet->setCellValue('N73', $districtSupervisorName);
+        $sheet->setCellValue('N77', $divisionSupervisorName);
 
         $summary = [
             'ready' => ['M' => 0, 'F' => 0],
@@ -687,6 +759,7 @@ class ECDCController extends Controller
             'average' => ['M' => 0, 'F' => 0],
             'slight_delay' => ['M' => 0, 'F' => 0],
             'significant_delay' => ['M' => 0, 'F' => 0],
+            'achievement_total' => ['M' => 0, 'F' => 0],
         ];
 
         foreach ([['M', $maleStudents, $maleRows], ['F', $femaleStudents, $femaleRows]] as [$gender, $genderStudents, $rows]) {
@@ -699,28 +772,52 @@ class ECDCController extends Controller
                 $sheet->setCellValueExplicit('B'.$row, (string) $student->lrn, DataType::TYPE_STRING);
                 $sheet->setCellValue('C'.$row, $result['name'] ?? $name);
 
-                if ($result === null || ! isset($result['standard_score'])) {
+                if ($result === null) {
                     continue;
                 }
 
-                $score = (float) $result['standard_score'];
-                $interpretation = $result['interpretation'] ?? ECDC::getInterpretation($score);
-                $sheet->setCellValue('G'.$row, $result['standard_score']);
-                $sheet->setCellValue('H'.$row, $interpretation);
+                $score = is_numeric($result['standard_score'] ?? null) ? (float) $result['standard_score'] : null;
+                $interpretation = trim((string) ($result['interpretation'] ?? ''));
+                if ($interpretation === '' && $score !== null) {
+                    $interpretation = ECDC::getInterpretation($score);
+                }
+
+                if ($score !== null) {
+                    $sheet->setCellValue('G'.$row, $result['standard_score']);
+                }
+                if ($interpretation !== null) {
+                    $sheet->setCellValue('H'.$row, $interpretation);
+                }
+
+                $achievementCategory = match (strtolower(trim((string) $interpretation))) {
+                    'suggest highly advanced development' => 'highly_advanced',
+                    'suggest slightly advanced development' => 'slightly_advanced',
+                    'average development' => 'average',
+                    'suggest slight delay in overall development' => 'slight_delay',
+                    'suggest significant delay in overall development' => 'significant_delay',
+                    default => null,
+                };
+                if ($achievementCategory === null && $score !== null) {
+                    $achievementCategory = match (true) {
+                        $score <= 69 => 'significant_delay',
+                        $score <= 79 => 'slight_delay',
+                        $score <= 119 => 'average',
+                        $score <= 129 => 'slightly_advanced',
+                        default => 'highly_advanced',
+                    };
+                }
+                if ($achievementCategory !== null) {
+                    $summary[$achievementCategory][$gender]++;
+                    $summary['achievement_total'][$gender]++;
+                }
+
+                if ($score === null) {
+                    continue;
+                }
+
                 $sheet->setCellValue('I'.$row, $score >= 80 ? 'GRADE ONE READY' : 'NEEDS FURTHER INTERVENTION');
 
                 $summary[$score >= 80 ? 'ready' : 'intervention'][$gender]++;
-                if ($score >= 130) {
-                    $summary['highly_advanced'][$gender]++;
-                } elseif ($score >= 120) {
-                    $summary['slightly_advanced'][$gender]++;
-                } elseif ($score >= 80) {
-                    $summary['average'][$gender]++;
-                } elseif ($score >= 70) {
-                    $summary['slight_delay'][$gender]++;
-                } else {
-                    $summary['significant_delay'][$gender]++;
-                }
             }
         }
 
@@ -745,14 +842,15 @@ class ECDCController extends Controller
             $sheet->setCellValue($totalCell, $summary[$category]['M'] + $summary[$category]['F']);
         }
 
-        $sheet->setCellValue('P41', count($maleStudents));
-        $sheet->setCellValue('S41', count($femaleStudents));
+        $sheet->setCellValue('P41', $summary['achievement_total']['M']);
+        $sheet->setCellValue('S41', $summary['achievement_total']['F']);
         $sheet->setCellValue('A54', count($maleStudents));
         $sheet->setCellValue('A90', count($femaleStudents));
         $sheet->setCellValue('A91', count($students));
 
         $fileName = sprintf(
-            'ECDC SF5-K - %s - %s - %s.xlsx',
+            'ECDC %s SF5-K - %s - %s - %s.xlsx',
+            $period === ECDC::BOSY ? 'BOSY' : 'EOSY',
             $classroomDetails->level,
             $classroomDetails->section,
             $academicYear->from.'-'.$academicYear->to
@@ -783,195 +881,113 @@ class ECDCController extends Controller
         return $rows;
     }
 
-    public function download_template($classroom_id)
+    private function getAssignedStaffName(string $profileTable, string $organizationColumn, int $organizationId): ?string
     {
+        $person = DB::table($profileTable)
+            ->join('tbl_users', $profileTable.'.user_id', 'tbl_users.id')
+            ->join('tbl_persons', 'tbl_users.person_id', 'tbl_persons.id')
+            ->where($profileTable.'.'.$organizationColumn, $organizationId)
+            ->where($profileTable.'.status', 1)
+            ->whereNull($profileTable.'.deleted_at')
+            ->orderByDesc($profileTable.'.id')
+            ->first([
+                'tbl_persons.first_name',
+                'tbl_persons.middle_name',
+                'tbl_persons.last_name',
+            ]);
 
-        $students = CustomFunction::getStudentsPerClassroom($classroom_id);
-        $classroom = Classroom::find($classroom_id);
-        $section = Section::find($classroom->section_id);
-        $grade_level = GradeLevel::find($classroom->grade_level_id);
-
-        $reader = new Xlsx;
-        $spreadsheet = $reader->load(public_path('/templates/Template-ECDC-Uploader.xlsx'));
-        $sheet = $spreadsheet->getActiveSheet();
-
-        $col = 'D';
-
-        foreach ($students as $key => $student) {
-
-            $fullname = $student->last_name.', '.$student->first_name.' '.$student->middle_name;
-            $sheet->getStyle($col.'1')->getNumberFormat()->setFormatCode('0');
-            $sheet->setCellValue($col.'1', $student->lrn);
-            $sheet->setCellValue($col.'2', $fullname);
-            $col++;
-
+        if ($person === null) {
+            return null;
         }
 
-        $file_name = 'ECDC - TEMPLATE ('.$grade_level->level.'-'.$section->section.')';
-        $spreadsheet->getProperties()
-            ->setTitle('STARS: SYSTEM GENERATED REPORT')
-            ->setSubject('STARS: SYSTEM GENERATED REPORT')
-            ->setKeywords('PAYROLL') // Tags
-            ->setCategory('STARS Report')
-            ->setDescription('This is a system generated report.') // Comment
-            ->setCreator('Students Test Analysis Records System') // Author
-            ->setLastModifiedBy('Developer - Glenn Nerrie A. Afurong');
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="'.$file_name.'.xlsx"');
-        header('Cache-Control: max-age=0');
-        header('Cache-Control: max-age=1');
-        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-        header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
-        header('Cache-Control: cache, must-revalidate');
-        header('Pragma: public');
-
-        /* Download/Export as xlsx */
-        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
-        $writer->save('php://output');
-
+        return mb_strtoupper(trim($person->last_name.', '.$person->first_name.' '.$person->middle_name));
     }
 
-    public function upload(Request $request)
+    public function download_template(int $classroom_id): StreamedResponse
     {
+        $classroom = Classroom::with('section')->findOrFail($classroom_id);
+        abort_unless(app(RoleDataScope::class)->allowsSchool(Auth::user(), (int) $classroom->school_id), 404);
+        $spreadsheet = app(EcdcSpreadsheet::class)->template($classroom_id);
+        $grade = GradeLevel::find($classroom->grade_level_id);
+        $filename = 'ECDC - TEMPLATE ('.$grade?->level.'-'.$classroom->section?->section.').xlsx';
 
-        $request->validate([
-            'file' => 'required|mimes:xlsx,xls|max:10240',
-        ], [
-            'file.required' => 'Please upload a file.',
-            'file.mimes' => 'The file must be an Excel file (xlsx or xls).',
-            'file.max' => 'The file size must not exceed 10MB.',
-        ]);
-
-        $total_students = StudentClassroom::where('classroom_id', $request->classroom_id)->count();
-        $spreadsheet = IOFactory::load($request->file('file'));
-        $sheet = $spreadsheet->getSheetByName('ENCODE here')->toArray();
-        $data = [];
-        $errors = [];
-
-        $period = $spreadsheet->getSheetByName('ENCODE here')->getCell('C2')->getValue();
-        $date = $spreadsheet->getSheetByName('ENCODE here')->getCell('C3')->getValue();
-
-        if ($date == null) {
-            $errors[] = 'Date cannot be null.';
-        }
-
-        if ($period == null) {
-            $errors[] = 'Perod cannot be null.';
-        }
-
-        $col = 'D';
-        $available_competencies = ECDCCompetency::pluck('id');
-
-        for ($i = 0; $i < $total_students; $i++) {
-
-            $lrn = $spreadsheet->getSheetByName('ENCODE here')->getCell($col.'1')->getValue();
-            $name = $spreadsheet->getSheetByName('ENCODE here')->getCell($col.'2')->getValue();
-
-            if ($lrn != null) {
-
-                $check_lrn = StudentClassroom::join(
-                    'tbl_students',
-                    'tbl_student_classrooms.student_id',
-                    'tbl_students.id'
-                )->where('classroom_id', $request->classroom_id)
-                    ->where('lrn', $lrn)
-                    ->get();
-
-                if ($check_lrn->count() > 0) {
-                    for ($row = 5; $row < 124; $row++) {
-
-                        $competency_id = $spreadsheet->getSheetByName('ENCODE here')->getCell('A'.$row)->getValue();
-
-                        // The template is generated from a fixed instrument, so
-                        // a stale upload may reference a competency that has
-                        // since been removed from the library.
-                        if ($competency_id != '*' && $available_competencies->contains($competency_id)) {
-
-                            $get_score = $spreadsheet->getSheetByName('ENCODE here')->getCell($col.$row)->getValue();
-                            $score = ($get_score != 1) ? 0 : 1;
-                            $data[$check_lrn[0]->student_id][$competency_id] = $score;
-                        }
-                    }
-                } else {
-                    $errors[] = $name.' does not exist on this class';
-                }
-            }
-            $col++;
-
-        }
-
-        // dd($data);
-
-        if (count($errors) == 0) {
-
-            DB::beginTransaction();
+        return response()->streamDownload(function () use ($spreadsheet): void {
             try {
+                IOFactory::createWriter($spreadsheet, 'Xlsx')->save('php://output');
+            } finally {
+                $spreadsheet->disconnectWorksheets();
+            }
+        }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+    }
 
-                $academic_year = AcademicYear::active();
-
-                $ecdc = new ECDC;
-                $ecdc->source = 1;
-                $ecdc->date = $request->date;
-                $ecdc->period = $request->period;
-                $ecdc->academic_year_id = $academic_year->id;
-                $ecdc->classroom_id = $request->classroom_id;
-                $ecdc->teacher_id = Teacher::where('user_id', Auth::user()->id)->value('id');
-                $ecdc->created_at = Carbon::now('Asia/Manila');
-
-                $ecdc->save();
-
-                $duplicates = 0;
-                foreach ($data as $student_id => $competencies) {
-
-                    $existing = StudentECDC::join(
-                        'tbl_ecdcs', 'tbl_student_ecdcs.ecdc_id', 'tbl_ecdcs.id'
-                    )->where([
-                        'student_id' => $student_id,
-                        'period' => $request->period,
-                        'academic_year_id' => $academic_year->id,
-                        'classroom_id' => $request->classroom_id,
-                    ])->count();
-
-                    if ($existing > 0) {
-                        $duplicates++;
-                    } else {
-                        foreach ($competencies as $competency_id => $score) {
-                            $student_ecdc = new StudentECDC;
-                            $student_ecdc->ecdc_id = $ecdc->id;
-                            $student_ecdc->student_id = $student_id;
-                            $student_ecdc->ecdc_competency_id = $competency_id;
-                            $student_ecdc->score = $score;
-                            $student_ecdc->save();
-                        }
-                    }
-
+    public function upload(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:10240'],
+            'classroom_id' => ['required', 'integer', 'exists:tbl_classrooms,id'],
+            'period' => ['required', 'integer', Rule::in([ECDC::BOSY, ECDC::MOSY, ECDC::EOSY])],
+            'date' => ['nullable', 'date'],
+        ]);
+        $classroom = Classroom::findOrFail($validated['classroom_id']);
+        abort_unless(app(RoleDataScope::class)->allowsSchool($request->user(), (int) $classroom->school_id), 404);
+        $year = AcademicYear::active();
+        if ($year === null || (int) $classroom->academic_year_id !== (int) $year->id) {
+            throw ValidationException::withMessages(['classroom_id' => 'Select a classroom in the active academic year.']);
+        }
+        $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        try {
+            $data = app(EcdcSpreadsheet::class)->parse($spreadsheet, (int) $classroom->id);
+        } finally {
+            $spreadsheet->disconnectWorksheets();
+        }
+        if ($data === []) {
+            return back()->with('success', 'No tested student results were found. No assessment records were created.');
+        }
+        $teacherId = Teacher::where('user_id', $request->user()->id)->value('id')
+            ?? $classroom->advisoryTeacherClass?->teacher_id;
+        if ($teacherId === null) {
+            throw ValidationException::withMessages(['classroom_id' => 'This classroom needs an assigned teacher before ECDC results can be uploaded.']);
+        }
+        [$ecdc, $duplicates] = DB::transaction(function () use ($data, $validated, $year, $classroom, $teacherId): array {
+            $existing = StudentECDC::query()->join('tbl_ecdcs', 'tbl_student_ecdcs.ecdc_id', 'tbl_ecdcs.id')
+                ->where('tbl_ecdcs.period', $validated['period'])
+                ->where('tbl_ecdcs.academic_year_id', $year->id)
+                ->where('tbl_ecdcs.classroom_id', $classroom->id)
+                ->whereIn('tbl_student_ecdcs.student_id', array_keys($data))
+                ->distinct()->pluck('tbl_student_ecdcs.student_id')->all();
+            $pending = array_diff_key($data, array_flip($existing));
+            if ($pending === []) {
+                return [null, count($existing)];
+            }
+            $ecdc = new ECDC;
+            $ecdc->source = 1;
+            $ecdc->date = $validated['date'] ?? max(array_column($pending, 'date'));
+            $ecdc->period = $validated['period'];
+            $ecdc->academic_year_id = $year->id;
+            $ecdc->classroom_id = $classroom->id;
+            $ecdc->teacher_id = $teacherId;
+            $ecdc->save();
+            foreach ($pending as $studentId => $result) {
+                $rows = [];
+                foreach ($result['responses'] as $competencyId => $response) {
+                    $rows[] = [
+                        'ecdc_id' => $ecdc->id, 'student_id' => $studentId,
+                        'ecdc_competency_id' => $competencyId,
+                        'date_of_assessment' => $result['date'],
+                        'score' => $response['score'], 'present_type' => $response['present_type'],
+                        'created_at' => now(), 'updated_at' => now(),
+                    ];
                 }
-
-                DB::commit();
-                $result = true;
-
-                // Write Result
-                ECDC::getResults($ecdc->id);
-
-            } catch (Exception $e) {
-
-                DB::rollBack();
-                $result = $e->getMessage();
-
+                StudentECDC::query()->insert($rows);
             }
 
-            if ($result === true) {
-                return back()->with('success', 'ECDC Successfully Uploaded. Total of '.$duplicates.' duplicate record(s) found.');
-            } else {
-                return redirect()->to(url()->previous())->withErrors(['error' => $result]);
-            }
-
-        } else {
-
-            return redirect()->to(url()->previous())->withErrors(['error' => $errors]);
-
+            return [$ecdc, count($existing)];
+        });
+        if ($ecdc !== null) {
+            ECDC::getResults($ecdc->id);
         }
 
+        return back()->with('success', 'ECDC Successfully Uploaded. Total of '.$duplicates.' duplicate record(s) found.');
     }
 
     public function print(Classroom $classroom, Student $student)
@@ -990,9 +1006,9 @@ class ECDCController extends Controller
             'student_id' => $student->id,
         ];
 
-        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->groupBy('ecdc_id')->value('ecdc_id');
-        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->groupBy('ecdc_id')->value('ecdc_id');
+        $bosy_id = StudentECDC::getECD($filter)->where('period', ECDC::BOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $mosy_id = StudentECDC::getECD($filter)->where('period', ECDC::MOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
+        $eosy_id = StudentECDC::getECD($filter)->where('period', ECDC::EOSY)->select('tbl_student_ecdcs.ecdc_id')->distinct()->value('ecdc_id');
 
         $bosy_result = ($bosy_id) ? ECDC::getJsonResult($bosy_id)[$student->id] : 'No Record';
         $mosy_result = ($mosy_id) ? ECDC::getJsonResult($mosy_id)[$student->id] : 'No Record';
@@ -1019,14 +1035,18 @@ class ECDCController extends Controller
         $age = $date->diff($birthdate);
         $age = $age->y.'.'.$age->m;
 
-        $periods = ['bosy', 'mosy', 'eosy'];
+        $periods = ['bosy', 'eosy'];
+        $assessment_periods = [
+            'bosy' => '1st Assessment',
+            'mosy' => '2nd Assessment',
+        ];
         // dd($user);
         $classroom = CustomFunction::getClassroomDetails($classroom->id);
 
         return view('ecdc.card_tabs.print', compact(
             'student', 'classroom',
             'results', 'domains', 'domain_competencies',
-            'periods', 'person', 'age',
+            'periods', 'assessment_periods', 'person', 'age',
             'user', 'academic_year'
         ));
 

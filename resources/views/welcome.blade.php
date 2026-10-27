@@ -38,6 +38,139 @@
 
     <!-- Template Main CSS File -->
     <link href="/vendor/FlexStart/assets/css/style.css" rel="stylesheet">
+    <style>
+        #team .row > [class*="col-"] {
+            display: flex;
+        }
+
+        #team .team-members-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+            gap: 24px;
+        }
+
+        #team .team-members-row > [class*="col-"] {
+            width: 100%;
+            max-width: none;
+            padding: 0;
+        }
+
+        #team .superintendent-profile {
+            display: grid;
+            grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.5fr);
+            align-items: stretch;
+            overflow: hidden;
+            margin-bottom: 40px;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 0 30px rgba(1, 41, 112, 0.08);
+        }
+
+        #team .superintendent-profile-image {
+            min-height: 360px;
+            background: #f3f6fb;
+        }
+
+        #team .superintendent-profile-image img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: inherit;
+            object-fit: cover;
+            object-position: center 25%;
+        }
+
+        #team .superintendent-profile-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: clamp(28px, 5vw, 64px);
+        }
+
+        #team .superintendent-profile-content h3 {
+            margin-bottom: 8px;
+            color: #012970;
+            font-size: clamp(24px, 3vw, 34px);
+            font-weight: 700;
+        }
+
+        #team .superintendent-profile-content .role {
+            margin-bottom: 24px;
+            color: #6c757d;
+            font-size: 16px;
+        }
+
+        #team .superintendent-profile-content blockquote {
+            margin: 0;
+            color: #444;
+            font-size: clamp(17px, 1.6vw, 21px);
+            line-height: 1.8;
+        }
+
+        @media (max-width: 767.98px) {
+            #team .superintendent-profile {
+                grid-template-columns: 1fr;
+            }
+
+            #team .superintendent-profile-image {
+                min-height: 0;
+                aspect-ratio: 4 / 3;
+            }
+
+            #team .superintendent-profile-image img {
+                min-height: 0;
+            }
+        }
+
+        #team .member {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            transform: none;
+        }
+
+        #team .member .member-img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #f3f6fb;
+        }
+
+        #team .member .member-img img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        #team .member .member-info {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            align-items: center;
+            overflow-wrap: anywhere;
+        }
+
+        #team .member .member-info h4 {
+            font-size: clamp(18px, 1.5vw, 23px);
+        }
+
+        #team .member .member-info p {
+            margin-top: auto;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            #team .member {
+                transition: box-shadow 0.3s ease;
+            }
+        }
+
+        #team .member:hover {
+            transform: none;
+            box-shadow: 0 0 30px rgba(1, 41, 112, 0.12);
+        }
+    </style>
 
     <!-- =======================================================
     * Template Name: FlexStart
@@ -159,7 +292,7 @@
                         <img src="/images/landing/scanner.png" class="img-fluid" alt="">
                         <h3>Answer Sheet Scanner</h3>
                         <p>Automated checking of answer sheets through mobile application. 
-                            <br><b><a href="https://exscanner.edu.vn/deped-ph" target="_blank">ExScanner</a></b>
+                            <br><b><a href="#" target="_blank">STARS APP</a></b>
                         </p>
                     </div>
                 </div>
@@ -369,31 +502,30 @@
     <div class="container" data-aos="fade-up">
 
     <header class="section-header">
+        <h2>DepEd Laguna</h2>
+        <p>Our hard working team</p>
+    </header>
+    
+    <section class="superintendent-profile" aria-labelledby="superintendent-name" data-aos="fade-up">
+        <div class="superintendent-profile-image">
+            <img src="/images/landing/SUSAN-DL.jpg" alt="Editha M. Atendido, Schools Division Superintendent">
+        </div>
+        <div class="superintendent-profile-content">
+            <h3 id="superintendent-name">Editha M. Atendido, CESO V</h3>
+            <p class="role">Schools Division Superintendent</p>
+            <blockquote>Superintendent’s statement will appear here.</blockquote>
+        </div>
+    </section>
+    <header class="section-header">
         <h2>Team</h2>
         <p>Our hard working team</p>
     </header>
-
-    <div class="row gy-4">
-        <div class="col-lg-2 col-md-6 d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="100">
-            <div class="member">
-                <div class="member-img">
-                <img src="/images/landing/team1.png" class="img-fluid" alt="">
-              
-                </div>
-                <div class="member-info">
-                <h4>Editha M. Atendido, CESO V</h4>
-                <span>Schools Division Superintendent</span>
-                <p>
-                    {{-- Description --}}
-                </p>
-                </div>
-            </div>
-        </div>
-
+    <div class="team-members-row">
+      
         <div class="col-lg-2 col-md-6 d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="200">
             <div class="member">
                 <div class="member-img">
-                <img src="/images/landing/team2.png" class="img-fluid" alt="">
+                <img src="/images/landing/Punzalan.jpg" class="img-fluid" alt="">
               
                 </div>
                 <div class="member-info">
@@ -409,7 +541,7 @@
         <div class="col-lg-2 col-md-6 d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="300">
             <div class="member">
                 <div class="member-img">
-                <img src="/images/landing/team3.png" class="img-fluid" alt="">
+                <img src="/images/landing/REPIA.png" class="img-fluid" alt="">
               
                 </div>
                 <div class="member-info">
@@ -480,7 +612,7 @@
         <p>System Development Team</p>
     </header>
 
-    <div class="row gy-4">
+    <div class="team-members-row">
         <div class="col-lg-3 col-md-6 d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="600">
             <div class="member">
                 <div class="member-img">
@@ -637,14 +769,11 @@
             <ul>
                 <li><i class="bi bi-chevron-right"></i> <a href="https://depedlaguna.com.ph">DepEd Laguna</a></li>
                 <li><i class="bi bi-chevron-right"></i> <a href="https://laguna.gov.ph">Provincial Government of Laguna</a></li>
-                <li><i class="bi bi-chevron-right"></i> <a href="https://exscanner.edu.vn/deped-ph/">ExScanner</a></li>
+                <li><i class="bi bi-chevron-right"></i> <a href="#">STARS APP</a></li>
             </ul>
         </div>
         <div class="col-lg-3 col-3 footer-links">
-            <center>
-                
-            <img src="/images/una.png" style="height:200px">
-            </center>
+            
         </div>
         <div class="col-lg-3 col-3 footer-links">
             <img src="/images/matatag.png" style="width:100%">

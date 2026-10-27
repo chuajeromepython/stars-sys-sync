@@ -72,6 +72,7 @@
             </div>
         </div>
         <div class="col-md-6 mb-2">
+            @can('teacher_classes.manage')
             <form class="form" method="post" action="/student_classes/sync">
                 @csrf()
                 <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#modal_add_student">
@@ -83,6 +84,7 @@
                     <i class="fas fa-users mr-2"></i> Sync Students
                 </button>
             </form>
+            @endcan
         </div>
     </div>
     @if($students->count() == 0)

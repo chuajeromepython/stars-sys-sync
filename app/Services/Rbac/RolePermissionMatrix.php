@@ -73,6 +73,44 @@ final class RolePermissionMatrix
     ];
 
     /**
+     * Default read permissions for Curriculum and Instruction leadership.
+     *
+     * @var list<string>
+     */
+    private const CID_OFFICE = [
+        'api.lookups',
+        'assessments.view',
+        'classrooms.view',
+        'competencies.view',
+        'dashboard.view',
+        'item_banks.view',
+        'reports.view',
+        'reports.generate',
+        'schools.view',
+        'sections.view',
+        'students.view',
+        'subjects.view',
+        'teachers.view',
+    ];
+
+    /**
+     * Default read permissions for School Governance and Operations leadership.
+     *
+     * @var list<string>
+     */
+    private const SGOD_OFFICE = [
+        'api.lookups',
+        'classrooms.view',
+        'dashboard.view',
+        'districts.view',
+        'reports.view',
+        'reports.generate',
+        'schools.view',
+        'students.view',
+        'teachers.view',
+    ];
+
+    /**
      * Permissions granted to each role. A "module.*" entry expands to every
      * action declared for that module in self::MODULES.
      *
@@ -111,10 +149,34 @@ final class RolePermissionMatrix
         ],
         Role::DivisionSuperintendent->value => self::DIVISION_OFFICE,
         Role::AssistantDivisionSuperintendent->value => self::DIVISION_OFFICE,
-        Role::ChiefOfCID->value => self::DIVISION_OFFICE,
-        Role::ChiefOfSGOD->value => self::DIVISION_OFFICE,
-        Role::DivisionSupervisor->value => self::DIVISION_OFFICE,
-        Role::DistrictSupervisor->value => self::DIVISION_OFFICE,
+        Role::ChiefOfCID->value => self::CID_OFFICE,
+        Role::ChiefOfSGOD->value => self::SGOD_OFFICE,
+        Role::DivisionSupervisor->value => [
+            'api.lookups',
+            'classrooms.view',
+            'competencies.view',
+            'dashboard.view',
+            'districts.*',
+            'item_banks.view',
+            'reports.view',
+            'reports.generate',
+            'schools.view',
+            'sections.view',
+            'students.view',
+            'teachers.view',
+        ],
+        Role::DistrictSupervisor->value => [
+            'api.lookups',
+            'classrooms.view',
+            'dashboard.view',
+            'districts.view',
+            'reports.view',
+            'reports.generate',
+            'schools.view',
+            'sections.view',
+            'students.view',
+            'teachers.view',
+        ],
         Role::SchoolHead->value => [
             'api.lookups',
             'class_assessments.view',
@@ -126,6 +188,7 @@ final class RolePermissionMatrix
             'item_banks.view',
             'reports.view',
             'reports.generate',
+            'schools.view',
             'sections.*',
             'students.*',
             'teacher_classes.*',

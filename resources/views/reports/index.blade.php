@@ -87,10 +87,14 @@
 							</select>
 						</div>
 						<div class="col-md-12" id="div_assessment_type">
-							<small class="text-bold">Assessment Type</small>
+							<label class="small text-bold mb-1" for="assessment_type">Assessment Type</label>
 							<select class="select2bs4 form-control" name="assessment_type" id="assessment_type">
 
 							</select>
+						</div>
+						<div class="col-md-12">
+							<label class="small text-bold mb-1" for="assessment_date">Date of Assessment</label>
+							<input class="form-control" type="date" name="assessment_date" id="assessment_date" required>
 						</div>
 						<div class="col-md-12" id="div_report_type">
 							<small class="text-bold">Report Type</small>

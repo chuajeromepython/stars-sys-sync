@@ -117,69 +117,57 @@
         <div class="col-md-12 mb-2">
             <div class="card">
                 <div class="card-header">
-                    <div class="row">
-                        <div class="col-md-6 col-12 mb-2">
+                    <div class="d-flex flex-row justify-content-between">
+                        <div class="mb-2">
                             <small class=""><b>LEGEND</b></small><br>
                             <span class="badge bg-teal">Beginning Of S.Y.</span>
-                            <span class="badge bg-info">Mid Of S.Y.</span>
                             <span class="badge bg-purple">End Of S.Y.</span>
                         </div>
-                        <div class="col-md-2 mb-2">
+                       <div class="row">
+                         <div class="mx-1">
                             <a class="btn-block btn btn-info" data-toggle="modal" data-target="#upload_modal">
                                 <i class="fa fa-upload"></i>
                                 Upload
                             </a>
                         </div>
-                        <div class="col-md-2 mb-2">
+                        <div class="mx-1">
                             <a class="btn-block btn btn-success" href="/ecdcs/{{$classroom->id}}/download_template">
                                 <i class="fa fa-download"></i>
                                 Download Template
                             </a>
                         </div>
-                        <div class="col-md-2 mb-2">
-                            @can('ecdcs.download')
-                                <a class="btn-block btn btn-primary" href="{{ route('ecdcs.classroom.report.download', $classroom->id) }}">
-                                    <i class="fa fa-file-excel"></i>
-                                    Download SF5-K
-                                </a>
-                            @endcan
-                        </div>
+                       </div>
                     </div>
                 </div>
                 <div class="card-body">
                     <table class="table table-bordered table-hover" id="dt_ecdcs">
                         <thead>
                             <tr>
-                                <th colspan="5" class="text-primary">
+                                <th colspan="4" class="text-primary">
                                     <center>
                                         List of Uploaded ECDC
                                     </center>
                                 </th>
                             </tr>
                             <tr>
-                                <th>Date Uploaded</th>
-                                <th>Date of Assessment</th>
+                                <th style="width: 15%;">Date Uploaded</th>
                                 <th>Section</th>
-                                <th>Period</th>
-                                <th>Action</th>
+                                <th style="width: 15%;">Period</th>
+                                <th style="width: 15%;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($ecdcs as $ecdc)
+                                @if ((int) $ecdc->period !== 2)
                                 <tr>
                                     <td>{{$ecdc->created_at}}</td>
-                                    <td>{{$ecdc->date}}</td>
                                     <td>{{$ecdc->section}}</td>
                                     <td>
-                                        <center>
                                         @if ($ecdc->period == 1)
                                             <span class="badge bg-teal">BOSY</span>
-                                        @elseif ($ecdc->period == 2)
-                                            <span class="badge bg-info">MOSY</span>
                                         @else
                                             <span class="badge bg-purple">EOSY</span>
                                         @endif
-                                        </center>
                                     </td>
                                     <td>
                                         <center>
@@ -198,6 +186,7 @@
                                         </center>
                                     </td>
                                 </tr>
+                                @endif
                             @endforeach
                         </tbody>
                     </table>
@@ -218,7 +207,7 @@
                 <div class="card-body">
                     <table class="table table-striped table-bordered table-hover" id="dt_students">
                         <thead>
-                            <th colspan="6" class="text-primary">
+                            <th colspan="5" class="text-primary">
                                 <center>
                                     Student ECD Checklist
                                 </center>
@@ -227,7 +216,6 @@
                                 <th>LRN</th>
                                 <th>Name</th>
                                 <th>BoSY</th>
-                                <th>MoSY</th>
                                 <th>EoSY</th>
                                 <th>Action</th>
                             </tr>
@@ -240,14 +228,6 @@
                                     <td>
                                         <center>
                                             {!! ($student["has_bosy"] == 1) 
-                                                ? '<i class="fa fa-check text-success"></i>' 
-                                                : '<i class="fa fa-times text-danger"></i>'
-                                            !!}
-                                        </center>
-                                    </td>
-                                    <td>
-                                        <center>
-                                            {!! ($student["has_mosy"] == 1) 
                                                 ? '<i class="fa fa-check text-success"></i>' 
                                                 : '<i class="fa fa-times text-danger"></i>'
                                             !!}
