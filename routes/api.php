@@ -23,7 +23,7 @@ Route::post('/authenticate', [AppApiController::class, 'authenticate']);
 Route::get('/ecdc/domains', [AppApiController::class, 'getEcdcDomains']);
 Route::post('/ecdc/domains/sync', [AppApiController::class, 'syncEcdcDomains']);
 Route::post('/students/sync', [AppApiController::class, 'studentsPerClassroom']);
-Route::post('/assessment/sync', [AppApiController::class, 'syncAssessment']);
+Route::post('/assessment/sync', [AppApiController::class, 'syncAssessment']); // user_id
 Route::post('/upload/assessment', [AppApiController::class, 'uploadAssessment']);
 Route::post('/classrooms/sync', [AppApiController::class, 'syncClassroomsByTeacherUserId']);
 Route::post('/ecdc/upload', [AppApiController::class, 'uploadEcdcResults']);
